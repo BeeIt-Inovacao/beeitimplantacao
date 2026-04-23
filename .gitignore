@@ -1,0 +1,54 @@
+# ───────── Node / Build ─────────
+node_modules/
+dist/
+.cache/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ───────── Editores ─────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ───────── Env / Secrets ─────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+credentials.json
+service-account.json
+supabase/.temp/
+
+# ───────── Artefatos de dev ─────────
+*.tmp
+*.bak
+*.old
+/tmp/
+temp/
+*.html.backup
+BeeIT-OS-RT-*.html.bak
+
+# Versões de trabalho locais (só a produção vai pro repo)
+src/BeeIT-OS-RT-v2_[0-9]*.html
+!src/BeeIT-OS-RT-v2.html
+
+# ───────── Protheus Output / SPED ─────────
+*.txt.processed
+sped_samples/
+dados_reais/
+clientes/
+
+# ───────── PDF / Office temporários ─────────
+~$*
+*.pdf.tmp
+
+# ───────── System ─────────
+.Trash-*
+.directory
+.nfs*

@@ -1,0 +1,86 @@
+# ═══════════════════════════════════════════════════════════════
+# BeeIT OS-RT v2 — .htaccess (Hostinger)
+# ═══════════════════════════════════════════════════════════════
+
+# ────── HTTPS obrigatório ──────
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ────── Redirect www → non-www ──────
+RewriteCond %{HTTP_HOST} ^www\.implantacao\.com\.br$ [NC]
+RewriteRule ^(.*)$ https://implantacao.com.br/$1 [L,R=301]
+
+# ────── Default document ──────
+DirectoryIndex index.html
+
+# ────── Compressão Gzip ──────
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml
+  AddOutputFilterByType DEFLATE application/javascript application/x-javascript application/json
+  AddOutputFilterByType DEFLATE application/xml application/rss+xml application/atom+xml
+  AddOutputFilterByType DEFLATE image/svg+xml font/woff font/woff2
+</IfModule>
+
+# ────── Cache de estáticos ──────
+<IfModule mod_expires.c>
+  ExpiresActive On
+
+  # HTML principal — nunca cachear (para deploys imediatos)
+  ExpiresByType text/html "access plus 0 seconds"
+
+  # CSS/JS — 7 dias
+  ExpiresByType text/css "access plus 7 days"
+  ExpiresByType application/javascript "access plus 7 days"
+  ExpiresByType application/x-javascript "access plus 7 days"
+
+  # Imagens — 30 dias
+  ExpiresByType image/png "access plus 30 days"
+  ExpiresByType image/jpg "access plus 30 days"
+  ExpiresByType image/jpeg "access plus 30 days"
+  ExpiresByType image/gif "access plus 30 days"
+  ExpiresByType image/webp "access plus 30 days"
+  ExpiresByType image/svg+xml "access plus 30 days"
+  ExpiresByType image/x-icon "access plus 30 days"
+
+  # Fonts — 1 ano
+  ExpiresByType font/woff "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+# ────── Security Headers ──────
+<IfModule mod_headers.c>
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+  Header set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+
+  # Cache control para HTML
+  <FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+
+  # Permitir CORS apenas do próprio domínio
+  <FilesMatch "\.(woff|woff2|ttf|eot|svg)$">
+    Header set Access-Control-Allow-Origin "https://implantacao.com.br"
+  </FilesMatch>
+</IfModule>
+
+# ────── Bloquear arquivos sensíveis ──────
+<FilesMatch "^\.(htaccess|htpasswd|git|env|DS_Store)">
+  Require all denied
+</FilesMatch>
+
+<FilesMatch "\.(bak|backup|log|old|swp|tmp)$">
+  Require all denied
+</FilesMatch>
+
+# ────── Error pages (opcional) ──────
+# ErrorDocument 404 /index.html
+# ErrorDocument 500 /index.html
+
+# ────── Desabilitar listagem de diretórios ──────
+Options -Indexes
