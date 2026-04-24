@@ -39,20 +39,39 @@ O Bee IT exige **código cirúrgico e assertivo** — sempre:
 ```
 .
 ├── public/
-│   ├── index.html            ← Arquivo servido em produção (copiado do src/)
-│   └── .htaccess             ← HTTPS, compressão, security headers
+│   ├── index.html                 ← Arquivo servido em produção (copiado do src/)
+│   └── .htaccess                  ← HTTPS, compressão, security headers
 ├── src/
-│   └── BeeIT-OS-RT-v2.html   ← Fonte editável (arquivo real ~2.6MB)
-├── supabase/functions/protheus-proxy/
-│   └── index.ts              ← Edge Function Deno (proxy unificado)
+│   ├── BeeIT-OS-RT-v2.html        ← Monólito (shell — ~3.4MB, 46.786 linhas)
+│   ├── core/                      ← [novo] bootstrap, event-bus, tenant-context
+│   ├── services/                  ← [novo] supabase-client, protheus-proxy-client, dict-snapshot
+│   ├── security/                  ← [novo] auth-guard, input-sanitizer
+│   ├── modules/                   ← [novo] integrações Protheus modulares (mata410/415/460)
+│   ├── assessments/               ← [PRODUÇÃO — INTOCÁVEL] assessments TOTVS
+│   └── rm-agents/                 ← [PRODUÇÃO — INTOCÁVEL] agents RM
+├── supabase/
+│   ├── functions/protheus-proxy/
+│   │   └── index.ts               ← Edge Function Deno (proxy unificado)
+│   └── migrations/                ← [novo] SQL versionado (Sprint 2+)
 ├── scripts/
-│   └── migrate-proxy-urls.js ← Troca localhost:3030 → Edge Function
+│   └── migrate-proxy-urls.js      ← Troca localhost:3030 → Edge Function
 ├── .github/workflows/
-│   └── deploy.yml            ← CI/CD FTP Hostinger
+│   └── deploy.yml                 ← CI/CD FTP Hostinger
+├── .claude/
+│   ├── rules/
+│   │   ├── code-style.md          ← Papéis, SOLID, proibições visuais
+│   │   └── testing.md             ← node --check, sanidade REST, RLS
+│   └── skills/deploy/
+│       └── deploy-config.md       ← Restrição FTP, módulos intocáveis
 └── docs/
-    ├── QUICKSTART.md         ← Passo-a-passo de deploy
-    └── DEPLOY.md             ← Guia detalhado Hostinger
+    ├── QUICKSTART.md              ← Passo-a-passo de deploy
+    ├── DEPLOY.md                  ← Guia detalhado Hostinger
+    ├── CLAUDE_CODE_GUIDE.md       ← Guia assistente
+    └── ROADMAP.md                 ← [novo] Sprints, riscos, descobertas
 ```
+
+**Branch atual:** `feat/modularization-security-v1` (Sprints 1+2)
+**Rollback:** tag `v1.0-pre-modular` no `main`
 
 ---
 
@@ -63,7 +82,7 @@ O Bee IT exige **código cirúrgico e assertivo** — sempre:
 | Supabase Project | https://dbaqvoatopfquaqgdptk.supabase.co |
 | Edge Function Proxy | https://dbaqvoatopfquaqgdptk.supabase.co/functions/v1/protheus-proxy |
 | Produção | https://implantacao.com.br |
-| Repositório GitHub | (a criar) |
+| Repositório GitHub | https://github.com/BeeIt-Inovacao/beeitimplantacao |
 | Painel Hostinger | https://hpanel.hostinger.com |
 | Painel Supabase | https://supabase.com/dashboard/project/dbaqvoatopfquaqgdptk |
 
