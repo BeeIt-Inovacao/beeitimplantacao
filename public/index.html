@@ -44419,6 +44419,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = QDB_RM_CON
 
 
 // ──────────────────────────────────────────────────
+// ══════ EXPORTS GLOBAIS (bridge const → window.X para IIFEs consumirem) ══════
+if (typeof AGENTS !== 'undefined') window.AGENTS = AGENTS;
+if (typeof PROCESSOS_PADRAO !== 'undefined') window.PROCESSOS_PADRAO = PROCESSOS_PADRAO;
+if (typeof QDB_PROTHEUS_CONTEXTO !== 'undefined') window.QDB_PROTHEUS_CONTEXTO = QDB_PROTHEUS_CONTEXTO;
+if (typeof QDB_RM_CONTEXTO !== 'undefined') window.QDB_RM_CONTEXTO = QDB_RM_CONTEXTO;
+if (typeof _M41RM_MODS !== 'undefined') window._M41RM_MODS = _M41RM_MODS;
+if (typeof _M41RM_QDB !== 'undefined') window._M41RM_QDB = _M41RM_QDB;
+if (typeof M41_RM_FUNCIONAL_PROMPT !== 'undefined') window.M41_RM_FUNCIONAL_PROMPT = M41_RM_FUNCIONAL_PROMPT;
+console.log('[BeeIT] Globals exportados para window:', {AGENTS: !!window.AGENTS, QDB_PROTHEUS: !!window.QDB_PROTHEUS_CONTEXTO, QDB_RM: !!window.QDB_RM_CONTEXTO, _M41RM_QDB: !!window._M41RM_QDB});
+
 // ══════ assessments-ui.html (script inline) ══════
 
 (function() {
