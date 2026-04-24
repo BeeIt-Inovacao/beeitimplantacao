@@ -44442,6 +44442,16 @@ if (typeof module !== 'undefined' && module.exports) module.exports = QDB_RM_CON
     const container = $('#asm-list-container');
     container.innerHTML = `<div class="asm-empty"><h2>Carregando…</h2><p style="font-size:12px; opacity:.6;">Se demorar mais de 10s, verifique o console (F12)</p></div>`;
 
+    // Guard clause: race entre login e click rápido em Assessments
+    // Aguarda até 5x 500ms pela session antes de prosseguir
+    if (!window.beeitSession?.user?.id) {
+      console.log('[BeeIT Assessments] session ainda não disponível — aguardando...');
+      for (let i = 0; i < 5; i++) {
+        await new Promise(r => setTimeout(r, 500));
+        if (window.beeitSession?.user?.id) { console.log('[BeeIT Assessments] session pronta após', (i+1)*500, 'ms'); break; }
+      }
+    }
+
     // Timeout de 15s — se Supabase não responder, mostra erro claro
     const timeout = new Promise((_, rej) =>
       setTimeout(() => rej(new Error('Timeout ao carregar assessments. O Supabase não respondeu em 15s. Abra o Console (F12) e veja se há erros.')), 15000)
