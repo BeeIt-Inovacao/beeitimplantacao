@@ -74,8 +74,8 @@
    * Usa padrão do BeeIT OS-RT v2 existente (header anthropic-dangerous-direct-browser-access).
    */
   async function callClaude(agent, userPrompt, options = {}) {
-    const key = window.ANTHROPIC_KEY || options.apiKey;
-    if (!key) throw new Error('ANTHROPIC_KEY não definida no escopo global');
+    const key = (typeof cfgGet==='function' ? cfgGet('api_key','') : '') || options.apiKey;
+    if (!key) throw new Error('API key não configurada (cfgGet(\'api_key\') vazio)');
 
     const body = {
       model: agent.modelo,
@@ -86,6 +86,7 @@
     // ⚠️ NÃO passar temperature: 0 — causa HTTP 400 nesta versão da API
 
     const resp = await fetch(ANTHROPIC_API_URL, {
+      signal: AbortSignal.timeout(120000),
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -12,7 +12,7 @@
 const AGENT_PROTHEUS = {
   id: 'protheus-assessor',
   nome: 'Especialista Protheus',
-  modelo: 'claude-sonnet-4-20250514',
+  modelo: 'claude-sonnet-4-6',
   max_tokens: 6000,
 
   system_prompt: `Você é um consultor sênior especialista em TOTVS Protheus, atuando pela Bee IT Consultoria.
@@ -198,7 +198,7 @@ Produza JSON completo conforme schema. Apenas JSON puro.`
 const AGENT_RM = {
   id: 'rm-assessor',
   nome: 'Especialista RM',
-  modelo: 'claude-sonnet-4-20250514',
+  modelo: 'claude-sonnet-4-6',
   max_tokens: 6000,
 
   system_prompt: `Você é um consultor sênior especialista em TOTVS RM, atuando pela Bee IT Consultoria.
@@ -383,7 +383,7 @@ Produza JSON completo conforme schema. Apenas JSON puro.`
 const AGENT_ORQUESTRADOR = {
   id: 'orquestrador',
   nome: 'Orquestrador de Assessments',
-  modelo: 'claude-sonnet-4-20250514',
+  modelo: 'claude-sonnet-4-6',
   max_tokens: 2000,
 
   system_prompt: `Você é o Orquestrador de Assessments da BeeIT. Analisa descrição livre de cliente TOTVS e classifica: Protheus, RM ou híbrido.
@@ -452,7 +452,7 @@ Produza JSON conforme schema. Apenas JSON puro.`
 const AGENT_CONSOLIDADOR = {
   id: 'consolidador',
   nome: 'Consolidador de Assessment',
-  modelo: 'claude-sonnet-4-20250514',
+  modelo: 'claude-sonnet-4-6',
   max_tokens: 6000,
 
   system_prompt: `Você é consultor sênior BeeIT especializado em consolidar múltiplas análises de processos (formato AS-IS/GAP/TO-BE) em Sumário Executivo coerente e acionável para liderança do cliente.

@@ -1134,17 +1134,13 @@ window.beeitAdminLoadLog    = beeitAdminLoadLog;
       <button class="sbi" id="sbi-imp" onclick="nav('imp')"><span class="sbi-ic">📥</span><span class="sbi-lb">Importar SPED</span></button>
     </div>
 
-    <div class="sb-section" id="sh-diag" onclick="sbToggle('sg-diag')">DIAGNÓSTICO <span class="sb-arr">›</span></div>
-    <div class="sb-group" id="sg-diag">
-      <button class="sbi" id="sbi-assessments" onclick="nav('assessments');setTimeout(()=>window.BeeITAssessmentsUI?.init(),60)"><span class="sbi-ic">🎯</span><span class="sbi-lb">Assessments</span><span class="sbi-bd" style="background:rgba(139,92,246,.2);color:#c084fc;border:1px solid rgba(139,92,246,.4);">IA</span></button>
-    </div>
-
     <div class="sb-section" id="sh-doc" onclick="sbToggle('sg-doc')">DOCUMENTAÇÃO <span class="sb-arr">›</span></div>
     <div class="sb-group" id="sg-doc">
       <button class="sbi" id="sbi-mit044" onclick="nav('mit044');setTimeout(rndMIT044,60)"><span class="sbi-ic">📋</span><span class="sbi-lb">MIT041 Desenvolvimento Protheus</span><span class="sbi-bd" style="background:rgba(139,92,246,.2);color:#38D4F5;border:1px solid rgba(139,92,246,.4);">IA</span></button>
       <button class="sbi" id="sbi-mit041" onclick="nav('mit041');setTimeout(rndMIT041,60)"><span class="sbi-ic">📄</span><span class="sbi-lb">MIT041 Funcional Protheus</span><span class="sbi-bd" style="background:rgba(249,115,22,.2);color:#f97316;border:1px solid rgba(249,115,22,.4);">IA</span></button>
       <button class="sbi" id="sbi-mit041rm" onclick="nav('mit041rm');setTimeout(rndMIT041RM,60)"><span class="sbi-ic">📄</span><span class="sbi-lb">MIT041 Funcional RM</span><span class="sbi-bd" style="background:rgba(16,185,129,.2);color:#34d399;border:1px solid rgba(16,185,129,.4);">IA</span></button>
       <button class="sbi" id="sbi-mit044rm" onclick="nav('mit044rm');setTimeout(rndMIT044RM,60)"><span class="sbi-ic">📋</span><span class="sbi-lb">MIT041 Desenvolvimento RM</span><span class="sbi-bd" style="background:rgba(16,185,129,.2);color:#34d399;border:1px solid rgba(16,185,129,.4);">IA</span></button>
+      <button class="sbi" id="sbi-assessments" onclick="nav('assessments');setTimeout(rndAssessments,60)"><span class="sbi-ic">🎯</span><span class="sbi-lb">Assessments</span><span class="sbi-bd" style="background:rgba(139,92,246,.2);color:#c084fc;border:1px solid rgba(139,92,246,.4);">IA</span></button>
     </div>
 
     <div class="sb-section" id="sh-cad" onclick="sbToggle('sg-cad')">CADASTRO <span class="sb-arr">›</span></div>
@@ -24661,7 +24657,7 @@ Mínimo 20 centros analíticos organizados por área. Adaptar para ${setorNome}:
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
+        model:'claude-sonnet-4-6',
         max_tokens:4000,
         system:'Responda SOMENTE JSON minificado e válido. Sem markdown, sem texto adicional.',
         messages:[{role:'user',content:PROMPT}]
@@ -25175,7 +25171,7 @@ Scores reais 0-100. problemas_criticos máx 6. checklist máx 8.`;
     const r=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4000,
         system:'Responda SOMENTE JSON minificado e válido. Sem markdown.',
         messages:[{role:'user',content:PROMPT}]})
     });
@@ -30699,7 +30695,7 @@ async function ct1AgentAnalyze(){
     prog(20,'Chamanda IA...','Fase 1 — '+label);
     const HEADERS={'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
     // Tentar Sonnet 4 primeiro
-    for(const [model,tok] of [['claude-sonnet-4-20250514',maxTok],['claude-haiku-4-5-20251001',Math.min(maxTok,4000)]]){
+    for(const [model,tok] of [['claude-sonnet-4-6',maxTok],['claude-haiku-4-5-20251001',Math.min(maxTok,4000)]]){
       try{
         const r=await fetch('https://api.anthropic.com/v1/messages',{
           method:'POST',headers:HEADERS,
@@ -41283,7 +41279,7 @@ window._m44IniciarProgramacao = _m44IniciarProgramacao;
 const AGENT_PROTHEUS = {
   id: 'protheus-assessor',
   nome: 'Especialista Protheus',
-  modelo: 'claude-sonnet-4-20250514',
+  modelo: 'claude-sonnet-4-6',
   max_tokens: 6000,
 
   system_prompt: `Você é um consultor sênior especialista em TOTVS Protheus, atuando pela Bee IT Consultoria.
@@ -41469,7 +41465,7 @@ Produza JSON completo conforme schema. Apenas JSON puro.`
 const AGENT_RM = {
   id: 'rm-assessor',
   nome: 'Especialista RM',
-  modelo: 'claude-sonnet-4-20250514',
+  modelo: 'claude-sonnet-4-6',
   max_tokens: 6000,
 
   system_prompt: `Você é um consultor sênior especialista em TOTVS RM, atuando pela Bee IT Consultoria.
@@ -41654,7 +41650,7 @@ Produza JSON completo conforme schema. Apenas JSON puro.`
 const AGENT_ORQUESTRADOR = {
   id: 'orquestrador',
   nome: 'Orquestrador de Assessments',
-  modelo: 'claude-sonnet-4-20250514',
+  modelo: 'claude-sonnet-4-6',
   max_tokens: 2000,
 
   system_prompt: `Você é o Orquestrador de Assessments da BeeIT. Analisa descrição livre de cliente TOTVS e classifica: Protheus, RM ou híbrido.
@@ -41723,7 +41719,7 @@ Produza JSON conforme schema. Apenas JSON puro.`
 const AGENT_CONSOLIDADOR = {
   id: 'consolidador',
   nome: 'Consolidador de Assessment',
-  modelo: 'claude-sonnet-4-20250514',
+  modelo: 'claude-sonnet-4-6',
   max_tokens: 6000,
 
   system_prompt: `Você é consultor sênior BeeIT especializado em consolidar múltiplas análises de processos (formato AS-IS/GAP/TO-BE) em Sumário Executivo coerente e acionável para liderança do cliente.
@@ -42204,8 +42200,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = QDB_RM_CON
    * Usa padrão do BeeIT OS-RT v2 existente (header anthropic-dangerous-direct-browser-access).
    */
   async function callClaude(agent, userPrompt, options = {}) {
-    const key = window.ANTHROPIC_KEY || options.apiKey;
-    if (!key) throw new Error('ANTHROPIC_KEY não definida no escopo global');
+    const key = (typeof cfgGet==='function' ? cfgGet('api_key','') : '') || options.apiKey;
+    if (!key) throw new Error('API key não configurada (cfgGet(\'api_key\') vazio)');
 
     const body = {
       model: agent.modelo,
@@ -42216,6 +42212,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = QDB_RM_CON
     // ⚠️ NÃO passar temperature: 0 — causa HTTP 400 nesta versão da API
 
     const resp = await fetch(ANTHROPIC_API_URL, {
+      signal: AbortSignal.timeout(120000),
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -43338,6 +43335,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = QDB_RM_CON
 
   console.log('[BeeIT] UI Assessments carregada');
 })();
+
+// Wrapper global rndAssessments — padrão BeeIT (onclick sidebar → setTimeout(rndAssessments,60))
+function rndAssessments(){ window.BeeITAssessmentsUI?.init(); }
+window.rndAssessments = rndAssessments;
 </script>
 
 </body>
