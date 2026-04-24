@@ -1,14 +1,17 @@
 // ============================================================================
-// BeeIT OS-RT v2 — Edge Function protheus-proxy (v3.0)
+// BeeIT OS-RT v2 — Edge Function protheus-proxy (v3.1)
 // ----------------------------------------------------------------------------
-// Proxy unificado com hardening de segurança (Sprint 3):
+// Proxy unificado com hardening de segurança (Sprint 3) +
+// legacy allow-list para compatibilidade com monólito (Sprint 5):
 //
 //   1. CORS allow-list estrita (implantacao.com.br + localhost dev)
 //   2. JWT obrigatório — valida assinatura via supabase.auth.getUser
 //   3. Path allow-list estrita para /protheus/* (regex fechada)
+//      + PROTHEUS_PATH_ALLOW_LEGACY para aliases usados pelo monólito hoje
 //   4. Credenciais Protheus resolvidas server-side via tenant_protheus_config
 //      + Supabase Vault — NUNCA aceita x-protheus-auth do browser
 //   5. Audit log em public.audit_protheus (best-effort)
+//      rejectedReason="legacy_alias_in_use" sinaliza paths para migração S6
 //
 // Roteamento:
 //   /protheus/<path-allowed> → Protheus REST (path validado, credenciais injetadas)
@@ -39,7 +42,7 @@ const ORIGIN_REGEX = [
   /^http:\/\/127\.0\.0\.1(?::\d+)?$/,
 ];
 
-// Allow-list de paths Protheus (regex estrita).
+// Allow-list de paths Protheus (regex estrita) — rotas BDA/MATA modernas.
 // Permite:
 //   /api/v1/bda/dictionary/<endpoint>     BdaDictApi    (blueprint etc)
 //   /api/v1/bda/dynamic                   BDADynApi     (get_arch_blueprint, exec_sql)
@@ -54,6 +57,22 @@ const PROTHEUS_PATH_ALLOW = new RegExp(
     "/api/v1/mata4\\d{2}(/[a-z0-9_-]+)*" +
     "|" +
     "/rest/mata4\\d{2}(/[a-z0-9_-]+)*" +
+  ")$",
+  "i"
+);
+
+// Aliases legados — usados pelo monólito hoje enquanto Sprint 6 migra para /bda/dynamic.
+// TODAS as proteções (JWT, tenant_id, Vault) permanecem ativas — só o path-filter é ampliado.
+// Requests que baterem nesta lista são auditados com rejectedReason="legacy_alias_in_use"
+// para facilitar rastreamento da migração. Remover cada entrada ao migrar em S6.
+const PROTHEUS_PATH_ALLOW_LEGACY = new RegExp(
+  "^(" +
+    // Aliases SX/Manutenção com ou sem prefixo /rest/ — SA1, SA2 etc.
+    "/(?:rest/)?(SA1|SA2|SA6|SB1|CT1|CTT|CTD|SE4|SED|SEE|SF4|SN1|SX3|SX6|COMPANIES)" +
+    "(/[A-Za-z0-9_~%.+-]*)*/?" +
+    "|" +
+    // Framework endpoints mínimos
+    "/api/framework/v1/(health|company|user)" +
   ")$",
   "i"
 );
@@ -264,7 +283,7 @@ Deno.serve(async (req) => {
   if (isHealth) {
     return jsonResponse(origin, {
       service: "BeeIT OS-RT Proxy",
-      version: "3.0",
+      version: "3.1",
       status: "ok",
       routes: {
         protheus: "/protheus/<allow-listed-path>",
@@ -304,8 +323,9 @@ Deno.serve(async (req) => {
     if (path.startsWith("/protheus/")) {
       const protheusPath = path.slice("/protheus".length); // começa com "/"
 
-      // Path allow-list estrita
-      if (!PROTHEUS_PATH_ALLOW.test(protheusPath)) {
+      // Path allow-list — moderno (PROTHEUS_PATH_ALLOW) ou legado (PROTHEUS_PATH_ALLOW_LEGACY).
+      const isLegacy = PROTHEUS_PATH_ALLOW_LEGACY.test(protheusPath);
+      if (!PROTHEUS_PATH_ALLOW.test(protheusPath) && !isLegacy) {
         await audit({
           userId: auth.userId,
           tenantId: auth.tenantId,
@@ -375,6 +395,7 @@ Deno.serve(async (req) => {
         method: req.method,
         status: upstream.status,
         durationMs: Date.now() - startedAt,
+        ...(isLegacy && { rejectedReason: "legacy_alias_in_use" }),
         ip: clientIp(req),
         userAgent: req.headers.get("user-agent"),
       });
