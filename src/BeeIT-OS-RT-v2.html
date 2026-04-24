@@ -677,8 +677,8 @@ async function beeitSbFetch(path, opts={}) {
 
   // ═ Retry automático em 401: tenta refresh uma vez antes de propagar o erro
   // Evita loop infinito: não re-tenta se já é chamada de refresh/logout/login OU se já é segunda tentativa
-  if (r.status === 401 && !opts._isRetry && !/\/auth\/v1\/(token|logout)/.test(path) && beeitSession?.refresh_token) {
-    console.warn('[BeeIT Auth] 401 recebido em', path, '— tentando refresh automático');
+  if ((r.status === 401 || r.status === 403) && !opts._isRetry && !/\/auth\/v1\/(token|logout)/.test(path) && beeitSession?.refresh_token) {
+    console.warn('[BeeIT Auth]', r.status, 'recebido em', path, '— tentando refresh automático');
     try {
       const refreshed = await beeitSbFetch('/auth/v1/token?grant_type=refresh_token', {
         method: 'POST',
@@ -818,6 +818,9 @@ function beeitStartAutoRefresh() {
         beeitSession = data;
         localStorage.setItem('beeit_session', JSON.stringify(data));
         console.log('[BeeIT Auth] Auto-refresh OK em', new Date().toISOString());
+      } else if (r.status === 401 || r.status === 403) {
+        console.error('[BeeIT Auth] Refresh token inválido (HTTP', r.status, ') — forçando logout');
+        beeitLogout();
       } else {
         console.warn('[BeeIT Auth] Auto-refresh falhou:', r.status, data?.error_description || data?.msg);
       }
@@ -11189,7 +11192,8 @@ Máx: riscos=5, alertas=5, validacoes=4, checklist=6, params=4.`;
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,
         system:'Especialista Protheus TOTVS. Responda SOMENTE JSON minificado.',
-        messages:[{role:'user',content:prompt}]})
+        messages:[{role:'user',content:prompt}]}),
+      signal: AbortSignal.timeout(120000)
     });
     if(!resp.ok) throw new Error('HTTP '+resp.status);
     const data=await resp.json();
@@ -11816,7 +11820,8 @@ Máx: riscos=5, alertas_criticos=3, alertas_atencao=5, checklist=6, params=4.`;
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,
         system:'Especialista Protheus TOTVS. Responda SOMENTE JSON minificado válido.',
-        messages:[{role:'user',content:prompt}]})
+        messages:[{role:'user',content:prompt}]}),
+      signal: AbortSignal.timeout(120000)
     });
     if(!resp.ok) throw new Error('HTTP '+resp.status);
     const data = await resp.json();
@@ -14549,7 +14554,8 @@ Chaves: c=G1_COMP, desc=G1_DESC, q=G1_QUANT, p=G1_PERDA, fv=G1_FIXVAR, niv=G1_NI
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey.trim(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3000,messages:[{role:'user',content:PROMPT}]})
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:3000,messages:[{role:'user',content:PROMPT}]}),
+      signal: AbortSignal.timeout(120000)
     });
     if(!resp.ok) throw new Error(`API ${resp.status}`);
     const data=await resp.json();
@@ -15899,7 +15905,8 @@ async function hr2CallAI(prompt){
     headers:{'Content-Type':'application/json','x-api-key':k.trim(),
       'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
     body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:4000,
-      messages:[{role:'user',content:prompt}]})
+      messages:[{role:'user',content:prompt}]}),
+    signal: AbortSignal.timeout(120000)
   });
   if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(`API ${r.status}: ${e.error?.message||r.statusText}`);}
   const d=await r.json();
@@ -16753,7 +16760,8 @@ Checklist eSocial obrigatório (S2200 - Admissão): Nome completo, CPF válido, 
       headers:{'Content-Type':'application/json','x-api-key':key.trim(),
         'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:4000,
-        messages:[{role:'user',content:PROMPT}]})
+        messages:[{role:'user',content:PROMPT}]}),
+      signal: AbortSignal.timeout(120000)
     });
     if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(`API ${resp.status}: ${e.error?.message}`);}
     const data=await resp.json();
@@ -19071,7 +19079,8 @@ async function cfgTestApiKey(){
     const r=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:10,messages:[{role:'user',content:'ping'}]})
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:10,messages:[{role:'user',content:'ping'}]}),
+      signal: AbortSignal.timeout(120000)
     });
     const d=await r.json();
     if(r.ok||d.content){
@@ -25205,7 +25214,8 @@ Scores 0-100 reais. Problemas_criticos: máx 6. Correções automáticas: máx 5
         'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4000,
         system:'Responda SOMENTE JSON minificado e válido. Sem markdown.',
-        messages:[{role:'user',content:PROMPT}]})
+        messages:[{role:'user',content:PROMPT}]}),
+      signal: AbortSignal.timeout(120000)
     });
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json(); if(d.error) throw new Error(d.error.message);
@@ -25437,7 +25447,8 @@ Scores reais 0-100. problemas_criticos máx 6. checklist máx 8.`;
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4000,
         system:'Responda SOMENTE JSON minificado e válido. Sem markdown.',
-        messages:[{role:'user',content:PROMPT}]})
+        messages:[{role:'user',content:PROMPT}]}),
+      signal: AbortSignal.timeout(120000)
     });
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d=await r.json(); if(d.error) throw new Error(d.error.message);
@@ -25772,7 +25783,7 @@ async function queryIBGEMunicipio(codigoIBGE){
   // 2. API IBGE via proxy (para municípios não na tabela)
   if(!window._proxyAtivo) return null;
   try{
-    const r = await fetch(`https://dbaqvoatopfquaqgdptk.supabase.co/functions/v1/protheus-proxy/ibge/municipio/${cod}`,{
+    const r = await fetch(`https://dbaqvoatopfquaqgdptk.supabase.co/functions/v1/protheus-proxy/ibge/municipios/${cod}`,{
       signal: AbortSignal.timeout(4000)
     });
     if(!r.ok) return null;
@@ -32645,7 +32656,7 @@ const _m41 = {
   client:{nome:'',codigo:'',projeto:'',ger_totvs:'',ger_cli:'',data:new Date().toLocaleDateString('pt-BR'),release:'12.1.2510'},
   doc:'', _revisarRelease:'12.1.2510',
   chatHistory:[], chatLoading:false,
-  trainData: JSON.parse(localStorage.getItem('mit41_train')||'[]'),
+  trainData: (()=>{try{return JSON.parse(localStorage.getItem('mit41_train')||'[]');}catch(e){console.warn('[BeeIT] localStorage.mit41_train corrompido — usando []', e.message);return [];}})(),
   customQs:[],  // perguntas manuais adicionadas pelo consultor
   customQsNextSec:null // índice da próxima seção (GAP) após custom_qs
 };
@@ -34376,7 +34387,7 @@ function _m41Ink(t){
 function _m41Copy(){
   navigator.clipboard.writeText(_m41.doc||'').then(()=>{
     const btn=document.querySelector('#mit041-acts .btn-p');
-    if(btn){btn.textContent='✓ Copiado!';setTimeout(()=>{btn.textContent='📋 Copiar MIT041 Funcional Funcional Funcional';},2000);}
+    if(btn){btn.textContent='✓ Copiado!';setTimeout(()=>{btn.textContent='📋 Copiar MIT041 Funcional Protheus';},2000);}
   });
 }
 
@@ -38641,7 +38652,7 @@ const _m44 = {
             data: new Date().toLocaleDateString('pt-BR'), release:'12.1.2510' },
   doc: '', _importDoc: '', _importRelease: '12.1.2510',
   chatHistory:[], chatLoading:false,
-  trainData: JSON.parse(localStorage.getItem('mit44_train')||'[]')
+  trainData: (()=>{try{return JSON.parse(localStorage.getItem('mit44_train')||'[]');}catch(e){console.warn('[BeeIT] localStorage.mit44_train corrompido — usando []', e.message);return [];}})()
 };
 
 function rndMIT044() { _m44Render(); }
@@ -39370,7 +39381,7 @@ let _m41rm = {
   client:{nome:'',codigo:'',projeto:'',ger_totvs:'',ger_cli:'',data:new Date().toLocaleDateString('pt-BR'),release:'12.1'},
   doc:'', _revisarDoc:'', _revisarMod:null, _revisarRelease:'12.1',
   chatHistory:[], chatLoading:false,
-  trainData: JSON.parse(localStorage.getItem('mit41rm_train')||'[]')
+  trainData: (()=>{try{return JSON.parse(localStorage.getItem('mit41rm_train')||'[]');}catch(e){console.warn('[BeeIT] localStorage.mit41rm_train corrompido — usando []', e.message);return [];}})()
 };
 
 function rndMIT041RM(){ _m41rmRender(); }
@@ -39671,7 +39682,9 @@ async function _m41rmDoGen(){
     });
     const data = await resp.json();
     if(data.error) throw new Error(data.error.message);
-    _m41rm.doc = (data.content||[]).map(b=>b.text||'').join('').trim();
+    const doc = (data.content||[]).map(b=>b.text||'').join('').trim();
+    if (!doc) { console.error('[_m41rmDoGen] resposta vazia, data =', data); throw new Error('Resposta vazia da API (F12)'); }
+    _m41rm.doc = doc;
     _m41rmSet('preview');
   } catch(e){
     console.error('[_m41rmDoGen]', e);
@@ -40008,7 +40021,7 @@ let _m44rm = {
   client:{nome:'',codigo:'',projeto:'',data:new Date().toLocaleDateString('pt-BR')},
   doc:'', _importDoc:'', _importRelease:'12.1',
   chatHistory:[], chatLoading:false,
-  trainData: JSON.parse(localStorage.getItem('mit44rm_train')||'[]')
+  trainData: (()=>{try{return JSON.parse(localStorage.getItem('mit44rm_train')||'[]');}catch(e){console.warn('[BeeIT] localStorage.mit44rm_train corrompido — usando []', e.message);return [];}})()
 };
 
 function rndMIT044RM(){ _m44rmRender(); }
@@ -40028,7 +40041,7 @@ function _m44rmRender(){
       <button class="btn btn-g" onclick="_m44rmExportPDF()" style="background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.35);color:#34d399;">📥 Exportar PDF</button>
       <button class="btn btn-g" onclick="_m44rmSet('chat')" style="background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.35);color:#38bdf8;font-weight:700;">💬 Chat</button>
       <button class="btn btn-g" onclick="_m44rmSet('train')" style="background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.35);color:#34d399;font-weight:700;">🧠 Treinar</button>
-      <button class="btn btn-p" onclick="_m44rmCopy()">📋 Copiar MIT041 Funcional Funcional Funcional Dev</button>`;
+      <button class="btn btn-p" onclick="_m44rmCopy()">📋 Copiar MIT041 Desenvolvimento RM</button>`;
   }
   if(s==='home')     el.innerHTML = _m44rmHomeHTML();
   else if(s==='info')   el.innerHTML = _m44rmInfoHTML();
@@ -40132,7 +40145,7 @@ function _m44rmPreviewHTML(){
 function _m44rmCopy(){
   navigator.clipboard.writeText(_m44rm.doc||'').then(()=>{
     const btn = document.querySelector('#mit044rm-acts .btn-p');
-    if(btn){btn.textContent='✓ Copiado!';setTimeout(()=>btn.textContent='📋 Copiar MIT041 Funcional Funcional Funcional Dev',2000);}
+    if(btn){btn.textContent='✓ Copiado!';setTimeout(()=>btn.textContent='📋 Copiar MIT041 Desenvolvimento RM',2000);}
   });
 }
 
@@ -40181,7 +40194,8 @@ REGRAS:
     const resp = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:8000,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:8000,messages:[{role:'user',content:prompt}]}),
+      signal: AbortSignal.timeout(120000)
     });
     const data = await resp.json();
     if(data.error) throw new Error(data.error.message);
@@ -40851,7 +40865,7 @@ function _m44Render() {
     else if (s === 'train') acts.innerHTML = `<button class="btn btn-g" onclick="_m44Set(_m44.prevScreen||'preview')">← Voltar</button><button class="btn" onclick="_m44TrainClearAll()" style="background:rgba(220,38,38,.12);border:1.5px solid rgba(220,38,38,.3);color:#ef4444;">🗑 Limpar Tudo</button>`;
     else if (s === 'preview') acts.innerHTML = `
       <button class="btn btn-g" onclick="_m44Set('home')">← Voltar</button>
-      <button class="btn btn-p" onclick="_m44Copy()">📋 Copiar MIT041 Funcional Funcional Funcional Dev</button>
+      <button class="btn btn-p" onclick="_m44Copy()">📋 Copiar MIT041 Desenvolvimento Protheus</button>
       <button class="btn btn-g" onclick="_m44ExportPDF()" style="background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.35);color:#34d399;">📥 Exportar PDF</button>
       <button class="btn btn-g" onclick="_m44Set('chat')" style="background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.35);color:#38bdf8;font-weight:700;">💬 Chat</button>
       <button class="btn btn-g" onclick="_m44Set('train')" style="background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.35);color:#34d399;font-weight:700;">🧠 Treinar</button>
@@ -41535,7 +41549,7 @@ function _m44Ink(t){
 function _m44Copy(){
   navigator.clipboard.writeText(_m44.doc||'').then(()=>{
     const btn=document.querySelector('#mit044-acts .btn-p');
-    if(btn){btn.textContent='✓ Copiado!';setTimeout(()=>{btn.textContent='📋 Copiar MIT041 Funcional Funcional Funcional Dev';},2000);}
+    if(btn){btn.textContent='✓ Copiado!';setTimeout(()=>{btn.textContent='📋 Copiar MIT041 Desenvolvimento Protheus';},2000);}
   });
 }
 
