@@ -1681,7 +1681,13 @@ window.beeitAdminLoadLog    = beeitAdminLoadLog;
           <h3>Não sei</h3>
           <p>Orquestrador me ajuda a decidir</p>
         </div>
+        <div class="asm-type-card" onclick="document.getElementById('asm-import-first-input').click()" style="grid-column:1/-1;border:2px dashed rgba(14,165,233,.4);background:rgba(14,165,233,.04);">
+          <span class="icon">📎</span>
+          <h3 style="color:#38bdf8;">Tenho um documento do cliente</h3>
+          <p>PDF/DOCX/XLSX/TXT/imagem — a IA extrai o contexto ANTES de você começar o questionário</p>
+        </div>
       </div>
+      <input id="asm-import-first-input" type="file" accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.md,image/*" style="display:none" onchange="BeeITAssessmentsUI.importFirstDoc(event)">
     </div>
   </div>
 </div>
@@ -45762,6 +45768,48 @@ Se retornar ex. "sb, beeitClient", me envie o resultado.
   // ───────── Criação ─────────
   function openCreateModal() { openModal('asm-modal-create'); }
 
+  async function importFirstDoc(ev) {
+    const file = ev.target.files && ev.target.files[0];
+    if (!file) return;
+    if (typeof window.BeeITDocParser !== 'object' || typeof window.BeeITDocParser.parse !== 'function') {
+      alert('⚠️ Parser de documento não carregado. Recarregue a página (Cmd+Shift+R).');
+      ev.target.value = ''; return;
+    }
+    const banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;top:20px;right:20px;background:rgba(14,165,233,.95);color:#fff;padding:12px 18px;border-radius:8px;z-index:99999;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);';
+    banner.textContent = '📄 Analisando ' + file.name + '...';
+    document.body.appendChild(banner);
+    try {
+      const result = await window.BeeITDocParser.parse(file);
+      banner.remove();
+      if (!result?.success) {
+        alert('❌ Falha ao processar: ' + (result?.erro || 'erro desconhecido'));
+        ev.target.value = ''; return;
+      }
+      state.importedDocText = result.texto || '';
+      state.importedDocFilename = file.name;
+      // Heurística simples pra detectar tipo: RM se citar Labore/Fluxus/Chronus, Protheus se SIGAFAT/SIGACOM
+      const t = (result.texto||'').toLowerCase();
+      const isRM = /labore|fluxus|chronus|saldus|nucleus|gpessoas|classis|tcop|tcgi|agilis/.test(t);
+      const tipo = isRM ? 'rm' : 'protheus';
+      // Fechar modal create e abrir contexto com o tipo detectado
+      closeModal('asm-modal-create');
+      ev.target.value = '';
+      toast(`✅ Documento "${file.name}" analisado (${(result.texto||'').length.toLocaleString('pt-BR')} chars) — tipo detectado: ${tipo.toUpperCase()}`, 'success', 5000);
+      startNewAssessment(tipo);
+      // Marcar visualmente no campo objetivo (após renderContextoForm)
+      setTimeout(() => {
+        const obj = document.getElementById('ctx-objetivo_assessment');
+        if (obj) obj.value = `Análise baseada em documento importado: "${file.name}" (${(result.texto||'').length.toLocaleString('pt-BR')} chars). ${t.slice(0,200)}...`;
+      }, 200);
+    } catch (e) {
+      banner.remove();
+      console.error('[importFirstDoc]', e);
+      alert('Erro: ' + e.message);
+      ev.target.value = '';
+    }
+  }
+
   function startNewAssessment(tipo) {
     state.currentTipo = tipo;
     closeModal('asm-modal-create');
@@ -46335,6 +46383,7 @@ Se retornar ex. "sb, beeitClient", me envie o resultado.
   // ───────── API pública ─────────
   window.BeeITAssessmentsUI = {
     _getState: () => state,
+    importFirstDoc,
     init: listAssessments,
     openCreateModal,
     openOrquestrador,
