@@ -627,21 +627,31 @@ body::before{
   </div>
 </div>
 
-<!-- ════ BEEIT AUTH — HEADER BAR (usuário logado) ════ -->
-<div id="beeit-user-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9990;background:rgba(6,15,32,.95);border-top:1px solid rgba(255,255,255,.08);padding:6px 20px;display:none;align-items:center;justify-content:space-between;">
-  <div style="display:flex;align-items:center;gap:10px;">
-    <div id="beeit-user-avatar" style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#06B6D4,#0284C7);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;"></div>
+<!-- ════ BEEIT AUTH — TOPBAR USUÁRIO (topo direito, discreto) ════ -->
+<style>
+  #beeit-user-bar.beeit-topbar { display:none; position:fixed; top:14px; right:20px; z-index:9990; align-items:center; gap:10px; }
+  #beeit-user-bar.beeit-topbar .beeit-user-info { display:flex; align-items:center; gap:6px; padding:3px 8px 3px 3px; background:rgba(6,182,212,.08); border:1px solid rgba(6,182,212,.2); border-radius:14px; }
+  #beeit-user-bar.beeit-topbar #beeit-user-avatar { width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg,#06B6D4,#0284C7); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; flex-shrink:0; }
+  #beeit-user-bar.beeit-topbar #beeit-user-nome { font-size:10.5px; font-weight:700; color:#fff; line-height:1.15; }
+  #beeit-user-bar.beeit-topbar #beeit-user-role { font-size:8.5px; color:rgba(255,255,255,.55); text-transform:uppercase; letter-spacing:.04em; line-height:1.15; }
+  #beeit-user-bar.beeit-topbar #beeit-admin-btn button { padding:3px 10px; background:rgba(139,92,246,.12); border:1px solid rgba(139,92,246,.3); color:#c4b5fd; border-radius:12px; font-size:10px; font-weight:600; cursor:pointer; transition:all .15s; }
+  #beeit-user-bar.beeit-topbar #beeit-admin-btn button:hover { background:rgba(139,92,246,.22); color:#e9d5ff; }
+  #beeit-user-bar.beeit-topbar .beeit-logout-btn { width:28px; height:28px; background:transparent; border:1px solid rgba(148,163,184,.25); color:rgba(148,163,184,.75); border-radius:8px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; transition:all .15s; padding:0; }
+  #beeit-user-bar.beeit-topbar .beeit-logout-btn:hover { background:rgba(239,68,68,.1); color:#ef4444; border-color:rgba(239,68,68,.35); }
+  @media (max-width: 740px) { #beeit-user-bar.beeit-topbar .beeit-user-info { display:none !important; } }
+</style>
+<div id="beeit-user-bar" class="beeit-topbar">
+  <div class="beeit-user-info">
+    <div id="beeit-user-avatar"></div>
     <div>
-      <div id="beeit-user-nome" style="font-size:11px;font-weight:700;color:#fff;"></div>
-      <div id="beeit-user-role" style="font-size:9px;color:#06B6D4;text-transform:uppercase;letter-spacing:.05em;"></div>
+      <div id="beeit-user-nome"></div>
+      <div id="beeit-user-role"></div>
     </div>
   </div>
-  <div style="display:flex;align-items:center;gap:8px;">
-    <div id="beeit-admin-btn" style="display:none;">
-      <button onclick="beeitAdminPanel()" style="padding:4px 12px;background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.4);color:#a78bfa;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;">👑 Admin</button>
-    </div>
-    <button onclick="beeitLogout()" style="padding:4px 12px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#fca5a5;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;">Sair</button>
+  <div id="beeit-admin-btn" style="display:none;">
+    <button onclick="beeitAdminPanel()">👑 Admin</button>
   </div>
+  <button class="beeit-logout-btn" onclick="beeitLogout()" title="Sair (logout)" aria-label="Sair">⎋</button>
 </div>
 
 <script>
