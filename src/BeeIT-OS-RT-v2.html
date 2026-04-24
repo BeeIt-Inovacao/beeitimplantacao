@@ -18864,6 +18864,30 @@ function rndConfig(){
     <div id="cfg-key-test-result" style="padding:0 16px 10px;font-size:10px;"></div>
   </div>`;
 
+  // ── CARD 2.5: ClickSign API (token para envio de documentos para assinatura) ──
+  const csToken=cfgGet('clicksign_token','');
+  const csHasToken=csToken && csToken.length>=10;
+  h+=`<div style="background:var(--bg2);border:1px solid rgba(56,212,245,.3);border-radius:12px;overflow:hidden;">
+    <div style="background:rgba(56,212,245,.1);border-bottom:2px solid #38D4F5;padding:12px 16px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px;">✍️</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:800;color:#38D4F5;">ClickSign — Assinatura Eletrônica</div>
+        <div style="font-size:10px;color:var(--txt3);">Token usado pelo botão "ClickSign" do MIT041 para enviar documentos à assinatura</div>
+      </div>
+      <span style="font-size:10px;background:${csHasToken?'rgba(52,211,153,.2)':'rgba(251,191,36,.2)'};color:${csHasToken?'#34d399':'#fbbf24'};border-radius:4px;padding:3px 10px;">${csHasToken?'✅ Configurado':'⚠️ Sem token'}</span>
+    </div>
+    <div style="padding:14px 16px;">
+      <label style="font-size:9px;color:var(--txt3);display:block;margin-bottom:4px;">🔑 Token API ClickSign (access_token)</label>
+      <input id="cfg-clicksign-token" type="password" value="${esc(csToken)}"
+        placeholder="Cole seu access_token do ClickSign aqui"
+        style="width:100%;background:var(--bg3);border:1px solid ${csHasToken?'#34d399':'var(--bdr)'};border-radius:6px;padding:8px 12px;color:var(--txt);font-size:12px;font-family:monospace;box-sizing:border-box;">
+      <div style="font-size:9px;margin-top:6px;color:var(--txt3);line-height:1.5;">
+        Obtenha em <strong>app.clicksign.com → Configurações → Integrações → API → Gerar token</strong>.
+        Não esqueça de preencher também o <strong>E-mail do usuário da API</strong> na mesma página — sem ele o ClickSign rejeita o envio.
+      </div>
+    </div>
+  </div>`;
+
   // ── CARD 2: Protheus REST ──────────────────────────────────────────
   h+=`<div style="background:var(--bg2);border:1px solid rgba(251,191,36,.3);border-radius:12px;overflow:hidden;">
     <div style="background:rgba(251,191,36,.1);border-bottom:2px solid #FF8C00;padding:12px 16px;display:flex;align-items:center;gap:10px;">
@@ -19764,6 +19788,10 @@ function configSave(){
   const k=(document.getElementById('cfg-api-key')?.value||'').trim();
   if(k&&/^sk-ant-[A-Za-z0-9\-_]{10,}$/.test(k)) cfgSet('api_key',k);
   else if(k) { alert('⚠️ API Key com formato inválido — deve começar com sk-ant-'); return; }
+
+  // ClickSign
+  const csTk=(document.getElementById('cfg-clicksign-token')?.value||'').trim();
+  cfgSet('clicksign_token', csTk);
 
   // Protheus
   const url=(document.getElementById('cfg-ptheus-url')?.value||'').trim();
@@ -36333,8 +36361,21 @@ function _m41ClickSign(){
         O documento MIT041 será enviado ao <strong style="color:#38D4F5;">ClickSign</strong> e o signatário receberá um e-mail para assinatura eletrônica.
         O <strong style="color:#38D4F5;">token</strong> é o seu <em>access_token</em> gerado no painel ClickSign → Configurações → Integrações.
       </div>
-      <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:var(--or);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Configuração API</div>
-      ${fld('cs-token','Token API ClickSign (access_token)','cole seu token aqui',savedTk)}
+      ${savedTk ? `
+        <div style="background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.3);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:18px;">✅</span>
+          <div style="flex:1;">
+            <div style="font-size:11px;font-weight:700;color:#34d399;">Token ClickSign configurado</div>
+            <div style="font-size:10px;color:var(--txt3);margin-top:2px;">Use <strong>Configurações → ClickSign</strong> pra alterar o token quando precisar.</div>
+          </div>
+        </div>
+      ` : `
+        <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.35);border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+          <div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:6px;">⚠️ Token ClickSign não configurado</div>
+          <div style="font-size:10px;color:var(--txt2);line-height:1.55;margin-bottom:8px;">Antes de enviar, configure o token da API ClickSign em <strong>Configurações → ClickSign</strong>.</div>
+          <button onclick="document.getElementById('cs-modal').remove(); nav('config'); setTimeout(()=>document.getElementById('cfg-clicksign-token')?.focus(),300);" style="background:#fbbf24;border:none;color:#0a0e17;padding:6px 14px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">→ Ir para Configurações</button>
+        </div>
+      `}
       <div style="border-top:1px solid var(--bdr);padding-top:14px;margin-bottom:14px;">
         <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:var(--or);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Signatários</div>
         <div id="cs-signers">
@@ -36377,12 +36418,13 @@ function _m41CSAddSigner(){
 }
 
 async function _m41DoClickSign(){
-  const token=document.getElementById('cs-token')?.value.trim();
+  const token=(typeof cfgGet==='function'?cfgGet('clicksign_token',''):'').trim();
   const msg=document.getElementById('cs-msg')?.value.trim();
   const status=document.getElementById('cs-status');
-  if(!token){if(status)status.innerHTML='<span style="color:var(--red);">Informe o token de API do ClickSign.</span>';return;}
-  // Persiste o token no BeeIT pra não precisar colar toda vez
-  if(typeof cfgSet==='function') cfgSet('clicksign_token', token);
+  if(!token){
+    if(status)status.innerHTML='<span style="color:var(--red);">Configure o token em <strong>Configurações → ClickSign</strong> antes de enviar.</span>';
+    return;
+  }
 
   // Coletar signatários
   const signers=[];
