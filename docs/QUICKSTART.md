@@ -163,7 +163,7 @@ Abrir https://implantacao.com.br no browser:
 
 - [ ] Página carrega sem erro
 - [ ] Console limpo (F12 → Console)
-- [ ] Login com `admin@beeit.com.br` / `BeeIT@2025!` entra no sistema
+- [ ] Login com `admin@beeit.com.br` (senha definida no Supabase Dashboard) entra no sistema
 - [ ] Importar um SPED teste funciona
 - [ ] Proxy Protheus responde (testar uma consulta SA1)
 - [ ] ViaCEP responde (cadastro novo, digitar CEP)

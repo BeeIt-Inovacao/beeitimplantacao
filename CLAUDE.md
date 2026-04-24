@@ -120,7 +120,7 @@ supabase functions serve protheus-proxy --project-ref dbaqvoatopfquaqgdptk
 
 **Admin do sistema (produção):**
 - Email: `admin@beeit.com.br`
-- Senha: `BeeIT@2025!` (DEVE ser trocada após primeiro login em produção)
+- Senha: definida diretamente no Supabase Dashboard (Authentication → Users). **Nunca versionar.**
 
 **Supabase Anon Key (pública, OK no HTML):** ver painel Supabase → Settings → API
 

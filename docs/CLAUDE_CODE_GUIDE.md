@@ -208,7 +208,7 @@ supabase functions deploy protheus-proxy \
 Após o Claude Code concluir, valide manualmente:
 
 - [ ] `https://implantacao.com.br` carrega
-- [ ] Login com `admin@beeit.com.br` / `BeeIT@2025!` entra
+- [ ] Login com `admin@beeit.com.br` (senha definida no Supabase Dashboard) entra
 - [ ] Console do browser sem erros críticos (F12)
 - [ ] Testar importação de SPED
 - [ ] Testar uma consulta Protheus via proxy (SA1 ou SB1)
