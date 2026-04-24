@@ -577,8 +577,18 @@ body::before{
 </style>
 </head>
 <body>
+
+<!-- Loading splash — mostra durante beeitInit IIFE (anti-flash de login) -->
+<div id="beeit-loading-splash" style="position:fixed;inset:0;z-index:999999;background:linear-gradient(135deg,#060F20 0%,#0D2B5E 50%,#001E62 100%);display:flex;align-items:center;justify-content:center;">
+  <div style="text-align:center;">
+    <div style="width:48px;height:48px;border:3px solid rgba(56,212,245,.2);border-top-color:#38D4F5;border-radius:50%;animation:bspin 0.8s linear infinite;margin:0 auto 16px;"></div>
+    <div style="font-family:'Inter',system-ui,sans-serif;font-size:12px;color:rgba(56,212,245,.85);letter-spacing:.08em;font-weight:600;">CARREGANDO…</div>
+  </div>
+</div>
+<style>@keyframes bspin{to{transform:rotate(360deg)}}</style>
+
 <!-- ════ BEEIT AUTH — LOGIN OVERLAY ════ -->
-<div id="beeit-auth-overlay" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#060F20 0%,#0D2B5E 50%,#001E62 100%);display:flex;align-items:center;justify-content:center;font-family:'Inter',system-ui,sans-serif;">
+<div id="beeit-auth-overlay" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#060F20 0%,#0D2B5E 50%,#001E62 100%);display:none;align-items:center;justify-content:center;font-family:'Inter',system-ui,sans-serif;">
   <div style="width:100%;max-width:420px;padding:0 24px;">
     <!-- Logo -->
     <div style="text-align:center;margin-bottom:36px;">
@@ -759,6 +769,7 @@ async function beeitLoadProfile() {
 
 function beeitShowApp() {
   console.log('[BeeIT Auth] beeitShowApp() — sessão ativa para', beeitSession?.user?.email);
+  const splash = document.getElementById('beeit-loading-splash'); if (splash) splash.style.display = 'none';
   beeitStartAutoRefresh();
   const overlay = document.getElementById('beeit-auth-overlay');
   if (overlay) overlay.style.display = 'none';
@@ -1189,6 +1200,7 @@ window.beeitAdminLoadLog    = beeitAdminLoadLog;
     localStorage.removeItem('beeit_session');
   }
   // Sem sessão válida — mostrar login
+  (function(){ const s=document.getElementById('beeit-loading-splash'); if(s) s.style.display='none'; })();
   document.getElementById('beeit-auth-overlay').style.display = 'flex';
 })();
 </script>
