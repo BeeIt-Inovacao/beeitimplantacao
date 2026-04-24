@@ -132,9 +132,67 @@
   // ──────────────────────────────────────────────────────────
 
   function getSupabase() {
-    const sb = window.supabase || window.sbClient || window._supabaseClient;
-    if (!sb) throw new Error('Cliente Supabase não encontrado no escopo global');
-    return sb;
+    // ═ Adapter BeeIT: imita API mínima do SDK Supabase usando beeitSbFetch ═
+    // beeitSbFetch(path, opts) retorna JSON (ou throw); adapter envolve em {data,error}.
+    const sbFetch = typeof beeitSbFetch === 'function' ? beeitSbFetch : window.beeitSbFetch;
+    const SB_URL  = typeof BEEIT_SB_URL !== 'undefined' ? BEEIT_SB_URL : window.BEEIT_SB_URL;
+    if (!sbFetch) throw new Error('beeitSbFetch ausente — BeeIT helper requerido');
+
+    function queryBuilder(table) {
+      let method = 'GET', body = null, cols = '*', single = false;
+      const filters = []; let orderClause = '';
+      const api = {
+        insert(d)  { method='POST';  body=d; return api; },
+        update(d)  { method='PATCH'; body=d; return api; },
+        delete()   { method='DELETE'; return api; },
+        select(c)  { cols = c || '*'; return api; },
+        eq(col,v)  { filters.push(`${col}=eq.${encodeURIComponent(v)}`); return api; },
+        is(col,v)  { filters.push(`${col}=is.${v===null?'null':v}`); return api; },
+        or(expr)   { filters.push(`or=(${expr})`); return api; },
+        order(col,o){ orderClause = `order=${col}.${o&&o.ascending===false?'desc':'asc'}`; return api; },
+        single()   { single = true; return api; },
+        async _exec() {
+          const qs = [];
+          if (cols) qs.push(`select=${cols}`);
+          filters.forEach(f => qs.push(f));
+          if (orderClause) qs.push(orderClause);
+          const url = `/rest/v1/${table}${qs.length ? '?' + qs.join('&') : ''}`;
+          const opts = { method, headers: {} };
+          if (body !== null) opts.body = JSON.stringify(body);
+          if (method === 'POST' || method === 'PATCH') opts.headers['Prefer'] = 'return=representation';
+          if (single) opts.headers['Accept'] = 'application/vnd.pgrst.object+json';
+          try { return { data: await sbFetch(url, opts), error: null }; }
+          catch (e) { return { data: null, error: { message: e.message } }; }
+        },
+        then(onRes, onRej) { return api._exec().then(onRes, onRej); }
+      };
+      return api;
+    }
+
+    return {
+      from: queryBuilder,
+      storage: {
+        from(bucket) {
+          return {
+            async upload(path, blob, opts = {}) {
+              const url = `/storage/v1/object/${bucket}/${encodeURIComponent(path)}`;
+              const headers = { 'Content-Type': opts.contentType || blob.type || 'application/octet-stream' };
+              if (opts.upsert) headers['x-upsert'] = 'true';
+              try { return { data: await sbFetch(url, { method:'POST', body: blob, headers }), error: null }; }
+              catch (e) { return { data: null, error: { message: e.message } }; }
+            },
+            async createSignedUrl(path, expiresIn) {
+              const url = `/storage/v1/object/sign/${bucket}/${encodeURIComponent(path)}`;
+              try {
+                const data = await sbFetch(url, { method:'POST', body: JSON.stringify({ expiresIn }) });
+                const signedUrl = data.signedURL ? SB_URL + data.signedURL : data.signedUrl;
+                return { data: { signedUrl }, error: null };
+              } catch (e) { return { data: null, error: { message: e.message } }; }
+            }
+          };
+        }
+      }
+    };
   }
 
   function getUserId() {
