@@ -72,10 +72,19 @@
   /**
    * Chamada padrão à API Claude Sonnet 4.
    * Usa padrão do BeeIT OS-RT v2 existente (header anthropic-dangerous-direct-browser-access).
+   * 
+   * Busca a API key na seguinte ordem:
+   *   1. options.apiKey (passado explicitamente)
+   *   2. cfgGet('api_key','') — padrão do BeeIT (Configurações → API Key)
+   *   3. window.ANTHROPIC_KEY — fallback
    */
   async function callClaude(agent, userPrompt, options = {}) {
-    const key = (typeof cfgGet==='function' ? cfgGet('api_key','') : '') || options.apiKey;
-    if (!key) throw new Error('API key não configurada (cfgGet(\'api_key\') vazio)');
+    let key = options.apiKey;
+    if (!key && typeof window.cfgGet === 'function') {
+      key = window.cfgGet('api_key', '');
+    }
+    if (!key) key = window.ANTHROPIC_KEY;
+    if (!key) throw new Error('API key da Anthropic não configurada. Vá em Configurações → API Key.');
 
     const body = {
       model: agent.modelo,
@@ -86,7 +95,6 @@
     // ⚠️ NÃO passar temperature: 0 — causa HTTP 400 nesta versão da API
 
     const resp = await fetch(ANTHROPIC_API_URL, {
-      signal: AbortSignal.timeout(120000),
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -94,7 +102,8 @@
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true'
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(120000) // 2min timeout (evita travar como no bug original)
     });
 
     if (!resp.ok) {

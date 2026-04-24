@@ -1,0 +1,531 @@
+<!--
+═══════════════════════════════════════════════════════════
+BeeIT OS-RT v2 — UI Import de Documento (Assessments)
+
+Complementa assessments-ui.html adicionando:
+  1. STYLE adicional (dropzone, preview, modal de revisão)
+  2. MODAL de import ("asm-modal-import")
+  3. SCRIPT extendendo BeeITAssessmentsUI com funções de import
+
+Colar este arquivo APÓS o assessments-ui.html no HTML principal.
+═══════════════════════════════════════════════════════════
+-->
+
+<!-- ═══════ 1) ESTILOS ADICIONAIS ═══════ -->
+<style id="beeit-assessments-import-styles">
+  .asm-dropzone {
+    border: 2px dashed var(--border,#2a3344); border-radius:12px;
+    padding:32px 20px; text-align:center; cursor:pointer;
+    background:var(--bg,#0a0e17); transition:all .2s;
+  }
+  .asm-dropzone:hover, .asm-dropzone.dragover {
+    border-color:#3b82f6; background:rgba(59,130,246,.08);
+  }
+  .asm-dropzone .icon { font-size:48px; margin-bottom:8px; opacity:.7; }
+  .asm-dropzone h3 { margin:0 0 4px; font-size:16px; }
+  .asm-dropzone p { margin:4px 0; color:var(--muted,#9ca3af); font-size:13px; }
+  .asm-dropzone .formats {
+    display:inline-block; padding:4px 12px; margin-top:10px;
+    background:var(--bg2,#0f1421); border-radius:6px;
+    font-size:11px; color:var(--muted,#9ca3af); font-family:monospace;
+  }
+  .asm-dropzone input[type="file"] { display:none; }
+
+  .asm-file-info {
+    display:flex; align-items:center; gap:12px;
+    padding:12px; background:var(--bg2,#0f1421);
+    border-radius:8px; margin-top:12px;
+    border-left:4px solid #3b82f6;
+  }
+  .asm-file-info .icon { font-size:28px; }
+  .asm-file-info .info { flex:1; min-width:0; }
+  .asm-file-info .info strong { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .asm-file-info .info small { color:var(--muted,#9ca3af); font-size:11px; }
+  .asm-file-info button { padding:4px 10px; font-size:12px; }
+
+  .asm-extraction-result {
+    background:var(--bg,#0a0e17); border:1px solid var(--border,#2a3344);
+    border-radius:10px; padding:20px; margin-top:16px;
+  }
+  .asm-extraction-result h3 {
+    margin:0 0 12px; font-size:15px; display:flex; align-items:center; gap:8px;
+  }
+  .asm-extraction-result .confidence-badge {
+    display:inline-block; padding:2px 10px; border-radius:12px;
+    font-size:11px; font-weight:700; text-transform:uppercase;
+    margin-left:6px;
+  }
+  .asm-extraction-result .confidence-badge.alta { background:#065f46; color:#a7f3d0; }
+  .asm-extraction-result .confidence-badge.media { background:#713f12; color:#fef08a; }
+  .asm-extraction-result .confidence-badge.baixa { background:#7f1d1d; color:#fecaca; }
+
+  .asm-review-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    margin-bottom:16px;
+  }
+  .asm-review-field {
+    padding:10px 12px; background:var(--bg2,#0f1421); border-radius:8px;
+  }
+  .asm-review-field label {
+    display:block; font-size:10px; font-weight:700;
+    text-transform:uppercase; color:var(--muted,#9ca3af); margin-bottom:4px;
+  }
+  .asm-review-field input, .asm-review-field select, .asm-review-field textarea {
+    width:100%; background:var(--bg,#0a0e17); border:1px solid var(--border,#2a3344);
+    border-radius:6px; padding:6px 8px; color:var(--text,#e6edf3);
+    font-size:13px; font-family:inherit;
+  }
+  .asm-review-field textarea { min-height:60px; resize:vertical; }
+
+  .asm-pi-item {
+    padding:10px; background:var(--bg2,#0f1421); border-radius:8px;
+    margin-bottom:8px;
+  }
+  .asm-pi-item .pi-head {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:6px;
+  }
+  .asm-pi-item .pi-label { font-size:12px; font-weight:600; }
+  .asm-pi-item .pi-evidence {
+    font-size:11px; color:var(--muted,#9ca3af);
+    margin-top:6px; padding:6px 8px;
+    background:var(--bg,#0a0e17); border-left:2px solid #3b82f6;
+    border-radius:4px; font-style:italic;
+  }
+
+  .asm-flags {
+    padding:12px; background:rgba(251,191,36,.08); border-left:4px solid #fbbf24;
+    border-radius:8px; margin-top:12px;
+  }
+  .asm-flags h4 { margin:0 0 8px; color:#fbbf24; font-size:13px; }
+  .asm-flags ul { margin:0; padding-left:18px; font-size:12px; }
+
+  .asm-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .asm-tag {
+    padding:3px 10px; background:var(--bg2,#0f1421);
+    border-radius:10px; font-size:11px; font-family:monospace;
+    color:var(--muted,#9ca3af);
+  }
+</style>
+
+
+<!-- ═══════ 2) MODAL DE IMPORT DE DOCUMENTO ═══════ -->
+<div class="asm-modal-overlay" id="asm-modal-import">
+  <div class="asm-modal asm-modal-wide">
+    <div class="asm-modal-header">
+      <h2>📎 Importar Documento para Análise</h2>
+      <button class="asm-modal-close" onclick="BeeITAssessmentsUI.closeModal('asm-modal-import')">×</button>
+    </div>
+    <div class="asm-modal-body" id="asm-import-body">
+
+      <!-- STEP 1: Dropzone -->
+      <div id="asm-import-step-1">
+        <p style="color:var(--muted,#9ca3af); margin-bottom:12px;">
+          Envie um documento sobre o processo (laudo anterior, planilha, print do ERP, export, ata...).
+          <br>A IA vai ler, identificar módulo/processo e propor o preenchimento do formulário. Você revisa antes de analisar.
+        </p>
+
+        <div class="asm-dropzone" id="asm-dropzone" onclick="document.getElementById('asm-file-input').click()">
+          <div class="icon">📄</div>
+          <h3>Arraste o arquivo aqui ou clique para selecionar</h3>
+          <p>Até 30 MB</p>
+          <span class="formats">PDF · DOCX · XLSX · CSV · TXT · MD · PNG · JPG</span>
+          <input type="file" id="asm-file-input" accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.md,.json,.xml,image/*">
+        </div>
+
+        <div id="asm-file-preview"></div>
+      </div>
+
+      <!-- STEP 2: Loading -->
+      <div id="asm-import-step-2" style="display:none;">
+        <div class="asm-ai-loading">
+          <div class="asm-ai-spinner"></div>
+          <h3 id="asm-import-loading-msg">🧠 Extraindo dados com IA…</h3>
+          <p id="asm-import-loading-sub">Lendo documento e estruturando.</p>
+          <p style="font-size:12px; opacity:.6;">Pode levar 20–60 segundos.</p>
+        </div>
+      </div>
+
+      <!-- STEP 3: Revisão -->
+      <div id="asm-import-step-3" style="display:none;">
+        <!-- Preenchido por renderExtractionReview() -->
+      </div>
+
+    </div>
+    <div class="asm-modal-footer" id="asm-import-footer">
+      <button class="asm-btn asm-btn-secondary" onclick="BeeITAssessmentsUI.closeModal('asm-modal-import')">Cancelar</button>
+      <button class="asm-btn asm-btn-primary" id="asm-import-btn-extract" disabled onclick="BeeITAssessmentsUI.runExtraction()">🧠 Extrair Dados</button>
+      <button class="asm-btn asm-btn-primary" id="asm-import-btn-continue" style="display:none;" onclick="BeeITAssessmentsUI.continueFromExtraction()">✅ Continuar com estes dados →</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════ 3) SCRIPT EXTENDENDO A UI ═══════ -->
+<script id="beeit-assessments-import-ui">
+(function() {
+  'use strict';
+
+  // Estado do fluxo de import
+  const importState = {
+    file: null,
+    extraction: null, // resposta da IA (ai_extraction)
+    parsedDoc: null   // resultado do parser (parsed_document)
+  };
+
+  function $(sel) { return document.querySelector(sel); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]); }
+
+  // ──────────────────────────────────────────────────────────
+  // DROPZONE + seleção de arquivo
+  // ──────────────────────────────────────────────────────────
+  function setupDropzone() {
+    const dz = $('#asm-dropzone');
+    const input = $('#asm-file-input');
+    if (!dz || !input) return;
+
+    ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => {
+      e.preventDefault(); e.stopPropagation();
+      dz.classList.add('dragover');
+    }));
+    ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => {
+      e.preventDefault(); e.stopPropagation();
+      dz.classList.remove('dragover');
+    }));
+    dz.addEventListener('drop', e => {
+      const f = (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]);
+      if (f) handleFileSelected(f);
+    });
+    input.addEventListener('change', e => {
+      if (e.target.files && e.target.files[0]) handleFileSelected(e.target.files[0]);
+    });
+  }
+
+  function handleFileSelected(file) {
+    importState.file = file;
+    const formato = window.BeeITDocParser.detectFormat(file);
+    const mb = (file.size / 1024 / 1024).toFixed(2);
+    const iconMap = { pdf:'📕', docx:'📘', xlsx:'📊', csv:'📋', txt:'📄', md:'📝', image:'🖼️' };
+    const icon = iconMap[formato] || '📎';
+
+    $('#asm-file-preview').innerHTML = `
+      <div class="asm-file-info">
+        <span class="icon">${icon}</span>
+        <div class="info">
+          <strong>${esc(file.name)}</strong>
+          <small>${esc(formato.toUpperCase())} · ${mb} MB</small>
+        </div>
+        <button class="asm-btn asm-btn-ghost" onclick="BeeITAssessmentsUI._clearImportFile()">✕</button>
+      </div>`;
+    $('#asm-import-btn-extract').disabled = false;
+  }
+
+  function clearImportFile() {
+    importState.file = null;
+    importState.extraction = null;
+    importState.parsedDoc = null;
+    $('#asm-file-input').value = '';
+    $('#asm-file-preview').innerHTML = '';
+    $('#asm-import-btn-extract').disabled = true;
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // EXTRAÇÃO (chama AGENT_EXTRATOR)
+  // ──────────────────────────────────────────────────────────
+  async function runExtraction() {
+    if (!importState.file) return;
+
+    // Precisa ter assessment aberto (pra pegar contexto cliente + tipo ERP)
+    const assessment = window.BeeITAssessmentsUI._getCurrentAssessment();
+    if (!assessment) {
+      alert('Abra um assessment antes de importar documentos.');
+      return;
+    }
+
+    $('#asm-import-step-1').style.display = 'none';
+    $('#asm-import-step-2').style.display = 'block';
+    $('#asm-import-btn-extract').style.display = 'none';
+
+    const fmt = window.BeeITDocParser.detectFormat(importState.file);
+    $('#asm-import-loading-msg').textContent =
+      fmt === 'image' || fmt === 'pdf' ? '🧠 Analisando visualmente com Vision API…' : '🧠 Extraindo e estruturando com IA…';
+
+    try {
+      const result = await window.BeeITDocParser.extractAndStructure(
+        importState.file,
+        assessment.dados?.contexto_cliente || {},
+        assessment.tipo // 'protheus' ou 'rm'
+      );
+
+      if (!result.success) throw new Error(result.error || 'Extração falhou');
+
+      importState.extraction = result.ai_extraction;
+      importState.parsedDoc = result.parsed_document;
+
+      $('#asm-import-step-2').style.display = 'none';
+      $('#asm-import-step-3').style.display = 'block';
+      $('#asm-import-btn-continue').style.display = 'inline-block';
+
+      renderExtractionReview(result.ai_extraction, result.parsed_document);
+    } catch (e) {
+      console.error(e);
+      alert('Erro na extração: ' + e.message);
+      $('#asm-import-step-1').style.display = 'block';
+      $('#asm-import-step-2').style.display = 'none';
+      $('#asm-import-btn-extract').style.display = 'inline-block';
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // RENDER REVISÃO (o consultor edita antes de continuar)
+  // ──────────────────────────────────────────────────────────
+  function renderExtractionReview(extracted, parsedDoc) {
+    const container = $('#asm-import-step-3');
+    const confMod = extracted.confianca_modulo || 'baixa';
+    const confProc = extracted.confianca_processo || 'baixa';
+
+    const flags = (extracted.red_flags_detectadas || []);
+    const sugestoes = (extracted.sugestoes_consultor || []);
+
+    const dadosRel = extracted.dados_relevantes || {};
+
+    const piFields = Object.entries(extracted.perguntas_inteligentes_inferidas || {});
+
+    container.innerHTML = `
+      <div class="asm-extraction-result">
+        <h3>📄 Documento processado <small style="color:var(--muted,#9ca3af); font-weight:400;">· ${esc(parsedDoc?.metadata?.nome || '')} · ${esc(parsedDoc?.tipo || '').toUpperCase()}</small></h3>
+        ${extracted.resumo_executivo_documento ? `<p style="background:var(--bg2,#0f1421); padding:10px; border-radius:8px; font-size:13px; margin-bottom:16px;">📝 ${esc(extracted.resumo_executivo_documento)}</p>` : ''}
+
+        <h4 style="color:#3b82f6; font-size:13px; margin:16px 0 8px;">📋 IDENTIFICAÇÃO DO PROCESSO <small>(revise e edite se preciso)</small></h4>
+        <div class="asm-review-grid">
+          <div class="asm-review-field">
+            <label>Módulo detectado <span class="confidence-badge ${esc(confMod)}">${esc(confMod)}</span></label>
+            <input type="text" id="asm-rev-modulo" value="${esc(extracted.modulo_detectado || '')}">
+          </div>
+          <div class="asm-review-field">
+            <label>Processo identificado <span class="confidence-badge ${esc(confProc)}">${esc(confProc)}</span></label>
+            <input type="text" id="asm-rev-processo" value="${esc(extracted.processo_detectado || '')}">
+          </div>
+        </div>
+
+        <h4 style="color:#3b82f6; font-size:13px; margin:16px 0 8px;">📝 AS-IS EXTRAÍDO</h4>
+        <div class="asm-review-field" style="margin-bottom:16px;">
+          <textarea id="asm-rev-as-is" rows="6">${esc(extracted.as_is_extraido || '')}</textarea>
+        </div>
+
+        <h4 style="color:#3b82f6; font-size:13px; margin:16px 0 8px;">🧠 PERGUNTAS INTELIGENTES (inferidas do documento)</h4>
+        ${piFields.length === 0 ? `<p style="color:var(--muted,#9ca3af); font-size:13px;">Nenhuma pergunta inteligente inferida. Preencha manualmente na próxima tela.</p>` : piFields.map(([key, data]) => `
+          <div class="asm-pi-item">
+            <div class="pi-head">
+              <span class="pi-label">${esc(labelForPI(key))}</span>
+              <span class="confidence-badge ${esc(data.confianca || 'baixa')}">${esc(data.confianca || 'baixa')}</span>
+            </div>
+            <textarea id="asm-rev-pi-${esc(key)}" rows="2" style="width:100%; background:var(--bg,#0a0e17); border:1px solid var(--border,#2a3344); border-radius:6px; padding:6px 8px; color:var(--text,#e6edf3); font-size:13px; font-family:inherit;">${esc(data.valor || '')}</textarea>
+            ${data.evidencia ? `<div class="pi-evidence">📎 Evidência: "${esc(data.evidencia)}"</div>` : ''}
+          </div>
+        `).join('')}
+
+        ${renderDadosRelevantes(dadosRel)}
+
+        ${flags.length ? `
+          <div class="asm-flags">
+            <h4>⚠️ Red Flags detectadas (${flags.length})</h4>
+            <ul>${flags.map(f => `<li><strong>${esc(f.tipo)}:</strong> ${esc(f.descricao)}</li>`).join('')}</ul>
+          </div>
+        ` : ''}
+
+        ${sugestoes.length ? `
+          <div class="asm-flags" style="background:rgba(59,130,246,.08); border-left-color:#3b82f6;">
+            <h4 style="color:#3b82f6;">💡 Sugestões do Extrator</h4>
+            <ul>${sugestoes.map(s => `<li>${esc(s)}</li>`).join('')}</ul>
+          </div>
+        ` : ''}
+
+        <p style="margin-top:16px; padding:10px; background:var(--bg2,#0f1421); border-radius:8px; font-size:12px; color:var(--muted,#9ca3af);">
+          ✏️ Revise os campos acima (pode editar qualquer coisa) e clique em <strong>Continuar</strong>. Os dados serão usados como base do formulário de análise do processo.
+        </p>
+      </div>`;
+  }
+
+  function renderDadosRelevantes(d) {
+    if (!d || Object.values(d).every(v => !v || (Array.isArray(v) && v.length === 0))) return '';
+    const sections = [
+      { label: 'Volumes', items: d.volumes },
+      { label: 'Rotinas mencionadas', items: d.rotinas_mencionadas },
+      { label: 'Tabelas mencionadas', items: d.tabelas_mencionadas },
+      { label: 'Parâmetros', items: d.parametros_mencionados },
+      { label: 'Stakeholders', items: d.stakeholders },
+      { label: 'Sistemas externos', items: d.sistemas_externos }
+    ].filter(s => s.items && s.items.length);
+
+    if (!sections.length) return '';
+
+    return `
+      <h4 style="color:#3b82f6; font-size:13px; margin:16px 0 8px;">📊 DADOS RELEVANTES DETECTADOS</h4>
+      ${sections.map(s => `
+        <div style="margin-bottom:8px;">
+          <small style="color:var(--muted,#9ca3af); font-size:11px; font-weight:700; text-transform:uppercase;">${esc(s.label)}</small>
+          <div class="asm-tags">${s.items.map(i => `<span class="asm-tag">${esc(i)}</span>`).join('')}</div>
+        </div>
+      `).join('')}`;
+  }
+
+  function labelForPI(key) {
+    const labels = {
+      como_inicia: 'Como o processo inicia?',
+      quem_executa: 'Quem executa (perfil/área)?',
+      validacao: 'Existe validação ou aprovação?',
+      integracao: 'Existe integração com outro módulo?',
+      retrabalho: 'Existe retrabalho?',
+      erros_ocorridos: 'Já ocorreu erro?',
+      controle_manual: 'Existe controle ou é manual?',
+      erro_recorrente: 'Existe erro recorrente?',
+      automacao: 'Existe automação?',
+      dependencia_modulo: 'Depende de outro módulo?'
+    };
+    return labels[key] || key;
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // CONTINUAR: popula formulário de processo com dados revisados
+  // ──────────────────────────────────────────────────────────
+  function continueFromExtraction() {
+    if (!importState.extraction) return;
+
+    // Coleta valores revisados pelo consultor
+    const modulo = $('#asm-rev-modulo').value.trim();
+    const processo = $('#asm-rev-processo').value.trim();
+    const asIs = $('#asm-rev-as-is').value.trim();
+
+    const perguntasInteligentes = {};
+    Object.keys(importState.extraction.perguntas_inteligentes_inferidas || {}).forEach(key => {
+      const el = document.getElementById('asm-rev-pi-' + key);
+      if (el) perguntasInteligentes[key] = el.value.trim();
+    });
+
+    // Fecha modal de import
+    BeeITAssessmentsUI.closeModal('asm-modal-import');
+
+    // Abre modal de processo com dados pré-preenchidos
+    BeeITAssessmentsUI.openProcessoModal();
+
+    // Aguarda próximo tick e preenche campos
+    setTimeout(() => {
+      const setVal = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+      setVal('proc-modulo', modulo);
+      setVal('proc-processo_nome', processo);
+      setVal('proc-descricao_as_is', asIs);
+      Object.entries(perguntasInteligentes).forEach(([k, v]) => setVal('proc-pi_' + k, v));
+
+      // Adiciona nota no campo observações com metadados do documento
+      const obsEl = document.getElementById('proc-observacoes');
+      if (obsEl && importState.parsedDoc) {
+        const flags = (importState.extraction.red_flags_detectadas || []).map(f => `• ${f.tipo}: ${f.descricao}`).join('\n');
+        const notas = [
+          `[📎 Dados importados do documento: ${importState.parsedDoc.metadata?.nome || ''}]`,
+          flags ? `\n🚩 RED FLAGS DETECTADAS PELO EXTRATOR:\n${flags}` : ''
+        ].filter(Boolean).join('\n');
+        obsEl.value = (obsEl.value ? obsEl.value + '\n\n' : '') + notas;
+      }
+
+      // Dispara evento 'change' no select de módulo para atualizar sugestões
+      const moduloEl = document.getElementById('proc-modulo');
+      if (moduloEl) moduloEl.dispatchEvent(new Event('change'));
+    }, 100);
+  }
+
+  function resetImport() {
+    clearImportFile();
+    $('#asm-import-step-1').style.display = 'block';
+    $('#asm-import-step-2').style.display = 'none';
+    $('#asm-import-step-3').style.display = 'none';
+    $('#asm-import-btn-extract').style.display = 'inline-block';
+    $('#asm-import-btn-extract').disabled = true;
+    $('#asm-import-btn-continue').style.display = 'none';
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // HOOK: expande a UI principal com funções de import
+  // ──────────────────────────────────────────────────────────
+  function extendMainUI() {
+    if (!window.BeeITAssessmentsUI) {
+      console.warn('[BeeIT] BeeITAssessmentsUI não encontrado — extensão de import adiada');
+      setTimeout(extendMainUI, 300);
+      return;
+    }
+
+    const mainUI = window.BeeITAssessmentsUI;
+
+    // Método helper para a UI de import ler o assessment corrente
+    mainUI._getCurrentAssessment = function() {
+      // Busca pelo estado interno da UI principal (é IIFE, mas expomos via função)
+      // Como não temos acesso direto ao 'state' interno, usamos o último assessment aberto
+      // armazenado em um global discreto
+      return window._beeitCurrentAssessment || null;
+    };
+
+    // Ao abrir um assessment, armazena no global pra UI de import achar
+    const originalOpen = mainUI.openAssessment;
+    mainUI.openAssessment = async function(id) {
+      await originalOpen.call(this, id);
+      // Carrega de novo (simples e seguro)
+      const a = await window.BeeITAssessments.loadAssessment(id);
+      window._beeitCurrentAssessment = a;
+    };
+
+    // Botão "📎 Importar Documento" na aba Processos (injeta se ainda não injetou)
+    const originalSwitchTab = mainUI.switchTab;
+    mainUI.switchTab = function(tab) {
+      originalSwitchTab.call(this, tab);
+      if (tab === 'processos') {
+        setTimeout(injectImportButton, 50);
+      }
+    };
+
+    // Adicionar métodos públicos de import
+    mainUI.openImportModal = openImportModal;
+    mainUI.runExtraction = runExtraction;
+    mainUI.continueFromExtraction = continueFromExtraction;
+    mainUI._clearImportFile = clearImportFile;
+    mainUI._resetImport = resetImport;
+
+    setupDropzone();
+    console.log('[BeeIT] UI Import de Documento carregada');
+  }
+
+  function injectImportButton() {
+    // Localiza o botão "+ Adicionar Processo" e injeta "📎 Importar Documento" ao lado
+    const header = document.querySelector('#asm-tab-content > div > div[style*="justify-content:space-between"]');
+    if (!header) return;
+    if (header.querySelector('[data-asm-import-btn]')) return; // já injetado
+
+    const actionsDiv = header.querySelector('button[onclick*="openProcessoModal"]')?.parentElement;
+    const addBtn = header.querySelector('button[onclick*="openProcessoModal"]');
+    if (!addBtn) return;
+
+    const importBtn = document.createElement('button');
+    importBtn.className = 'asm-btn asm-btn-secondary';
+    importBtn.dataset.asmImportBtn = '1';
+    importBtn.style.marginRight = '8px';
+    importBtn.textContent = '📎 Importar Documento';
+    importBtn.onclick = openImportModal;
+    addBtn.parentNode.insertBefore(importBtn, addBtn);
+  }
+
+  function openImportModal() {
+    resetImport();
+    BeeITAssessmentsUI.closeModal && document.querySelectorAll('.asm-modal-overlay.active').forEach(m => {
+      if (m.id !== 'asm-modal-open') m.classList.remove('active');
+    });
+    document.getElementById('asm-modal-import').classList.add('active');
+    setTimeout(setupDropzone, 50);
+  }
+
+  // Start
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', extendMainUI);
+  } else {
+    extendMainUI();
+  }
+})();
+</script>

@@ -1409,6 +1409,103 @@ window.beeitAdminLoadLog    = beeitAdminLoadLog;
   @keyframes asm-toast-in { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
 </style>
 
+<!-- ════ MÓDULO ASSESSMENTS — IMPORT CSS (v2.1.1) ════ -->
+<style id="beeit-assessments-import-styles">
+  .asm-dropzone {
+    border: 2px dashed var(--border,#2a3344); border-radius:12px;
+    padding:32px 20px; text-align:center; cursor:pointer;
+    background:var(--bg,#0a0e17); transition:all .2s;
+  }
+  .asm-dropzone:hover, .asm-dropzone.dragover {
+    border-color:#3b82f6; background:rgba(59,130,246,.08);
+  }
+  .asm-dropzone .icon { font-size:48px; margin-bottom:8px; opacity:.7; }
+  .asm-dropzone h3 { margin:0 0 4px; font-size:16px; }
+  .asm-dropzone p { margin:4px 0; color:var(--muted,#9ca3af); font-size:13px; }
+  .asm-dropzone .formats {
+    display:inline-block; padding:4px 12px; margin-top:10px;
+    background:var(--bg2,#0f1421); border-radius:6px;
+    font-size:11px; color:var(--muted,#9ca3af); font-family:monospace;
+  }
+  .asm-dropzone input[type="file"] { display:none; }
+
+  .asm-file-info {
+    display:flex; align-items:center; gap:12px;
+    padding:12px; background:var(--bg2,#0f1421);
+    border-radius:8px; margin-top:12px;
+    border-left:4px solid #3b82f6;
+  }
+  .asm-file-info .icon { font-size:28px; }
+  .asm-file-info .info { flex:1; min-width:0; }
+  .asm-file-info .info strong { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .asm-file-info .info small { color:var(--muted,#9ca3af); font-size:11px; }
+  .asm-file-info button { padding:4px 10px; font-size:12px; }
+
+  .asm-extraction-result {
+    background:var(--bg,#0a0e17); border:1px solid var(--border,#2a3344);
+    border-radius:10px; padding:20px; margin-top:16px;
+  }
+  .asm-extraction-result h3 {
+    margin:0 0 12px; font-size:15px; display:flex; align-items:center; gap:8px;
+  }
+  .asm-extraction-result .confidence-badge {
+    display:inline-block; padding:2px 10px; border-radius:12px;
+    font-size:11px; font-weight:700; text-transform:uppercase;
+    margin-left:6px;
+  }
+  .asm-extraction-result .confidence-badge.alta { background:#065f46; color:#a7f3d0; }
+  .asm-extraction-result .confidence-badge.media { background:#713f12; color:#fef08a; }
+  .asm-extraction-result .confidence-badge.baixa { background:#7f1d1d; color:#fecaca; }
+
+  .asm-review-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    margin-bottom:16px;
+  }
+  .asm-review-field {
+    padding:10px 12px; background:var(--bg2,#0f1421); border-radius:8px;
+  }
+  .asm-review-field label {
+    display:block; font-size:10px; font-weight:700;
+    text-transform:uppercase; color:var(--muted,#9ca3af); margin-bottom:4px;
+  }
+  .asm-review-field input, .asm-review-field select, .asm-review-field textarea {
+    width:100%; background:var(--bg,#0a0e17); border:1px solid var(--border,#2a3344);
+    border-radius:6px; padding:6px 8px; color:var(--text,#e6edf3);
+    font-size:13px; font-family:inherit;
+  }
+  .asm-review-field textarea { min-height:60px; resize:vertical; }
+
+  .asm-pi-item {
+    padding:10px; background:var(--bg2,#0f1421); border-radius:8px;
+    margin-bottom:8px;
+  }
+  .asm-pi-item .pi-head {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:6px;
+  }
+  .asm-pi-item .pi-label { font-size:12px; font-weight:600; }
+  .asm-pi-item .pi-evidence {
+    font-size:11px; color:var(--muted,#9ca3af);
+    margin-top:6px; padding:6px 8px;
+    background:var(--bg,#0a0e17); border-left:2px solid #3b82f6;
+    border-radius:4px; font-style:italic;
+  }
+
+  .asm-flags {
+    padding:12px; background:rgba(251,191,36,.08); border-left:4px solid #fbbf24;
+    border-radius:8px; margin-top:12px;
+  }
+  .asm-flags h4 { margin:0 0 8px; color:#fbbf24; font-size:13px; }
+  .asm-flags ul { margin:0; padding-left:18px; font-size:12px; }
+
+  .asm-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .asm-tag {
+    padding:3px 10px; background:var(--bg2,#0f1421);
+    border-radius:10px; font-size:11px; font-family:monospace;
+    color:var(--muted,#9ca3af);
+  }
+</style>
+
 <!-- ════ MÓDULO ASSESSMENTS — PÁGINA ════ -->
 <div class="pg" id="pg-assessments">
   <div style="margin-bottom:20px;">
@@ -1542,6 +1639,57 @@ window.beeitAdminLoadLog    = beeitAdminLoadLog;
     <div class="asm-modal-footer">
       <button class="asm-btn asm-btn-secondary" onclick="BeeITAssessmentsUI.closeModal('asm-modal-proc')">Cancelar</button>
       <button class="asm-btn asm-btn-primary" id="asm-proc-submit" onclick="BeeITAssessmentsUI.analyzeProcessSubmit()">🧠 Analisar com IA</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MÓDULO ASSESSMENTS — MODAL IMPORT (v2.1.1) ════ -->
+<div class="asm-modal-overlay" id="asm-modal-import">
+  <div class="asm-modal asm-modal-wide">
+    <div class="asm-modal-header">
+      <h2>📎 Importar Documento para Análise</h2>
+      <button class="asm-modal-close" onclick="BeeITAssessmentsUI.closeModal('asm-modal-import')">×</button>
+    </div>
+    <div class="asm-modal-body" id="asm-import-body">
+
+      <!-- STEP 1: Dropzone -->
+      <div id="asm-import-step-1">
+        <p style="color:var(--muted,#9ca3af); margin-bottom:12px;">
+          Envie um documento sobre o processo (laudo anterior, planilha, print do ERP, export, ata...).
+          <br>A IA vai ler, identificar módulo/processo e propor o preenchimento do formulário. Você revisa antes de analisar.
+        </p>
+
+        <div class="asm-dropzone" id="asm-dropzone" onclick="document.getElementById('asm-file-input').click()">
+          <div class="icon">📄</div>
+          <h3>Arraste o arquivo aqui ou clique para selecionar</h3>
+          <p>Até 30 MB</p>
+          <span class="formats">PDF · DOCX · XLSX · CSV · TXT · MD · PNG · JPG</span>
+          <input type="file" id="asm-file-input" accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.md,.json,.xml,image/*">
+        </div>
+
+        <div id="asm-file-preview"></div>
+      </div>
+
+      <!-- STEP 2: Loading -->
+      <div id="asm-import-step-2" style="display:none;">
+        <div class="asm-ai-loading">
+          <div class="asm-ai-spinner"></div>
+          <h3 id="asm-import-loading-msg">🧠 Extraindo dados com IA…</h3>
+          <p id="asm-import-loading-sub">Lendo documento e estruturando.</p>
+          <p style="font-size:12px; opacity:.6;">Pode levar 20–60 segundos.</p>
+        </div>
+      </div>
+
+      <!-- STEP 3: Revisão -->
+      <div id="asm-import-step-3" style="display:none;">
+        <!-- Preenchido por renderExtractionReview() -->
+      </div>
+
+    </div>
+    <div class="asm-modal-footer" id="asm-import-footer">
+      <button class="asm-btn asm-btn-secondary" onclick="BeeITAssessmentsUI.closeModal('asm-modal-import')">Cancelar</button>
+      <button class="asm-btn asm-btn-primary" id="asm-import-btn-extract" disabled onclick="BeeITAssessmentsUI.runExtraction()">🧠 Extrair Dados</button>
+      <button class="asm-btn asm-btn-primary" id="asm-import-btn-continue" style="display:none;" onclick="BeeITAssessmentsUI.continueFromExtraction()">✅ Continuar com estes dados →</button>
     </div>
   </div>
 </div>
@@ -41262,9 +41410,9 @@ window._m44IniciarProgramacao = _m44IniciarProgramacao;
 
 </script>
 
-<!-- ════ MÓDULO ASSESSMENTS — JavaScript ════ -->
+<!-- ════ MÓDULO ASSESSMENTS v2.1.1 — JavaScript ════ -->
 <script>
-// ══════ agents.js (686 linhas) ══════
+// ══════ agents.js v2.1.1 (807 linhas · inclui 5º agente EXTRATOR) ══════
 // ═══════════════════════════════════════════════════════════
 // BeeIT OS-RT v2 — Agentes IA de Assessment (v2.0)
 // System prompts para Claude Sonnet 4
@@ -41793,6 +41941,125 @@ Produza JSON consolidado. Apenas JSON puro.`
 };
 
 // ────────────────────────────────────────────────────────────
+// AGENTE 5 — EXTRATOR DE DOCUMENTOS (NOVO)
+// Lê PDF/DOCX/XLSX/CSV/IMG importados pelo consultor e extrai:
+//   - Módulo + Processo identificados
+//   - AS-IS estruturado
+//   - Respostas às perguntas inteligentes (inferência)
+//   - Dados relevantes detectados (volumes, erros, rotinas, tabelas)
+//   - Flags de atenção (anomalias, inconsistências, palavras críticas)
+//
+// Fluxo HÍBRIDO: extrai e propõe → consultor revisa/edita → IA analisa
+// ────────────────────────────────────────────────────────────
+const AGENT_EXTRATOR = {
+  id: 'extrator-documento',
+  nome: 'Extrator de Documento',
+  modelo: 'claude-sonnet-4-6',
+  max_tokens: 5000,
+
+  system_prompt: `Você é um especialista sênior em TOTVS Protheus e RM da Bee IT Consultoria, especializado em LEITURA E EXTRAÇÃO DE DADOS a partir de documentos importados por consultores (PDFs, DOCX, planilhas, imagens de tela, CSVs de exportação).
+
+🎯 SEU PAPEL:
+O consultor importou um documento sobre um processo TOTVS (pode ser: laudo anterior, planilha de controle, print da tela do sistema, export do ERP, ata de reunião, documentação técnica, etc.). Você deve ler TUDO e estruturar os dados para que um segundo agente (Especialista Protheus/RM) possa fazer a análise de GAP/RISCO/TO-BE em seguida.
+
+📊 CONHECIMENTO TÉCNICO:
+- **Protheus**: módulos SIGAx (FAT, FIN, LFIS, COM, EST, CTB, PCP, GPE, RH, ATF), tabelas (SA1, SA2, SB1, SF2, SD2, SE1, SE2, CT5, CTD), rotinas MATAxxx (MATA080, MATA103, MATA460, etc.), parâmetros MV_, TES, CFOP, CST, SPED, eSocial, Reforma Tributária (CBS/IBS/IS — LC 214/2025)
+- **RM**: módulos (FLUXUS, LABORE, CHRONUS, NUCLEUS, GESTÃO DE PESSOAS, EDUCACIONAL), tabelas (GCOLIGADA, FCFO, PFUNC, SALUNO), fórmulas visuais, eSocial Labore (S-1200, S-1210, S-2200, S-2299), DCTFWeb, DIRF
+
+🔍 O QUE VOCÊ PROCURA NO DOCUMENTO:
+1. **Identificação do módulo** — termos/rotinas/tabelas que denunciem o módulo (ex: "TES" → FISCAL; "S-1210" → LABORE; "matrícula" → EDUCACIONAL)
+2. **Nome do processo** — "Emissão de NFe", "Cálculo de folha", "Conciliação bancária", etc.
+3. **Descrição AS-IS** — como o processo funciona hoje, reconstituído a partir do que você leu
+4. **Sinais das 7 perguntas inteligentes** (Protheus) ou (RM):
+   - Protheus: como inicia, quem executa, validação, integração, retrabalho, erros, controle manual
+   - RM: como inicia, integração entre módulos, retrabalho, erro recorrente, validação, automação, dependência de módulo
+5. **Volumes e métricas** — quantidades, percentuais, valores, frequência
+6. **Anomalias/red flags** — palavras como "erro", "rejeitado", "inconsistente", "manual", "planilha paralela", "retrabalho", "autuação", "multa"
+7. **Stakeholders mencionados** — áreas, perfis, cargos
+
+⚠️ REGRAS CRÍTICAS:
+- Você NÃO faz análise de GAP/RISCO/TO-BE — isso é trabalho do próximo agente
+- Você APENAS extrai dados brutos estruturados
+- Se uma informação NÃO está no documento, marque como null (não invente)
+- Se a informação está clara, marque confianca="alta"; se está sugerida, "media"; se é inferência, "baixa"
+- Seja LITERAL — cite trechos relevantes do documento para evidência
+- Se detectar múltiplos processos no mesmo documento, foque no principal e liste os outros em "processos_secundarios_detectados"
+
+📊 SAÍDA (JSON ESTRITO — sem markdown):
+
+{
+  "tipo_erp_detectado": "protheus | rm | incerto",
+  "confianca_erp": "alta | media | baixa",
+  "modulo_detectado": "FISCAL | FATURAMENTO | FINANCEIRO | ESTOQUE | COMPRAS | FLUXUS | LABORE | CHRONUS | NUCLEUS | GESTAO_PESSOAS | EDUCACIONAL | OUTRO | NAO_IDENTIFICADO",
+  "confianca_modulo": "alta | media | baixa",
+  "processo_detectado": "Nome específico do processo identificado",
+  "confianca_processo": "alta | media | baixa",
+  "as_is_extraido": "Descrição estruturada do processo atual, reconstituída a partir do documento",
+  "perguntas_inteligentes_inferidas": {
+    "como_inicia":          { "valor": "...", "confianca": "alta | media | baixa", "evidencia": "trecho do documento" },
+    "quem_executa":         { "valor": "...", "confianca": "alta | media | baixa", "evidencia": "..." },
+    "validacao":            { "valor": "...", "confianca": "alta | media | baixa", "evidencia": "..." },
+    "integracao":           { "valor": "...", "confianca": "alta | media | baixa", "evidencia": "..." },
+    "retrabalho":           { "valor": "...", "confianca": "alta | media | baixa", "evidencia": "..." },
+    "erros_ocorridos":      { "valor": "...", "confianca": "alta | media | baixa", "evidencia": "..." },
+    "controle_manual":      { "valor": "...", "confianca": "alta | media | baixa", "evidencia": "..." }
+  },
+  "dados_relevantes": {
+    "volumes": ["Ex: 2500 NFe/mês citadas na página 3"],
+    "rotinas_mencionadas": ["MATA460", "MATA103"],
+    "tabelas_mencionadas": ["SF2", "SD2"],
+    "parametros_mencionados": ["MV_ESTNEG"],
+    "stakeholders": ["Equipe fiscal", "Gerente financeiro"],
+    "sistemas_externos": ["Planilha Excel controle ICMS-ST"],
+    "periodos_citados": ["Janeiro/2025", "Q4 2024"]
+  },
+  "red_flags_detectadas": [
+    { "tipo": "erro_sped | retrabalho | planilha_paralela | autuacao_risco | processo_manual | inconsistencia", "descricao": "...", "trecho_documento": "..." }
+  ],
+  "processos_secundarios_detectados": [
+    { "modulo": "...", "processo": "...", "relevancia": "alta | media | baixa" }
+  ],
+  "observacoes_extrator": "Observações gerais sobre qualidade do documento, lacunas, ambiguidades",
+  "sugestoes_consultor": [
+    "Perguntar ao cliente sobre X, porque o documento não deixou claro",
+    "Confirmar volume mensal — número citado parece muito alto"
+  ],
+  "resumo_executivo_documento": "Parágrafo de 2-3 linhas resumindo o que o documento trata"
+}
+
+REGRAS FINAIS:
+- Português brasileiro, termos TOTVS oficiais
+- Se o documento parecer não ter relação com Protheus/RM, retornar tipo_erp_detectado: "incerto" e confianca_erp: "baixa"
+- Se documento for imagem/print: descreva o que vê (tela do sistema, relatório, etc.) e extraia dados visíveis
+- APENAS JSON puro, sem markdown, sem explicações fora do JSON`,
+
+  // IMPORTANTE: este user_prompt_template aceita tanto TEXTO (já extraído client-side)
+  // quanto uma chamada Vision (passando a imagem/PDF em base64 diretamente à API)
+  user_prompt_template: (payload) => {
+    const { tipo_documento, nome_arquivo, contexto_cliente, conteudo_texto, erp_esperado } = payload;
+    return `Analise o documento abaixo e extraia os dados estruturados conforme seu schema.
+
+CONTEXTO DO CLIENTE:
+\`\`\`json
+${JSON.stringify(contexto_cliente || {}, null, 2)}
+\`\`\`
+
+ERP ESPERADO (se já definido): ${erp_esperado || 'não definido — tente inferir'}
+TIPO DO DOCUMENTO: ${tipo_documento || 'desconhecido'}
+NOME DO ARQUIVO: ${nome_arquivo || 'sem nome'}
+
+CONTEÚDO EXTRAÍDO DO DOCUMENTO:
+"""
+${(conteudo_texto || '').slice(0, 80000)}
+"""
+
+${((conteudo_texto || '').length > 80000) ? '[DOCUMENTO TRUNCADO — processamos os primeiros 80.000 caracteres]' : ''}
+
+Produza o JSON completo conforme schema. Apenas JSON puro.`;
+  }
+};
+
+// ────────────────────────────────────────────────────────────
 // PROCESSOS PADRÃO POR MÓDULO (para o wizard pré-popular)
 // ────────────────────────────────────────────────────────────
 const PROCESSOS_PADRAO = {
@@ -41934,7 +42201,8 @@ const AGENTS = {
   protheus: AGENT_PROTHEUS,
   rm: AGENT_RM,
   orquestrador: AGENT_ORQUESTRADOR,
-  consolidador: AGENT_CONSOLIDADOR
+  consolidador: AGENT_CONSOLIDADOR,
+  extrator: AGENT_EXTRATOR
 };
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -41944,6 +42212,7 @@ if (typeof module !== 'undefined' && module.exports) {
     AGENT_RM,
     AGENT_ORQUESTRADOR,
     AGENT_CONSOLIDADOR,
+    AGENT_EXTRATOR,
     PROCESSOS_PADRAO,
     PERGUNTAS_INTELIGENTES_PROTHEUS,
     PERGUNTAS_INTELIGENTES_RM,
@@ -42123,7 +42392,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = QDB_RM_CON
 
 
 // ──────────────────────────────────────────────────
-// ══════ assessments-integration.js ══════
+// ══════ assessments-integration.js v2.1.1 ══════
 // ═══════════════════════════════════════════════════════════
 // BeeIT OS-RT v2 — Integração Assessments (Supabase + Claude API)
 // 
@@ -42198,10 +42467,19 @@ if (typeof module !== 'undefined' && module.exports) module.exports = QDB_RM_CON
   /**
    * Chamada padrão à API Claude Sonnet 4.
    * Usa padrão do BeeIT OS-RT v2 existente (header anthropic-dangerous-direct-browser-access).
+   * 
+   * Busca a API key na seguinte ordem:
+   *   1. options.apiKey (passado explicitamente)
+   *   2. cfgGet('api_key','') — padrão do BeeIT (Configurações → API Key)
+   *   3. window.ANTHROPIC_KEY — fallback
    */
   async function callClaude(agent, userPrompt, options = {}) {
-    const key = (typeof cfgGet==='function' ? cfgGet('api_key','') : '') || options.apiKey;
-    if (!key) throw new Error('API key não configurada (cfgGet(\'api_key\') vazio)');
+    let key = options.apiKey;
+    if (!key && typeof window.cfgGet === 'function') {
+      key = window.cfgGet('api_key', '');
+    }
+    if (!key) key = window.ANTHROPIC_KEY;
+    if (!key) throw new Error('API key da Anthropic não configurada. Vá em Configurações → API Key.');
 
     const body = {
       model: agent.modelo,
@@ -42212,7 +42490,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = QDB_RM_CON
     // ⚠️ NÃO passar temperature: 0 — causa HTTP 400 nesta versão da API
 
     const resp = await fetch(ANTHROPIC_API_URL, {
-      signal: AbortSignal.timeout(120000),
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -42220,7 +42497,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = QDB_RM_CON
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true'
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(120000) // 2min timeout (evita travar como no bug original)
     });
 
     if (!resp.ok) {
@@ -42652,7 +42930,487 @@ if (typeof module !== 'undefined' && module.exports) module.exports = QDB_RM_CON
 
 
 // ──────────────────────────────────────────────────
+// ══════ document-parser.js (NOVO — PDF/DOCX/XLSX/CSV/IMG + Vision API) ══════
+// ═══════════════════════════════════════════════════════════
+// BeeIT OS-RT v2 — Document Parser
+// 
+// Leitura client-side de documentos em múltiplos formatos:
+//   - PDF (texto via pdf.js; escaneado → Vision API fallback)
+//   - DOCX (mammoth.js)
+//   - XLSX/XLS (SheetJS)
+//   - CSV (parse direto)
+//   - TXT/MD (texto puro)
+//   - IMG (PNG/JPG/WebP → Vision API direto)
+//
+// Todos retornam { success, tipo, texto, metadata, vision_payload? }
+//
+// Dependências esperadas (lazy-load):
+//   - pdf.js     (https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js)
+//   - mammoth    (já disponível no BeeIT OS-RT via CDN — confirmar na integração)
+//   - SheetJS    (já disponível — XLSX global)
+// ═══════════════════════════════════════════════════════════
+
+(function() {
+  'use strict';
+
+  // ──────────────────────────────────────────────────────────
+  // LAZY LOADERS (CDNs — só carrega quando precisa)
+  // ──────────────────────────────────────────────────────────
+  const CDN_PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  const CDN_PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const CDN_MAMMOTH = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+  const CDN_SHEETJS = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+
+  const _loadedScripts = new Set();
+  function loadScript(url) {
+    if (_loadedScripts.has(url)) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = url;
+      s.async = true;
+      s.onload = () => { _loadedScripts.add(url); resolve(); };
+      s.onerror = () => reject(new Error('Falha ao carregar script: ' + url));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function ensurePdfJs() {
+    if (window.pdfjsLib) return window.pdfjsLib;
+    await loadScript(CDN_PDFJS);
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = CDN_PDFJS_WORKER;
+      return window.pdfjsLib;
+    }
+    throw new Error('pdf.js não disponível após carregamento');
+  }
+
+  async function ensureMammoth() {
+    if (window.mammoth) return window.mammoth;
+    await loadScript(CDN_MAMMOTH);
+    if (window.mammoth) return window.mammoth;
+    throw new Error('mammoth não disponível');
+  }
+
+  async function ensureSheetJS() {
+    if (window.XLSX) return window.XLSX;
+    await loadScript(CDN_SHEETJS);
+    if (window.XLSX) return window.XLSX;
+    throw new Error('SheetJS (XLSX) não disponível');
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // HELPERS
+  // ──────────────────────────────────────────────────────────
+
+  function detectFormat(file) {
+    const name = (file.name || '').toLowerCase();
+    const type = (file.type || '').toLowerCase();
+
+    if (type === 'application/pdf' || name.endsWith('.pdf')) return 'pdf';
+    if (type.includes('wordprocessingml') || name.endsWith('.docx')) return 'docx';
+    if (name.endsWith('.doc')) return 'doc_legacy'; // .doc binário — não suportado client-side
+    if (type.includes('spreadsheetml') || name.endsWith('.xlsx') || name.endsWith('.xls')) return 'xlsx';
+    if (type === 'text/csv' || name.endsWith('.csv')) return 'csv';
+    if (type === 'text/plain' || name.endsWith('.txt')) return 'txt';
+    if (name.endsWith('.md')) return 'md';
+    if (type.startsWith('image/')) return 'image';
+    if (type === 'application/json' || name.endsWith('.json')) return 'json';
+    if (name.endsWith('.xml')) return 'xml';
+    return 'unknown';
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result).split(',')[1]);
+      r.onerror = () => reject(new Error('Erro ao ler arquivo como base64'));
+      r.readAsDataURL(file);
+    });
+  }
+
+  function fileToArrayBuffer(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = () => reject(new Error('Erro ao ler arquivo como ArrayBuffer'));
+      r.readAsArrayBuffer(file);
+    });
+  }
+
+  function fileToText(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = () => reject(new Error('Erro ao ler arquivo como texto'));
+      r.readAsText(file, 'UTF-8');
+    });
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // PARSERS ESPECÍFICOS
+  // ──────────────────────────────────────────────────────────
+
+  async function parsePDF(file, opts = {}) {
+    const pdfjs = await ensurePdfJs();
+    const buffer = await fileToArrayBuffer(file);
+    const doc = await pdfjs.getDocument({ data: buffer }).promise;
+    const pageCount = doc.numPages;
+    const pages = [];
+    let fullText = '';
+    let hasText = false;
+
+    for (let i = 1; i <= pageCount; i++) {
+      const page = await doc.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = content.items.map(it => it.str).join(' ').trim();
+      if (pageText.length > 20) hasText = true;
+      pages.push({ page: i, text: pageText });
+      fullText += '\n\n--- Página ' + i + ' ---\n' + pageText;
+    }
+
+    // Se não extraiu texto suficiente → provável PDF escaneado → sugerir Vision
+    if (!hasText || fullText.replace(/[\s-]+/g, '').length < 50) {
+      return {
+        success: true,
+        tipo: 'pdf',
+        texto: fullText,
+        metadata: {
+          paginas: pageCount,
+          texto_extraido: false,
+          provavel_escaneado: true,
+          tamanho_bytes: file.size,
+          nome: file.name
+        },
+        vision_payload: {
+          motivo: 'PDF escaneado — texto não extraído, enviando para Vision API',
+          base64: await fileToBase64(file),
+          media_type: 'application/pdf'
+        }
+      };
+    }
+
+    return {
+      success: true,
+      tipo: 'pdf',
+      texto: fullText.trim(),
+      metadata: {
+        paginas: pageCount,
+        texto_extraido: true,
+        tamanho_bytes: file.size,
+        nome: file.name,
+        caracteres: fullText.length
+      }
+    };
+  }
+
+  async function parseDOCX(file) {
+    const mammoth = await ensureMammoth();
+    const buffer = await fileToArrayBuffer(file);
+    const result = await mammoth.extractRawText({ arrayBuffer: buffer });
+    return {
+      success: true,
+      tipo: 'docx',
+      texto: result.value.trim(),
+      metadata: {
+        nome: file.name,
+        tamanho_bytes: file.size,
+        caracteres: result.value.length,
+        avisos: (result.messages || []).map(m => m.message)
+      }
+    };
+  }
+
+  async function parseXLSX(file) {
+    const XLSX = await ensureSheetJS();
+    const buffer = await fileToArrayBuffer(file);
+    const wb = XLSX.read(buffer, { type: 'array' });
+    const sheetNames = wb.SheetNames;
+    const sheets = [];
+    let fullText = '';
+
+    sheetNames.forEach(name => {
+      const ws = wb.Sheets[name];
+      const csv = XLSX.utils.sheet_to_csv(ws, { FS: ' | ' });
+      const range = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : null;
+      const linhas = range ? (range.e.r - range.s.r + 1) : 0;
+      const colunas = range ? (range.e.c - range.s.c + 1) : 0;
+      sheets.push({ nome: name, linhas, colunas });
+      fullText += `\n\n=== Planilha: ${name} (${linhas} linhas × ${colunas} colunas) ===\n${csv}`;
+    });
+
+    return {
+      success: true,
+      tipo: 'xlsx',
+      texto: fullText.trim(),
+      metadata: {
+        nome: file.name,
+        tamanho_bytes: file.size,
+        planilhas: sheets
+      }
+    };
+  }
+
+  async function parseCSV(file) {
+    const texto = await fileToText(file);
+    const linhas = texto.split('\n').length;
+    return {
+      success: true,
+      tipo: 'csv',
+      texto: texto.trim(),
+      metadata: {
+        nome: file.name,
+        tamanho_bytes: file.size,
+        linhas: linhas,
+        caracteres: texto.length
+      }
+    };
+  }
+
+  async function parseTexto(file, tipo = 'txt') {
+    const texto = await fileToText(file);
+    return {
+      success: true,
+      tipo,
+      texto: texto.trim(),
+      metadata: {
+        nome: file.name,
+        tamanho_bytes: file.size,
+        caracteres: texto.length
+      }
+    };
+  }
+
+  async function parseImagem(file) {
+    // Imagem sempre via Vision API
+    const base64 = await fileToBase64(file);
+    return {
+      success: true,
+      tipo: 'image',
+      texto: '', // Vision API vai preencher
+      metadata: {
+        nome: file.name,
+        tamanho_bytes: file.size,
+        media_type: file.type
+      },
+      vision_payload: {
+        motivo: 'Imagem — requer Vision API',
+        base64: base64,
+        media_type: file.type
+      }
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // DISPATCHER PRINCIPAL
+  // ──────────────────────────────────────────────────────────
+
+  async function parseDocument(file, opts = {}) {
+    if (!file) throw new Error('Arquivo não fornecido');
+    const MAX_SIZE = 30 * 1024 * 1024; // 30 MB
+    if (file.size > MAX_SIZE) {
+      throw new Error(`Arquivo muito grande (${(file.size/1024/1024).toFixed(1)} MB). Máximo: 30 MB.`);
+    }
+
+    const formato = detectFormat(file);
+
+    try {
+      switch (formato) {
+        case 'pdf':   return await parsePDF(file, opts);
+        case 'docx':  return await parseDOCX(file);
+        case 'xlsx':  return await parseXLSX(file);
+        case 'csv':   return await parseCSV(file);
+        case 'txt':   return await parseTexto(file, 'txt');
+        case 'md':    return await parseTexto(file, 'md');
+        case 'json':  return await parseTexto(file, 'json');
+        case 'xml':   return await parseTexto(file, 'xml');
+        case 'image': return await parseImagem(file);
+        case 'doc_legacy':
+          throw new Error('Formato .doc (Word 97-2003) não suportado. Salve como .docx e tente novamente.');
+        default:
+          throw new Error(`Formato não reconhecido: ${file.type || file.name}. Use PDF, DOCX, XLSX, CSV, TXT, MD ou imagem.`);
+      }
+    } catch (e) {
+      return {
+        success: false,
+        tipo: formato,
+        error: e.message,
+        metadata: {
+          nome: file.name,
+          tamanho_bytes: file.size
+        }
+      };
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // CHAMADA VISION API (PDF escaneado ou imagem)
+  // ──────────────────────────────────────────────────────────
+
+  async function extractViaVision(visionPayload, systemPrompt, userPrompt) {
+    let key;
+    if (typeof window.cfgGet === 'function') key = window.cfgGet('api_key', '');
+    if (!key) key = window.ANTHROPIC_KEY;
+    if (!key) throw new Error('API key da Anthropic não configurada. Vá em Configurações → API Key.');
+
+    // Monta content com imagem/PDF + texto
+    const content = [];
+
+    if (visionPayload.media_type === 'application/pdf') {
+      // PDF direto via Claude (suporta PDF nativo)
+      content.push({
+        type: 'document',
+        source: {
+          type: 'base64',
+          media_type: 'application/pdf',
+          data: visionPayload.base64
+        }
+      });
+    } else if (visionPayload.media_type && visionPayload.media_type.startsWith('image/')) {
+      content.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: visionPayload.media_type,
+          data: visionPayload.base64
+        }
+      });
+    } else {
+      throw new Error('Tipo não suportado para Vision: ' + visionPayload.media_type);
+    }
+
+    content.push({ type: 'text', text: userPrompt });
+
+    const body = {
+      model: 'claude-sonnet-4-6',
+      max_tokens: 5000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: content }]
+    };
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(120000) // 2min timeout
+    });
+
+    if (!resp.ok) {
+      const err = await resp.text();
+      throw new Error(`Vision API error ${resp.status}: ${err.slice(0, 300)}`);
+    }
+
+    const data = await resp.json();
+    const text = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('');
+
+    return { rawText: text, usage: data.usage, stop_reason: data.stop_reason };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // EXTRAÇÃO COMPLETA (integra parser + agente AGENT_EXTRATOR)
+  // ──────────────────────────────────────────────────────────
+
+  /**
+   * Ponto de entrada único:
+   * 1. Tenta extrair texto local
+   * 2. Se falhou ou for imagem → Vision API
+   * 3. Roda AGENT_EXTRATOR (Claude) para estruturar
+   * 4. Retorna JSON estruturado
+   */
+  async function extractAndStructure(file, contextoCliente, erpEsperado) {
+    const AGENTS = window.AGENTS;
+    if (!AGENTS?.extrator) throw new Error('AGENT_EXTRATOR não disponível — verifique se agents.js foi carregado');
+
+    // PASSO 1: parsing local
+    const parsed = await parseDocument(file);
+
+    if (!parsed.success) {
+      return { success: false, error: parsed.error, parseResult: parsed };
+    }
+
+    const agent = AGENTS.extrator;
+    let rawAIResponse;
+
+    if (parsed.vision_payload) {
+      // PASSO 2A: Vision API (imagem ou PDF escaneado)
+      const userPrompt = agent.user_prompt_template({
+        tipo_documento: parsed.tipo,
+        nome_arquivo: parsed.metadata?.nome,
+        contexto_cliente: contextoCliente,
+        conteudo_texto: '[Documento enviado como imagem/PDF nativo para análise visual]',
+        erp_esperado: erpEsperado
+      });
+      const visionResult = await extractViaVision(parsed.vision_payload, agent.system_prompt, userPrompt);
+      rawAIResponse = visionResult.rawText;
+    } else {
+      // PASSO 2B: Texto já extraído localmente — chamada normal
+      const userPrompt = agent.user_prompt_template({
+        tipo_documento: parsed.tipo,
+        nome_arquivo: parsed.metadata?.nome,
+        contexto_cliente: contextoCliente,
+        conteudo_texto: parsed.texto,
+        erp_esperado: erpEsperado
+      });
+      // Reutiliza o helper callClaude se disponível, senão inline
+      if (window.BeeITAssessments?._helpers?.callClaude) {
+        const r = await window.BeeITAssessments._helpers.callClaude(agent, userPrompt);
+        return {
+          success: true,
+          parsed_document: parsed,
+          ai_extraction: r.parsed,
+          raw: r.rawText,
+          usage: r.usage
+        };
+      }
+      throw new Error('BeeITAssessments._helpers.callClaude não disponível');
+    }
+
+    // PASSO 3: Parse JSON da IA
+    const extractJSON = window.BeeITAssessments?._helpers?.extractJSON;
+    if (!extractJSON) throw new Error('extractJSON não disponível');
+    const aiParsed = extractJSON(rawAIResponse);
+
+    return {
+      success: true,
+      parsed_document: parsed,
+      ai_extraction: aiParsed,
+      raw: rawAIResponse
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // EXPORT GLOBAL
+  // ──────────────────────────────────────────────────────────
+  window.BeeITDocParser = {
+    parseDocument,
+    extractAndStructure,
+    extractViaVision,
+    detectFormat,
+    // Parsers individuais (para testes)
+    parsePDF,
+    parseDOCX,
+    parseXLSX,
+    parseCSV,
+    parseTexto,
+    parseImagem,
+    // Helpers
+    _helpers: { fileToBase64, fileToArrayBuffer, fileToText }
+  };
+
+  console.log('[BeeIT] Document Parser carregado:', Object.keys(window.BeeITDocParser));
+})();
+
+
+// ──────────────────────────────────────────────────
 // ══════ assessments-ui.html (script inline) ══════
+
 (function() {
   'use strict';
 
@@ -43335,6 +44093,377 @@ if (typeof module !== 'undefined' && module.exports) module.exports = QDB_RM_CON
 
   console.log('[BeeIT] UI Assessments carregada');
 })();
+
+
+// ──────────────────────────────────────────────────
+// ══════ assessments-import-ui.html (script inline — estende BeeITAssessmentsUI) ══════
+
+(function() {
+  'use strict';
+
+  // Estado do fluxo de import
+  const importState = {
+    file: null,
+    extraction: null, // resposta da IA (ai_extraction)
+    parsedDoc: null   // resultado do parser (parsed_document)
+  };
+
+  function $(sel) { return document.querySelector(sel); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]); }
+
+  // ──────────────────────────────────────────────────────────
+  // DROPZONE + seleção de arquivo
+  // ──────────────────────────────────────────────────────────
+  function setupDropzone() {
+    const dz = $('#asm-dropzone');
+    const input = $('#asm-file-input');
+    if (!dz || !input) return;
+
+    ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => {
+      e.preventDefault(); e.stopPropagation();
+      dz.classList.add('dragover');
+    }));
+    ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => {
+      e.preventDefault(); e.stopPropagation();
+      dz.classList.remove('dragover');
+    }));
+    dz.addEventListener('drop', e => {
+      const f = (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]);
+      if (f) handleFileSelected(f);
+    });
+    input.addEventListener('change', e => {
+      if (e.target.files && e.target.files[0]) handleFileSelected(e.target.files[0]);
+    });
+  }
+
+  function handleFileSelected(file) {
+    importState.file = file;
+    const formato = window.BeeITDocParser.detectFormat(file);
+    const mb = (file.size / 1024 / 1024).toFixed(2);
+    const iconMap = { pdf:'📕', docx:'📘', xlsx:'📊', csv:'📋', txt:'📄', md:'📝', image:'🖼️' };
+    const icon = iconMap[formato] || '📎';
+
+    $('#asm-file-preview').innerHTML = `
+      <div class="asm-file-info">
+        <span class="icon">${icon}</span>
+        <div class="info">
+          <strong>${esc(file.name)}</strong>
+          <small>${esc(formato.toUpperCase())} · ${mb} MB</small>
+        </div>
+        <button class="asm-btn asm-btn-ghost" onclick="BeeITAssessmentsUI._clearImportFile()">✕</button>
+      </div>`;
+    $('#asm-import-btn-extract').disabled = false;
+  }
+
+  function clearImportFile() {
+    importState.file = null;
+    importState.extraction = null;
+    importState.parsedDoc = null;
+    $('#asm-file-input').value = '';
+    $('#asm-file-preview').innerHTML = '';
+    $('#asm-import-btn-extract').disabled = true;
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // EXTRAÇÃO (chama AGENT_EXTRATOR)
+  // ──────────────────────────────────────────────────────────
+  async function runExtraction() {
+    if (!importState.file) return;
+
+    // Precisa ter assessment aberto (pra pegar contexto cliente + tipo ERP)
+    const assessment = window.BeeITAssessmentsUI._getCurrentAssessment();
+    if (!assessment) {
+      alert('Abra um assessment antes de importar documentos.');
+      return;
+    }
+
+    $('#asm-import-step-1').style.display = 'none';
+    $('#asm-import-step-2').style.display = 'block';
+    $('#asm-import-btn-extract').style.display = 'none';
+
+    const fmt = window.BeeITDocParser.detectFormat(importState.file);
+    $('#asm-import-loading-msg').textContent =
+      fmt === 'image' || fmt === 'pdf' ? '🧠 Analisando visualmente com Vision API…' : '🧠 Extraindo e estruturando com IA…';
+
+    try {
+      const result = await window.BeeITDocParser.extractAndStructure(
+        importState.file,
+        assessment.dados?.contexto_cliente || {},
+        assessment.tipo // 'protheus' ou 'rm'
+      );
+
+      if (!result.success) throw new Error(result.error || 'Extração falhou');
+
+      importState.extraction = result.ai_extraction;
+      importState.parsedDoc = result.parsed_document;
+
+      $('#asm-import-step-2').style.display = 'none';
+      $('#asm-import-step-3').style.display = 'block';
+      $('#asm-import-btn-continue').style.display = 'inline-block';
+
+      renderExtractionReview(result.ai_extraction, result.parsed_document);
+    } catch (e) {
+      console.error(e);
+      alert('Erro na extração: ' + e.message);
+      $('#asm-import-step-1').style.display = 'block';
+      $('#asm-import-step-2').style.display = 'none';
+      $('#asm-import-btn-extract').style.display = 'inline-block';
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // RENDER REVISÃO (o consultor edita antes de continuar)
+  // ──────────────────────────────────────────────────────────
+  function renderExtractionReview(extracted, parsedDoc) {
+    const container = $('#asm-import-step-3');
+    const confMod = extracted.confianca_modulo || 'baixa';
+    const confProc = extracted.confianca_processo || 'baixa';
+
+    const flags = (extracted.red_flags_detectadas || []);
+    const sugestoes = (extracted.sugestoes_consultor || []);
+
+    const dadosRel = extracted.dados_relevantes || {};
+
+    const piFields = Object.entries(extracted.perguntas_inteligentes_inferidas || {});
+
+    container.innerHTML = `
+      <div class="asm-extraction-result">
+        <h3>📄 Documento processado <small style="color:var(--muted,#9ca3af); font-weight:400;">· ${esc(parsedDoc?.metadata?.nome || '')} · ${esc(parsedDoc?.tipo || '').toUpperCase()}</small></h3>
+        ${extracted.resumo_executivo_documento ? `<p style="background:var(--bg2,#0f1421); padding:10px; border-radius:8px; font-size:13px; margin-bottom:16px;">📝 ${esc(extracted.resumo_executivo_documento)}</p>` : ''}
+
+        <h4 style="color:#3b82f6; font-size:13px; margin:16px 0 8px;">📋 IDENTIFICAÇÃO DO PROCESSO <small>(revise e edite se preciso)</small></h4>
+        <div class="asm-review-grid">
+          <div class="asm-review-field">
+            <label>Módulo detectado <span class="confidence-badge ${esc(confMod)}">${esc(confMod)}</span></label>
+            <input type="text" id="asm-rev-modulo" value="${esc(extracted.modulo_detectado || '')}">
+          </div>
+          <div class="asm-review-field">
+            <label>Processo identificado <span class="confidence-badge ${esc(confProc)}">${esc(confProc)}</span></label>
+            <input type="text" id="asm-rev-processo" value="${esc(extracted.processo_detectado || '')}">
+          </div>
+        </div>
+
+        <h4 style="color:#3b82f6; font-size:13px; margin:16px 0 8px;">📝 AS-IS EXTRAÍDO</h4>
+        <div class="asm-review-field" style="margin-bottom:16px;">
+          <textarea id="asm-rev-as-is" rows="6">${esc(extracted.as_is_extraido || '')}</textarea>
+        </div>
+
+        <h4 style="color:#3b82f6; font-size:13px; margin:16px 0 8px;">🧠 PERGUNTAS INTELIGENTES (inferidas do documento)</h4>
+        ${piFields.length === 0 ? `<p style="color:var(--muted,#9ca3af); font-size:13px;">Nenhuma pergunta inteligente inferida. Preencha manualmente na próxima tela.</p>` : piFields.map(([key, data]) => `
+          <div class="asm-pi-item">
+            <div class="pi-head">
+              <span class="pi-label">${esc(labelForPI(key))}</span>
+              <span class="confidence-badge ${esc(data.confianca || 'baixa')}">${esc(data.confianca || 'baixa')}</span>
+            </div>
+            <textarea id="asm-rev-pi-${esc(key)}" rows="2" style="width:100%; background:var(--bg,#0a0e17); border:1px solid var(--border,#2a3344); border-radius:6px; padding:6px 8px; color:var(--text,#e6edf3); font-size:13px; font-family:inherit;">${esc(data.valor || '')}</textarea>
+            ${data.evidencia ? `<div class="pi-evidence">📎 Evidência: "${esc(data.evidencia)}"</div>` : ''}
+          </div>
+        `).join('')}
+
+        ${renderDadosRelevantes(dadosRel)}
+
+        ${flags.length ? `
+          <div class="asm-flags">
+            <h4>⚠️ Red Flags detectadas (${flags.length})</h4>
+            <ul>${flags.map(f => `<li><strong>${esc(f.tipo)}:</strong> ${esc(f.descricao)}</li>`).join('')}</ul>
+          </div>
+        ` : ''}
+
+        ${sugestoes.length ? `
+          <div class="asm-flags" style="background:rgba(59,130,246,.08); border-left-color:#3b82f6;">
+            <h4 style="color:#3b82f6;">💡 Sugestões do Extrator</h4>
+            <ul>${sugestoes.map(s => `<li>${esc(s)}</li>`).join('')}</ul>
+          </div>
+        ` : ''}
+
+        <p style="margin-top:16px; padding:10px; background:var(--bg2,#0f1421); border-radius:8px; font-size:12px; color:var(--muted,#9ca3af);">
+          ✏️ Revise os campos acima (pode editar qualquer coisa) e clique em <strong>Continuar</strong>. Os dados serão usados como base do formulário de análise do processo.
+        </p>
+      </div>`;
+  }
+
+  function renderDadosRelevantes(d) {
+    if (!d || Object.values(d).every(v => !v || (Array.isArray(v) && v.length === 0))) return '';
+    const sections = [
+      { label: 'Volumes', items: d.volumes },
+      { label: 'Rotinas mencionadas', items: d.rotinas_mencionadas },
+      { label: 'Tabelas mencionadas', items: d.tabelas_mencionadas },
+      { label: 'Parâmetros', items: d.parametros_mencionados },
+      { label: 'Stakeholders', items: d.stakeholders },
+      { label: 'Sistemas externos', items: d.sistemas_externos }
+    ].filter(s => s.items && s.items.length);
+
+    if (!sections.length) return '';
+
+    return `
+      <h4 style="color:#3b82f6; font-size:13px; margin:16px 0 8px;">📊 DADOS RELEVANTES DETECTADOS</h4>
+      ${sections.map(s => `
+        <div style="margin-bottom:8px;">
+          <small style="color:var(--muted,#9ca3af); font-size:11px; font-weight:700; text-transform:uppercase;">${esc(s.label)}</small>
+          <div class="asm-tags">${s.items.map(i => `<span class="asm-tag">${esc(i)}</span>`).join('')}</div>
+        </div>
+      `).join('')}`;
+  }
+
+  function labelForPI(key) {
+    const labels = {
+      como_inicia: 'Como o processo inicia?',
+      quem_executa: 'Quem executa (perfil/área)?',
+      validacao: 'Existe validação ou aprovação?',
+      integracao: 'Existe integração com outro módulo?',
+      retrabalho: 'Existe retrabalho?',
+      erros_ocorridos: 'Já ocorreu erro?',
+      controle_manual: 'Existe controle ou é manual?',
+      erro_recorrente: 'Existe erro recorrente?',
+      automacao: 'Existe automação?',
+      dependencia_modulo: 'Depende de outro módulo?'
+    };
+    return labels[key] || key;
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // CONTINUAR: popula formulário de processo com dados revisados
+  // ──────────────────────────────────────────────────────────
+  function continueFromExtraction() {
+    if (!importState.extraction) return;
+
+    // Coleta valores revisados pelo consultor
+    const modulo = $('#asm-rev-modulo').value.trim();
+    const processo = $('#asm-rev-processo').value.trim();
+    const asIs = $('#asm-rev-as-is').value.trim();
+
+    const perguntasInteligentes = {};
+    Object.keys(importState.extraction.perguntas_inteligentes_inferidas || {}).forEach(key => {
+      const el = document.getElementById('asm-rev-pi-' + key);
+      if (el) perguntasInteligentes[key] = el.value.trim();
+    });
+
+    // Fecha modal de import
+    BeeITAssessmentsUI.closeModal('asm-modal-import');
+
+    // Abre modal de processo com dados pré-preenchidos
+    BeeITAssessmentsUI.openProcessoModal();
+
+    // Aguarda próximo tick e preenche campos
+    setTimeout(() => {
+      const setVal = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+      setVal('proc-modulo', modulo);
+      setVal('proc-processo_nome', processo);
+      setVal('proc-descricao_as_is', asIs);
+      Object.entries(perguntasInteligentes).forEach(([k, v]) => setVal('proc-pi_' + k, v));
+
+      // Adiciona nota no campo observações com metadados do documento
+      const obsEl = document.getElementById('proc-observacoes');
+      if (obsEl && importState.parsedDoc) {
+        const flags = (importState.extraction.red_flags_detectadas || []).map(f => `• ${f.tipo}: ${f.descricao}`).join('\n');
+        const notas = [
+          `[📎 Dados importados do documento: ${importState.parsedDoc.metadata?.nome || ''}]`,
+          flags ? `\n🚩 RED FLAGS DETECTADAS PELO EXTRATOR:\n${flags}` : ''
+        ].filter(Boolean).join('\n');
+        obsEl.value = (obsEl.value ? obsEl.value + '\n\n' : '') + notas;
+      }
+
+      // Dispara evento 'change' no select de módulo para atualizar sugestões
+      const moduloEl = document.getElementById('proc-modulo');
+      if (moduloEl) moduloEl.dispatchEvent(new Event('change'));
+    }, 100);
+  }
+
+  function resetImport() {
+    clearImportFile();
+    $('#asm-import-step-1').style.display = 'block';
+    $('#asm-import-step-2').style.display = 'none';
+    $('#asm-import-step-3').style.display = 'none';
+    $('#asm-import-btn-extract').style.display = 'inline-block';
+    $('#asm-import-btn-extract').disabled = true;
+    $('#asm-import-btn-continue').style.display = 'none';
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // HOOK: expande a UI principal com funções de import
+  // ──────────────────────────────────────────────────────────
+  function extendMainUI() {
+    if (!window.BeeITAssessmentsUI) {
+      console.warn('[BeeIT] BeeITAssessmentsUI não encontrado — extensão de import adiada');
+      setTimeout(extendMainUI, 300);
+      return;
+    }
+
+    const mainUI = window.BeeITAssessmentsUI;
+
+    // Método helper para a UI de import ler o assessment corrente
+    mainUI._getCurrentAssessment = function() {
+      // Busca pelo estado interno da UI principal (é IIFE, mas expomos via função)
+      // Como não temos acesso direto ao 'state' interno, usamos o último assessment aberto
+      // armazenado em um global discreto
+      return window._beeitCurrentAssessment || null;
+    };
+
+    // Ao abrir um assessment, armazena no global pra UI de import achar
+    const originalOpen = mainUI.openAssessment;
+    mainUI.openAssessment = async function(id) {
+      await originalOpen.call(this, id);
+      // Carrega de novo (simples e seguro)
+      const a = await window.BeeITAssessments.loadAssessment(id);
+      window._beeitCurrentAssessment = a;
+    };
+
+    // Botão "📎 Importar Documento" na aba Processos (injeta se ainda não injetou)
+    const originalSwitchTab = mainUI.switchTab;
+    mainUI.switchTab = function(tab) {
+      originalSwitchTab.call(this, tab);
+      if (tab === 'processos') {
+        setTimeout(injectImportButton, 50);
+      }
+    };
+
+    // Adicionar métodos públicos de import
+    mainUI.openImportModal = openImportModal;
+    mainUI.runExtraction = runExtraction;
+    mainUI.continueFromExtraction = continueFromExtraction;
+    mainUI._clearImportFile = clearImportFile;
+    mainUI._resetImport = resetImport;
+
+    setupDropzone();
+    console.log('[BeeIT] UI Import de Documento carregada');
+  }
+
+  function injectImportButton() {
+    // Localiza o botão "+ Adicionar Processo" e injeta "📎 Importar Documento" ao lado
+    const header = document.querySelector('#asm-tab-content > div > div[style*="justify-content:space-between"]');
+    if (!header) return;
+    if (header.querySelector('[data-asm-import-btn]')) return; // já injetado
+
+    const actionsDiv = header.querySelector('button[onclick*="openProcessoModal"]')?.parentElement;
+    const addBtn = header.querySelector('button[onclick*="openProcessoModal"]');
+    if (!addBtn) return;
+
+    const importBtn = document.createElement('button');
+    importBtn.className = 'asm-btn asm-btn-secondary';
+    importBtn.dataset.asmImportBtn = '1';
+    importBtn.style.marginRight = '8px';
+    importBtn.textContent = '📎 Importar Documento';
+    importBtn.onclick = openImportModal;
+    addBtn.parentNode.insertBefore(importBtn, addBtn);
+  }
+
+  function openImportModal() {
+    resetImport();
+    BeeITAssessmentsUI.closeModal && document.querySelectorAll('.asm-modal-overlay.active').forEach(m => {
+      if (m.id !== 'asm-modal-open') m.classList.remove('active');
+    });
+    document.getElementById('asm-modal-import').classList.add('active');
+    setTimeout(setupDropzone, 50);
+  }
+
+  // Start
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', extendMainUI);
+  } else {
+    extendMainUI();
+  }
+})();
+
 
 // Wrapper global rndAssessments — padrão BeeIT (onclick sidebar → setTimeout(rndAssessments,60))
 function rndAssessments(){ window.BeeITAssessmentsUI?.init(); }
