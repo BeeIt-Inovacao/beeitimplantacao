@@ -664,6 +664,28 @@ async function beeitSbFetch(path, opts={}) {
   const r = await fetch(BEEIT_SB_URL + path, { ...opts, headers });
   let data = {};
   try { data = await r.json(); } catch(e) {}
+
+  // ═ Retry automático em 401: tenta refresh uma vez antes de propagar o erro
+  // Evita loop infinito: não re-tenta se já é chamada de refresh/logout/login OU se já é segunda tentativa
+  if (r.status === 401 && !opts._isRetry && !/\/auth\/v1\/(token|logout)/.test(path) && beeitSession?.refresh_token) {
+    console.warn('[BeeIT Auth] 401 recebido em', path, '— tentando refresh automático');
+    try {
+      const refreshed = await beeitSbFetch('/auth/v1/token?grant_type=refresh_token', {
+        method: 'POST',
+        body: JSON.stringify({ refresh_token: beeitSession.refresh_token }),
+        _isRetry: true
+      });
+      if (refreshed?.access_token) {
+        beeitSession = refreshed;
+        localStorage.setItem('beeit_session', JSON.stringify(refreshed));
+        console.log('[BeeIT Auth] Refresh OK — retry', path);
+        return await beeitSbFetch(path, { ...opts, _isRetry: true });
+      }
+    } catch (refreshErr) {
+      console.error('[BeeIT Auth] Refresh falhou:', refreshErr.message);
+    }
+  }
+
   if (!r.ok) {
     const msg = data.error_description || data.msg || data.message || data.error || data.error_code || JSON.stringify(data) || ('HTTP ' + r.status);
     throw new Error(msg);
@@ -726,6 +748,8 @@ async function beeitLoadProfile() {
 }
 
 function beeitShowApp() {
+  console.log('[BeeIT Auth] beeitShowApp() — sessão ativa para', beeitSession?.user?.email);
+  beeitStartAutoRefresh();
   const overlay = document.getElementById('beeit-auth-overlay');
   if (overlay) overlay.style.display = 'none';
 
@@ -755,14 +779,48 @@ function beeitShowError(msg) {
 }
 
 async function beeitLogout() {
+  console.log('[BeeIT Auth] beeitLogout() chamado. Stack:', new Error().stack);
+  beeitStopAutoRefresh();
   try {
     await beeitSbFetch('/auth/v1/logout', { method: 'POST' });
   } catch(e) {}
+  console.log('[BeeIT Auth] Zerando beeitSession + removendo beeit_session do localStorage');
   beeitSession = null;
   beeitProfile = null;
   localStorage.removeItem('beeit_session');
   location.reload();
 }
+
+// ─── Refresh periódico automático (mantém session viva) ───
+let _beeitRefreshTimer = null;
+function beeitStartAutoRefresh() {
+  if (_beeitRefreshTimer) clearInterval(_beeitRefreshTimer);
+  _beeitRefreshTimer = setInterval(async () => {
+    if (!beeitSession?.refresh_token) { console.log('[BeeIT Auth] Auto-refresh tick — sem refresh_token, skipping'); return; }
+    try {
+      const r = await fetch(BEEIT_SB_URL + '/auth/v1/token?grant_type=refresh_token', {
+        method: 'POST',
+        headers: { 'apikey': BEEIT_SB_KEY, 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + beeitSession.access_token },
+        body: JSON.stringify({ refresh_token: beeitSession.refresh_token })
+      });
+      const data = await r.json();
+      if (r.ok && data?.access_token) {
+        beeitSession = data;
+        localStorage.setItem('beeit_session', JSON.stringify(data));
+        console.log('[BeeIT Auth] Auto-refresh OK em', new Date().toISOString());
+      } else {
+        console.warn('[BeeIT Auth] Auto-refresh falhou:', r.status, data?.error_description || data?.msg);
+      }
+    } catch(e) {
+      console.warn('[BeeIT Auth] Auto-refresh exception:', e.message);
+    }
+  }, 50 * 60 * 1000); // 50 minutos
+  console.log('[BeeIT Auth] Auto-refresh agendado (a cada 50min)');
+}
+function beeitStopAutoRefresh() {
+  if (_beeitRefreshTimer) { clearInterval(_beeitRefreshTimer); _beeitRefreshTimer = null; console.log('[BeeIT Auth] Auto-refresh cancelado'); }
+}
+
 
 // ════════════════════════════════════════════════════════════════
 // BEEIT ADMIN — Painel de Gerenciamento de Usuários
@@ -1091,6 +1149,7 @@ window.beeitAdminLoadLog    = beeitAdminLoadLog;
 
 // ── Auto-login por sessão salva ───────────────────────────
 (async function beeitInit() {
+  console.log('[BeeIT Auth] beeitInit() pageload em', new Date().toISOString(), '- document.readyState =', document.readyState);
   const saved = localStorage.getItem('beeit_session');
   if (saved) {
     try {
@@ -1112,7 +1171,8 @@ window.beeitAdminLoadLog    = beeitAdminLoadLog;
         beeitShowApp();
         return;
       }
-    } catch(e) {}
+    } catch(e) { console.warn('[BeeIT Auth] beeitInit parse/refresh erro:', e.message); }
+    console.log('[BeeIT Auth] beeitInit — REMOVENDO beeit_session (token expirado ou parse falhou)');
     localStorage.removeItem('beeit_session');
   }
   // Sem sessão válida — mostrar login
