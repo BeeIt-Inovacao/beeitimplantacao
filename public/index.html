@@ -39826,14 +39826,23 @@ ${(st.doc||'').slice(0, 6000)}${trainBlock}`;
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:4000, system, messages })
+      body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:8000, system, messages }),
+      signal: AbortSignal.timeout(120000)
     });
     if (!r.ok) { const e=await r.json().catch(()=>({})); throw new Error(e?.error?.message||'HTTP '+r.status); }
     const d = await r.json();
     const reply = (d.content||[]).map(b=>b.text||'').join('').trim();
+    if (!reply) {
+      console.error('[_mitChatSend] resposta vazia, d bruto =', d);
+      throw new Error('Resposta vazia da API (ver console)');
+    }
     st.chatHistory.push({ role:'assistant', content:reply, time:new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) });
   } catch(e) {
-    st.chatHistory.push({ role:'assistant', content:'❌ **Erro:** ' + e.message, time:now });
+    const msg = e.name === 'TimeoutError' || e.name === 'AbortError'
+      ? '⏱️ **Tempo esgotado (120s)** — a API Claude demorou demais. Tente novamente ou peça menos texto.'
+      : '❌ **Erro:** ' + e.message;
+    console.error('[_mitChatSend]', e);
+    st.chatHistory.push({ role:'assistant', content: msg, time:now });
   }
   st.chatLoading = false;
   _MIT_AGENTS[ag].set(st.screen);
