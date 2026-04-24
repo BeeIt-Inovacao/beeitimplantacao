@@ -36477,13 +36477,19 @@ async function _m41DoClickSign(){
     ul{margin:4pt 0 9pt 18pt;}li{margin:2pt 0;}</style></head>
     <body>${_m41MDtoPrint(_m41.doc)}</body></html>`;
   const b64=btoa(unescape(encodeURIComponent(docHtml)));
+  // ClickSign exige content_base64 em formato data URI (data:MIME;base64,XXX)
+  const b64DataURI = 'data:text/html;base64,' + b64;
+  if (b64.length < 100) {
+    if(status)status.innerHTML='<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:6px;padding:10px;"><div style="color:var(--red);font-weight:700;">❌ Documento vazio</div><div style="font-size:10px;color:var(--txt2);">Gere o MIT041 primeiro (botão "🤖 Gerar Documento MIT041") antes de enviar ao ClickSign.</div></div>';
+    return;
+  }
   const base='https://dbaqvoatopfquaqgdptk.supabase.co/functions/v1/protheus-proxy/clicksign/api/v1';
 
   try{
     // 1. Upload documento
     const docR=await fetch(`${base}/documents?access_token=${token}`,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({document:{path:`/${fname}`,content_base64:b64,sequence_enabled:true,brand_name:'TOTVS Acelerador Protheus'}})
+      body:JSON.stringify({document:{path:`/${fname}`,content_base64:b64DataURI,sequence_enabled:true,brand_name:'TOTVS Acelerador Protheus'}})
     });
     if(!docR.ok){const e=await docR.json().catch(()=>({}));throw new Error(e?.errors?.join(', ')||`HTTP ${docR.status} — verifique o token`);}
     const docData=await docR.json();
