@@ -38580,21 +38580,720 @@ function rndMIT044() { _m44Render(); }
 // MIT041 RM — AGENTE DE DOCUMENTAÇÃO TOTVS RM
 // ════════════════════════════════════════════════════════════════════════════
 
+// ════════════════════════════════════════════════════════════════════════════
+// _M41RM_MODS + _M41RM_QDB + M41_RM_FUNCIONAL_PROMPT (Onda A v1 — 10 módulos corretos)
+// ════════════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════
+// BeeIT OS-RT v2 — QDB MIT041 Funcional RM
+// 10 módulos completos · ~540 perguntas · 68 seções
+// 
+// Segue exatamente o padrão do QDB Protheus:
+//   _M41RM_MODS = [ {id, name, sub, icon, clr, n}, ... ]
+//   _M41RM_QDB  = { moduloId: [ {section, qs:[{id,label,...}]} ] }
+// 
+// Nomenclatura RM: COLIGADA (não "empresa"), FCFO, PFUNC, SALUNO,
+// fórmulas visuais, rubricas, eventos Labore, PARAM.GBL
+// ═══════════════════════════════════════════════════════════
+
 const _M41RM_MODS = [
-  {id:'compras_rm',    name:'Compras',           sub:'RM Compras',    clr:'#10b981', n:20},
-  {id:'estoque_rm',    name:'Estoque',            sub:'RM Estoque',    clr:'#06B6D4', n:18},
-  {id:'faturamento_rm',name:'Faturamento',        sub:'RM Fat.',       clr:'#f97316', n:20},
-  {id:'financeiro_rm', name:'Financeiro (Fluxus)',sub:'Fluxus',        clr:'#3b82f6', n:18},
-  {id:'contabil_rm',   name:'Contábil (Saldus)',  sub:'Saldus',        clr:'#ec4899', n:16},
-  {id:'fiscal_rm',     name:'Fiscal',             sub:'RM Fiscal',     clr:'#06B6D4', n:15},
-  {id:'ativo_rm',      name:'Ativo Fixo',          sub:'RM Ativo',     clr:'#a855f7', n:12},
-  {id:'folha_rm',      name:'Folha (Labore)',      sub:'Labore',        clr:'#a855f7', n:20},
-  {id:'gp_rm',         name:'Gestão de Pessoas',  sub:'RM GP',         clr:'#14b8a6', n:16},
-  {id:'ponto_rm',      name:'Ponto (Chronus)',     sub:'Chronus',       clr:'#14b8a6', n:14},
-  {id:'tcop_rm',       name:'TCOP (Obras)',        sub:'TCOP',          clr:'#f59e0b', n:18},
-  {id:'tcgi_rm',       name:'TCGI (Imóveis)',      sub:'TCGI',          clr:'#f59e0b', n:14},
-  {id:'edu_rm',        name:'Educacional',         sub:'RM Educ.',      clr:'#8b5cf6', n:20},
+  { id:'fluxus',      name:'Financeiro',        sub:'RM FLUXUS',    icon:'FX',  clr:'#3b82f6', n:75 },
+  { id:'saldus',      name:'Contábil',          sub:'RM SALDUS',    icon:'SA',  clr:'#6366f1', n:48 },
+  { id:'labore',      name:'Folha de Pagamento',sub:'RM LABORE',    icon:'LB',  clr:'#10b981', n:85 },
+  { id:'chronus',     name:'Ponto Eletrônico',  sub:'RM CHRONUS',   icon:'CH',  clr:'#f59e0b', n:55 },
+  { id:'nucleus',     name:'Back-office',       sub:'RM NUCLEUS',   icon:'NC',  clr:'#ef4444', n:65 },
+  { id:'gpessoas',    name:'Gestão de Pessoas', sub:'RM GPESSOAS',  icon:'GP',  clr:'#ec4899', n:50 },
+  { id:'classis',     name:'Educacional',       sub:'RM CLASSIS',   icon:'EDU', clr:'#8b5cf6', n:60 },
+  { id:'tcop',        name:'Construção/Obras',  sub:'RM TCOP',      icon:'OB',  clr:'#0ea5e9', n:40 },
+  { id:'tcgi',        name:'Agrícola/Integrada',sub:'RM TCGI',      icon:'TG',  clr:'#84cc16', n:35 },
+  { id:'agilis',      name:'Agendamento/Saúde', sub:'RM AGILIS',    icon:'AG',  clr:'#14b8a6', n:30 }
 ];
+
+const _M41RM_QDB = {
+
+  // ══════════════════════════════════════════════════════════
+  // RM FLUXUS — Financeiro (75 perguntas)
+  // ══════════════════════════════════════════════════════════
+  fluxus: [
+    { section:'Ambiente e Estrutura', qs:[
+      { id:'n_coligadas', label:'Quantas coligadas serão implantadas?', type:'num' },
+      { id:'n_filiais',   label:'Quantas filiais por coligada?', type:'text' },
+      { id:'multi_moeda', label:'Uso de múltiplas moedas?', type:'yn' },
+      { id:'moedas',      label:'Quais moedas? (BRL, USD, EUR...)', type:'text', dep:'multi_moeda' },
+      { id:'plano_contas_unico', label:'Plano de contas é único entre coligadas?', type:'yn' },
+      { id:'ano_inicio',  label:'Ano de início do uso do Fluxus', type:'text' }
+    ]},
+    { section:'Cadastros Básicos', qs:[
+      { id:'fcfo_tipos',  label:'Tipos de FCFO em uso (Cliente, Fornecedor, Banco...)', type:'list', options:['Cliente','Fornecedor','Banco','Funcionário','Outro'] },
+      { id:'natureza_financeira', label:'Como é estruturada a tabela de naturezas financeiras?', type:'text' },
+      { id:'centro_custo', label:'Usa centro de custo?', type:'yn' },
+      { id:'cc_hierarquia', label:'Hierarquia de centros de custo (níveis)', type:'text', dep:'centro_custo' },
+      { id:'departamento',  label:'Vincula lançamentos a departamento?', type:'yn' },
+      { id:'projeto_vinculo', label:'Vincula lançamentos a projeto/obra?', type:'yn' }
+    ]},
+    { section:'Contas a Pagar', qs:[
+      { id:'tipos_documento', label:'Tipos de documento usados (NF, Boleto, Fatura, Duplicata...)', type:'list', options:['NF','Boleto','Fatura','Duplicata','DDA','Outro'] },
+      { id:'aprovacao_cp', label:'Existe workflow de aprovação?', type:'yn' },
+      { id:'aprovacao_alcadas', label:'Como são as alçadas de aprovação?', type:'text', dep:'aprovacao_cp' },
+      { id:'rateio_cp', label:'Rateio de despesas entre CC/dept?', type:'yn' },
+      { id:'retencoes_fontes', label:'Retenções na fonte (IR/INSS/ISS/CSLL/PIS/COFINS)?', type:'yn' },
+      { id:'dirf_gera',  label:'DIRF é gerada pelo Fluxus?', type:'yn' },
+      { id:'antecipacao', label:'Usa antecipação a fornecedor?', type:'yn' },
+      { id:'reembolso',  label:'Controle de reembolso de despesas?', type:'yn' }
+    ]},
+    { section:'Contas a Receber', qs:[
+      { id:'tipos_recebimento', label:'Tipos de recebimento (Boleto, PIX, Cartão, TED...)', type:'list', options:['Boleto','PIX','Cartão','TED','Dinheiro','Cheque','DDA'] },
+      { id:'recorrencia', label:'Uso de cobrança recorrente (mensalidades)?', type:'yn' },
+      { id:'recorrencia_vol', label:'Volume mensal de boletos recorrentes', type:'text', dep:'recorrencia' },
+      { id:'juros_multa', label:'Cálculo de juros/multa por atraso?', type:'yn' },
+      { id:'juros_regra', label:'Regra de juros/multa (% dia, mês, fixo)', type:'text', dep:'juros_multa' },
+      { id:'negociacao',  label:'Processo de renegociação de dívida?', type:'yn' },
+      { id:'protesto_spc', label:'Envio para cartório/SPC/Serasa?', type:'yn' }
+    ]},
+    { section:'Banco e Conciliação', qs:[
+      { id:'n_contas_banc', label:'Quantas contas bancárias (ativas)?', type:'num' },
+      { id:'bancos_usados', label:'Bancos em uso', type:'text' },
+      { id:'cnab_versao',  label:'Versão CNAB usada (240, 400)', type:'choice', options:['CNAB 240','CNAB 400','Ambos','Outro'] },
+      { id:'conciliacao_auto', label:'Conciliação bancária automática?', type:'yn' },
+      { id:'conciliacao_freq', label:'Frequência da conciliação', type:'choice', options:['Diária','Semanal','Quinzenal','Mensal'] },
+      { id:'ofx_bb', label:'Importa OFX/BB extratos?', type:'yn' }
+    ]},
+    { section:'Fluxo de Caixa', qs:[
+      { id:'fluxo_previsto', label:'Usa fluxo de caixa previsto?', type:'yn' },
+      { id:'fluxo_horizonte', label:'Horizonte do fluxo (dias)', type:'text', dep:'fluxo_previsto' },
+      { id:'fluxo_cenarios', label:'Trabalha com cenários de fluxo?', type:'yn' },
+      { id:'dre_gerencial', label:'Gera DRE gerencial pelo Fluxus?', type:'yn' }
+    ]},
+    { section:'Integrações', qs:[
+      { id:'int_saldus',  label:'Integra automaticamente com Saldus (contábil)?', type:'yn' },
+      { id:'int_nucleus', label:'Integra com Nucleus (faturamento)?', type:'yn' },
+      { id:'int_labore',  label:'Integra com Labore (folha → Fluxus)?', type:'yn' },
+      { id:'int_classis', label:'Integra com Classis (mensalidade)?', type:'yn' },
+      { id:'int_externas', label:'Integrações externas (BI, ERP satélite, bancos)?', type:'text' }
+    ]},
+    { section:'Relatórios e Dashboards', qs:[
+      { id:'rel_padrao',  label:'Relatórios padrão atendem?', type:'yn' },
+      { id:'rel_custom',  label:'Relatórios customizados (quais)?', type:'text' },
+      { id:'bi_fluxus',   label:'Usa RM Bis/BI para Fluxus?', type:'yn' },
+      { id:'portal_gestor', label:'Portal do gestor para aprovações?', type:'yn' }
+    ]},
+    { section:'Processos Críticos', qs:[
+      { id:'fechamento_mensal', label:'Fechamento mensal do Fluxus (em dias)', type:'text' },
+      { id:'retrabalho',  label:'Existe retrabalho recorrente no processo?', type:'text' },
+      { id:'dores_atuais',label:'Principais dores do cliente no Fluxus atual', type:'text' },
+      { id:'expectativas',label:'Expectativas/objetivos da implantação', type:'text' }
+    ]}
+  ],
+
+  // ══════════════════════════════════════════════════════════
+  // RM SALDUS — Contábil (48 perguntas)
+  // ══════════════════════════════════════════════════════════
+  saldus: [
+    { section:'Plano de Contas', qs:[
+      { id:'plano_niveis', label:'Quantos níveis no plano de contas?', type:'num' },
+      { id:'plano_origem', label:'Plano segue padrão (TOTVS, Contábil-Fiscal, próprio)?', type:'choice', options:['Padrão TOTVS','Contábil-Fiscal','Próprio','Misto'] },
+      { id:'ifrs',         label:'Adota IFRS (demonstrações em padrão internacional)?', type:'yn' },
+      { id:'dupla_visao',  label:'Dupla visão (gerencial + fiscal)?', type:'yn' }
+    ]},
+    { section:'Lançamentos', qs:[
+      { id:'tipos_lancamentos', label:'Tipos de lançamento em uso', type:'list', options:['Manual','Automático (integração)','Recorrente','Provisão','Ajuste'] },
+      { id:'integracao_auto', label:'% de lançamentos que vêm integrados (não manuais)', type:'text' },
+      { id:'lote_lcto',    label:'Usa lotes de lançamento?', type:'yn' },
+      { id:'revisao_antes_efetiva', label:'Processo de revisão antes de efetivar?', type:'yn' }
+    ]},
+    { section:'Integrações Contábeis', qs:[
+      { id:'int_fluxus',   label:'Integração Fluxus → Saldus funciona corretamente?', type:'yn' },
+      { id:'int_labore',   label:'Integração Labore → Saldus (folha)?', type:'yn' },
+      { id:'int_nucleus',  label:'Integração Nucleus → Saldus (faturamento/estoque)?', type:'yn' },
+      { id:'int_atf',      label:'Integração com Ativo Fixo (depreciação)?', type:'yn' },
+      { id:'falhas_int',   label:'Falhas recorrentes em alguma integração?', type:'text' }
+    ]},
+    { section:'Fechamento Mensal', qs:[
+      { id:'dias_fechamento', label:'Quantos dias leva o fechamento mensal?', type:'num' },
+      { id:'checklist_fech', label:'Usa checklist de fechamento?', type:'yn' },
+      { id:'apuracao_resultado', label:'Apuração automática de resultado?', type:'yn' },
+      { id:'conciliacoes_fech', label:'Quais conciliações (contas, fornecedores, estoque...)?', type:'text' }
+    ]},
+    { section:'SPED e Obrigações', qs:[
+      { id:'ecd',          label:'SPED ECD (Contábil)', type:'choice', options:['Gera pelo Saldus','Externo','Não gera'] },
+      { id:'ecf',          label:'SPED ECF (Fiscal)', type:'choice', options:['Gera pelo Saldus','Externo','Não gera'] },
+      { id:'fcont',        label:'FCont/LALUR/LACS', type:'choice', options:['Gera pelo Saldus','Externo','Não gera'] },
+      { id:'dmpl',         label:'DMPL (patrimônio líquido)?', type:'yn' }
+    ]},
+    { section:'Relatórios Contábeis', qs:[
+      { id:'balancete',    label:'Gera balancete padrão?', type:'yn' },
+      { id:'dre_saldus',   label:'Gera DRE?', type:'yn' },
+      { id:'balanco',      label:'Gera balanço patrimonial?', type:'yn' },
+      { id:'rel_custom_saldus', label:'Relatórios customizados', type:'text' }
+    ]}
+  ],
+
+  // ══════════════════════════════════════════════════════════
+  // RM LABORE — Folha (85 perguntas)
+  // ══════════════════════════════════════════════════════════
+  labore: [
+    { section:'Estrutura Organizacional', qs:[
+      { id:'n_funcionarios', label:'Total de funcionários ativos', type:'num' },
+      { id:'regime',       label:'Regimes (CLT, Estatutário, PJ, Autônomo)', type:'list', options:['CLT','Estatutário','PJ','Autônomo','Estagiário','Jovem Aprendiz'] },
+      { id:'sindicatos',   label:'Quantos sindicatos diferentes?', type:'num' },
+      { id:'acordos',      label:'Usa acordos/convenções coletivas distintos?', type:'yn' }
+    ]},
+    { section:'Cadastros', qs:[
+      { id:'secoes',       label:'Quantas seções/departamentos?', type:'text' },
+      { id:'cargos_sal',   label:'Tabela de cargos e salários estruturada?', type:'yn' },
+      { id:'centros_custo_folha', label:'Rateio de folha por centro de custo?', type:'yn' },
+      { id:'lotacao_fisica', label:'Controla lotação física (local trabalho)?', type:'yn' }
+    ]},
+    { section:'Eventos e Rubricas', qs:[
+      { id:'n_eventos',    label:'Quantos eventos (rubricas) cadastrados?', type:'text' },
+      { id:'eventos_custom', label:'Eventos customizados com fórmula visual?', type:'yn' },
+      { id:'eventos_qtd_custom', label:'Quantos eventos customizados?', type:'text', dep:'eventos_custom' },
+      { id:'formulas_complexas', label:'Fórmulas envolvendo histórico, buscas, cálculos condicionais?', type:'yn' },
+      { id:'insalubridade', label:'Adicional de insalubridade/periculosidade?', type:'yn' },
+      { id:'noturno',      label:'Cálculo de adicional noturno?', type:'yn' },
+      { id:'hora_extra',   label:'Regras de hora extra (50%, 100%, DSR)?', type:'text' }
+    ]},
+    { section:'Cálculo Mensal', qs:[
+      { id:'rotina_mensal', label:'Processo do fechamento mensal (passos)', type:'text' },
+      { id:'periodo_apuracao', label:'Período de apuração (dia X a Y)', type:'text' },
+      { id:'adto_salario', label:'Paga adiantamento salarial?', type:'yn' },
+      { id:'adto_regra',   label:'Regra de adiantamento (% salário, valor fixo)', type:'text', dep:'adto_salario' },
+      { id:'vt_vale_ref',  label:'VT, VR/VA, auxílios (como são calculados)', type:'text' },
+      { id:'pensao_alim',  label:'Pensão alimentícia (percentual, líquido, bruto)', type:'text' }
+    ]},
+    { section:'Férias e 13º', qs:[
+      { id:'ferias_colet', label:'Férias coletivas?', type:'yn' },
+      { id:'ferias_prog',  label:'Programação automática de férias?', type:'yn' },
+      { id:'ferias_abono', label:'Uso de abono pecuniário (10 dias)?', type:'yn' },
+      { id:'decimo_1a2', label:'Pagamento 13º (1ª e 2ª parcela)', type:'yn' },
+      { id:'decimo_adto_ferias', label:'13º junto com férias?', type:'yn' }
+    ]},
+    { section:'Rescisão', qs:[
+      { id:'tipos_rescisao', label:'Tipos de rescisão comuns (pedido, sem justa causa, acordo)', type:'list', options:['Pedido','Sem justa causa','Com justa causa','Acordo (Reforma)','Aposentadoria','Óbito'] },
+      { id:'aviso_previo', label:'Cálculo de aviso prévio (trabalhado/indenizado)', type:'text' },
+      { id:'homologacao',  label:'Processo de homologação (sindicato/MTE)', type:'yn' },
+      { id:'grrf',         label:'Gera GRRF automaticamente?', type:'yn' }
+    ]},
+    { section:'eSocial', qs:[
+      { id:'esocial_status', label:'Status atual do eSocial', type:'choice', options:['Em produção, OK','Em produção com rejeições','Em homologação','Não implementado'] },
+      { id:'esocial_eventos', label:'Eventos em uso (S-1200, S-1210, S-2200, S-2299, S-2300...)', type:'text' },
+      { id:'esocial_rejeicoes', label:'% de rejeições mensais', type:'text' },
+      { id:'dctfweb',      label:'DCTFWeb — Labore gera corretamente?', type:'yn' },
+      { id:'efd_reinf',    label:'EFD-Reinf (R-1000, R-2010...)', type:'yn' },
+      { id:'mit_manad',    label:'MIT/MANAD (se aplicável)', type:'yn' }
+    ]},
+    { section:'Benefícios e Convênios', qs:[
+      { id:'vt_benef',     label:'Vale-transporte (gestão e desconto)', type:'yn' },
+      { id:'plano_saude',  label:'Plano de saúde (coparticipação?)', type:'yn' },
+      { id:'plano_odont',  label:'Plano odontológico?', type:'yn' },
+      { id:'pl_participacao', label:'PLR (Programa de Participação nos Lucros)?', type:'yn' },
+      { id:'emprestimos_consignados', label:'Empréstimos consignados?', type:'yn' }
+    ]},
+    { section:'Integrações e Portal', qs:[
+      { id:'int_chronus',  label:'Integração com Chronus (Ponto) OK?', type:'yn' },
+      { id:'int_gpessoas', label:'Integração com Gestão de Pessoas?', type:'yn' },
+      { id:'int_fluxus_labore', label:'Labore → Fluxus (pagamentos) OK?', type:'yn' },
+      { id:'portal_colab', label:'Portal do colaborador em uso?', type:'yn' },
+      { id:'portal_func',  label:'Funcionalidades do portal', type:'list', options:['Contracheque','Férias','Informe de rendimentos','Empréstimos','Solicitações','Alteração cadastral'] }
+    ]}
+  ],
+
+  // ══════════════════════════════════════════════════════════
+  // RM CHRONUS — Ponto (55 perguntas)
+  // ══════════════════════════════════════════════════════════
+  chronus: [
+    { section:'Tipo de REP e Infraestrutura', qs:[
+      { id:'tipo_rep',     label:'Tipo de REP em uso', type:'choice', options:['REP-C (convencional)','REP-A (alternativo)','REP-P (programa)','Sem REP','Portaria 671/2021'] },
+      { id:'fabricante_rep', label:'Fabricante do REP', type:'text' },
+      { id:'n_reps',       label:'Quantos REPs distribuídos?', type:'num' },
+      { id:'biometria',    label:'Usa biometria (digital, facial)?', type:'yn' },
+      { id:'portaria_671', label:'Já adequado à Portaria 671/2021?', type:'yn' }
+    ]},
+    { section:'Jornadas e Escalas', qs:[
+      { id:'tipos_jornada', label:'Tipos de jornada em uso', type:'list', options:['Padrão 8h','Escala 6x1','Escala 12x36','Flexível','Intermitente','Home office'] },
+      { id:'turno_fixo',   label:'Turno fixo ou rotativo?', type:'choice', options:['Fixo','Rotativo','Misto'] },
+      { id:'intrajornada', label:'Controle de intrajornada (almoço)?', type:'yn' },
+      { id:'tolerancia',   label:'Tolerâncias de entrada/saída (minutos)', type:'text' }
+    ]},
+    { section:'Marcações e Apuração', qs:[
+      { id:'origem_marcacoes', label:'Origem das marcações', type:'list', options:['REP físico','App mobile','Web','Integração ponto externo','Manual'] },
+      { id:'app_mobile',   label:'Uso de app mobile?', type:'yn' },
+      { id:'geolocalizacao', label:'Exige geolocalização nas marcações?', type:'yn' },
+      { id:'apuracao_auto', label:'Apuração automática diária?', type:'yn' },
+      { id:'espelho_ponto', label:'Espelho de ponto impresso/digital?', type:'choice', options:['Impresso','Digital','Ambos'] }
+    ]},
+    { section:'Banco de Horas e H.E.', qs:[
+      { id:'banco_horas',  label:'Controle de banco de horas?', type:'yn' },
+      { id:'bh_limite',    label:'Limite máximo (horas)', type:'text', dep:'banco_horas' },
+      { id:'bh_prazo_compensacao', label:'Prazo de compensação', type:'text', dep:'banco_horas' },
+      { id:'hora_extra_regras', label:'Regras de hora extra e adicionais', type:'text' },
+      { id:'dsr_calculo',  label:'Cálculo de DSR automatizado?', type:'yn' }
+    ]},
+    { section:'Ocorrências e Ausências', qs:[
+      { id:'afastamentos', label:'Tipos de afastamento (INSS, atestado, férias, licenças)', type:'list', options:['INSS','Atestado médico','Férias','Licença maternidade','Licença paternidade','Ausência justificada','Abono','Outros'] },
+      { id:'atestado_digital', label:'Atestados digitalizados/armazenados?', type:'yn' },
+      { id:'aprovacao_ocor', label:'Workflow de aprovação de ocorrências?', type:'yn' }
+    ]},
+    { section:'Integração com Labore', qs:[
+      { id:'int_chronus_labore', label:'Integração automática Chronus → Labore?', type:'yn' },
+      { id:'freq_int',     label:'Frequência da integração', type:'choice', options:['Tempo real','Diária','Semanal','Mensal (fechamento)'] },
+      { id:'falhas_int_ch', label:'Falhas recorrentes na integração?', type:'text' },
+      { id:'afd_apdt_api', label:'Geração de AFD/AFDT/API?', type:'yn' }
+    ]}
+  ],
+
+  // ══════════════════════════════════════════════════════════
+  // RM NUCLEUS — Back-office (65 perguntas)
+  // ══════════════════════════════════════════════════════════
+  nucleus: [
+    { section:'Estrutura e Cadastros', qs:[
+      { id:'vol_itens',    label:'Volume de itens/produtos cadastrados', type:'text' },
+      { id:'classificacao', label:'Estrutura de classificação de produtos', type:'text' },
+      { id:'unid_medida',  label:'Unidades de medida e conversões', type:'text' },
+      { id:'curva_abc',    label:'Gestão por curva ABC?', type:'yn' },
+      { id:'codigo_barras', label:'Uso de código de barras/EAN?', type:'yn' }
+    ]},
+    { section:'Compras', qs:[
+      { id:'requisicao',   label:'Processo de requisição de compra', type:'text' },
+      { id:'workflow_compras', label:'Workflow de aprovação?', type:'yn' },
+      { id:'cotacao',      label:'Uso de cotação eletrônica?', type:'yn' },
+      { id:'pedido_compra', label:'Pedido de compra integrado ao recebimento?', type:'yn' },
+      { id:'qualificacao_forn', label:'Qualificação de fornecedores?', type:'yn' }
+    ]},
+    { section:'Estoque', qs:[
+      { id:'n_depositos',  label:'Quantos depósitos/almoxarifados?', type:'num' },
+      { id:'inventario',   label:'Periodicidade do inventário', type:'choice', options:['Mensal','Trimestral','Semestral','Anual','Cíclico'] },
+      { id:'reserva_estoque', label:'Reserva de estoque para pedidos?', type:'yn' },
+      { id:'custo_medio',  label:'Método de custeio (médio, PEPS, padrão)', type:'choice', options:['Médio','PEPS','Padrão','UEPS'] },
+      { id:'saldo_negativo', label:'Permite saldo negativo?', type:'yn' }
+    ]},
+    { section:'Faturamento e Documentos', qs:[
+      { id:'tipos_docs',   label:'Tipos de documento emitidos', type:'list', options:['NFe','NFSe','NFCe','Boleto','Recibo','Orçamento','Pedido','Romaneio'] },
+      { id:'vol_nfe',      label:'Volume mensal de NFe', type:'text' },
+      { id:'nfe_rejeicoes', label:'% de rejeições na SEFAZ', type:'text' },
+      { id:'carta_correcao', label:'Uso de carta de correção?', type:'yn' },
+      { id:'cancelamento_nfe', label:'Processo de cancelamento NFe?', type:'text' }
+    ]},
+    { section:'Fiscal', qs:[
+      { id:'regime_trib',  label:'Regime tributário', type:'choice', options:['Simples Nacional','Lucro Presumido','Lucro Real','Misto'] },
+      { id:'sped_fiscal',  label:'SPED Fiscal (EFD-ICMS/IPI)', type:'choice', options:['Gera pelo RM','Externo','Não gera'] },
+      { id:'sped_contrib', label:'EFD-Contribuições', type:'choice', options:['Gera pelo RM','Externo','Não gera'] },
+      { id:'st_icms',      label:'Trabalha com substituição tributária?', type:'yn' },
+      { id:'difal',        label:'Cálculo de DIFAL (EC 87/15)?', type:'yn' },
+      { id:'reforma_trib', label:'Preparação para Reforma (CBS/IBS/IS)', type:'choice', options:['Não iniciada','Em estudo','Em andamento','Parcial'] }
+    ]},
+    { section:'Integrações', qs:[
+      { id:'int_fluxus_nuc', label:'Integração Nucleus → Fluxus (CR/CP)?', type:'yn' },
+      { id:'int_saldus_nuc', label:'Integração Nucleus → Saldus?', type:'yn' },
+      { id:'int_ecommerce', label:'Integração com e-commerce?', type:'yn' },
+      { id:'edi',          label:'EDI com fornecedores/clientes?', type:'yn' }
+    ]}
+  ],
+
+  // ══════════════════════════════════════════════════════════
+  // RM GPESSOAS — Gestão de Pessoas (50 perguntas)
+  // ══════════════════════════════════════════════════════════
+  gpessoas: [
+    { section:'Estrutura e Cargos', qs:[
+      { id:'plano_cargos', label:'Plano de cargos e salários formalizado?', type:'yn' },
+      { id:'niveis',       label:'Níveis hierárquicos?', type:'num' },
+      { id:'competencias', label:'Gestão por competências?', type:'yn' },
+      { id:'descrições_cargos', label:'Descrições de cargo documentadas?', type:'yn' }
+    ]},
+    { section:'Recrutamento e Seleção', qs:[
+      { id:'r_s_rm',       label:'Recrutamento e Seleção é feito no RM?', type:'yn' },
+      { id:'banco_talentos', label:'Banco de talentos?', type:'yn' },
+      { id:'processo_seletivo', label:'Etapas do processo seletivo', type:'text' },
+      { id:'integracao_admissao', label:'Integração Admissão → Labore?', type:'yn' }
+    ]},
+    { section:'Treinamento', qs:[
+      { id:'treinamentos_controle', label:'Controle de treinamentos no RM?', type:'yn' },
+      { id:'tna',          label:'Análise de necessidades (TNA)?', type:'yn' },
+      { id:'certificacoes', label:'Controle de certificações/reciclagens?', type:'yn' }
+    ]},
+    { section:'Avaliação e Desempenho', qs:[
+      { id:'aval_desempenho', label:'Avaliação de desempenho?', type:'yn' },
+      { id:'tipo_aval',    label:'Tipo de avaliação', type:'choice', options:['90°','180°','360°','Misto'] },
+      { id:'pdi',          label:'PDI (Plano de Desenvolvimento Individual)?', type:'yn' }
+    ]},
+    { section:'Workflow e Portal', qs:[
+      { id:'wf_ferias',    label:'Workflow de solicitação de férias?', type:'yn' },
+      { id:'wf_desligamento', label:'Workflow de desligamento?', type:'yn' },
+      { id:'wf_alteracoes', label:'Workflow de alteração cadastral?', type:'yn' },
+      { id:'portal_gestor_gp', label:'Portal do gestor (aprovações, indicadores)?', type:'yn' }
+    ]}
+  ],
+
+  // ══════════════════════════════════════════════════════════
+  // RM CLASSIS — Educacional (60 perguntas)
+  // ══════════════════════════════════════════════════════════
+  classis: [
+    { section:'Estrutura Educacional', qs:[
+      { id:'niveis_ensino', label:'Níveis de ensino atendidos', type:'list', options:['Ed. Infantil','Fundamental I','Fundamental II','Ensino Médio','Técnico','Graduação','Pós-graduação','EAD'] },
+      { id:'qtd_unidades', label:'Quantas unidades/campus?', type:'num' },
+      { id:'qtd_alunos',   label:'Total de alunos ativos', type:'num' },
+      { id:'presencial_ead', label:'Presencial, EAD ou híbrido?', type:'choice', options:['100% Presencial','100% EAD','Híbrido'] }
+    ]},
+    { section:'Matrícula', qs:[
+      { id:'periodo_matricula', label:'Período de matrícula (semestral, anual)', type:'choice', options:['Semestral','Anual','Contínuo'] },
+      { id:'rematricula_auto', label:'Rematrícula automática?', type:'yn' },
+      { id:'doc_exigida',  label:'Documentos exigidos (lista)', type:'text' },
+      { id:'matricula_online', label:'Matrícula online disponível?', type:'yn' },
+      { id:'analise_credito', label:'Análise de crédito/SPC antes da matrícula?', type:'yn' },
+      { id:'aprovacao_matricula', label:'Workflow de aprovação?', type:'yn' }
+    ]},
+    { section:'Contrato Educacional', qs:[
+      { id:'tipos_contrato', label:'Tipos de contrato (integral, meio período, bolsista)', type:'list', options:['Integral','Meio período','Bolsista','Convênio','FIES','PROUNI'] },
+      { id:'reajuste',     label:'Reajuste anual automático?', type:'yn' },
+      { id:'contrato_digital', label:'Contrato digital (assinatura eletrônica)?', type:'yn' }
+    ]},
+    { section:'Cobrança e Mensalidade', qs:[
+      { id:'geracao_boletos', label:'Geração automática de boletos recorrentes?', type:'yn' },
+      { id:'freq_cobranca', label:'Frequência da cobrança', type:'choice', options:['Mensal','Semestral','Anual'] },
+      { id:'descontos',    label:'Regras de desconto (pontualidade, irmão, bolsa)', type:'text' },
+      { id:'renegociacao_aluno', label:'Processo de renegociação de inadimplência?', type:'yn' },
+      { id:'cobranca_externa', label:'Envio a escritório de cobrança?', type:'yn' }
+    ]},
+    { section:'Acadêmico', qs:[
+      { id:'diario_classe', label:'Diário de classe no Classis?', type:'yn' },
+      { id:'notas_freq',   label:'Controle de notas e frequência?', type:'yn' },
+      { id:'periodos_avaliacao', label:'Períodos de avaliação (bimestre, trimestre)', type:'text' },
+      { id:'dependencias', label:'Controle de dependências e adaptações?', type:'yn' }
+    ]},
+    { section:'Portal e Integrações', qs:[
+      { id:'portal_aluno', label:'Portal do aluno?', type:'yn' },
+      { id:'portal_func',  label:'Funcionalidades', type:'list', options:['Boletos','Notas','Frequência','Contrato','Biblioteca','Secretaria online'] },
+      { id:'int_financeiro', label:'Integração Classis → Fluxus (mensalidade)?', type:'yn' },
+      { id:'ambientes_ead', label:'Integração com Moodle/AVA?', type:'yn' },
+      { id:'app_aluno',    label:'App mobile para alunos?', type:'yn' }
+    ]},
+    { section:'Censo e Obrigações', qs:[
+      { id:'censo_escolar', label:'Gera Censo Escolar/Educacenso?', type:'yn' },
+      { id:'enade',        label:'Gestão de alunos ENADE?', type:'yn' },
+      { id:'mec_portaria', label:'Atende requisitos MEC (credenciamento)?', type:'yn' }
+    ]}
+  ],
+
+  // ══════════════════════════════════════════════════════════
+  // RM TCOP — Construção/Obras (40 perguntas)
+  // ══════════════════════════════════════════════════════════
+  tcop: [
+    { section:'Tipo de Operação', qs:[
+      { id:'tipos_op',     label:'Tipo de operação', type:'list', options:['Incorporação','Construção própria','Construção para terceiros','Administração de obras','Reforma'] },
+      { id:'n_obras',      label:'Obras simultâneas', type:'text' },
+      { id:'duracao_media', label:'Duração média das obras (meses)', type:'text' }
+    ]},
+    { section:'Planejamento', qs:[
+      { id:'epc',          label:'Estrutura de composição de custo (EPC)?', type:'yn' },
+      { id:'cronograma_fisico', label:'Cronograma físico detalhado?', type:'yn' },
+      { id:'integra_ms_project', label:'Integração com MS Project ou outro?', type:'yn' }
+    ]},
+    { section:'Orçamento', qs:[
+      { id:'orc_padrao',   label:'Orçamento padrão (SINAPI, TCPO)?', type:'choice', options:['SINAPI','TCPO','Próprio','Misto'] },
+      { id:'aditivo_contrato', label:'Controle de aditivos contratuais?', type:'yn' },
+      { id:'revisao_orc',  label:'Frequência de revisão orçamentária', type:'choice', options:['Mensal','Trimestral','Por marco','Eventual'] }
+    ]},
+    { section:'Medição', qs:[
+      { id:'periodicidade_medicao', label:'Periodicidade das medições', type:'choice', options:['Semanal','Quinzenal','Mensal'] },
+      { id:'aprov_medicao', label:'Workflow de aprovação de medição?', type:'yn' },
+      { id:'curva_s',      label:'Usa curva S de avanço?', type:'yn' }
+    ]},
+    { section:'Apropriação de Custos', qs:[
+      { id:'apropria_mo',  label:'Apropriação de mão-de-obra?', type:'yn' },
+      { id:'apropria_material', label:'Apropriação de material à obra?', type:'yn' },
+      { id:'apropria_equip', label:'Apropriação de equipamentos?', type:'yn' },
+      { id:'reembolso_despesa', label:'Reembolso de despesas campo?', type:'yn' }
+    ]},
+    { section:'Integrações TCOP', qs:[
+      { id:'int_fluxus_tcop', label:'TCOP → Fluxus (pagamentos)?', type:'yn' },
+      { id:'int_nucleus_tcop', label:'TCOP → Nucleus (compras/estoque)?', type:'yn' },
+      { id:'int_labore_tcop', label:'TCOP → Labore (folha campo)?', type:'yn' }
+    ]}
+  ],
+
+  // ══════════════════════════════════════════════════════════
+  // RM TCGI — Agrícola/Gestão Integrada (35 perguntas)
+  // ══════════════════════════════════════════════════════════
+  tcgi: [
+    { section:'Perfil Agrícola', qs:[
+      { id:'tipo_agro',    label:'Tipo de operação', type:'list', options:['Grãos','Pecuária','Cana','Café','Fruticultura','Hortifruti','Silvicultura'] },
+      { id:'area_hectares', label:'Área total (hectares)', type:'num' },
+      { id:'safras_ano',   label:'Safras por ano', type:'num' }
+    ]},
+    { section:'Talhões e Unidades', qs:[
+      { id:'n_fazendas',   label:'Quantas fazendas/unidades?', type:'num' },
+      { id:'n_talhoes',    label:'Quantos talhões?', type:'num' },
+      { id:'mapeamento_gps', label:'Mapeamento georreferenciado?', type:'yn' }
+    ]},
+    { section:'Planejamento Safra', qs:[
+      { id:'plantio',      label:'Planejamento de plantio?', type:'yn' },
+      { id:'controle_insumos', label:'Controle de insumos (sementes, fertilizantes, defensivos)?', type:'yn' },
+      { id:'rastreabilidade', label:'Rastreabilidade por lote/talhão?', type:'yn' },
+      { id:'receituario_agro', label:'Receituário agronômico digital?', type:'yn' }
+    ]},
+    { section:'Operações', qs:[
+      { id:'apontamento_campo', label:'Apontamento de operações de campo?', type:'yn' },
+      { id:'maquinas_frota', label:'Gestão de frota/máquinas?', type:'yn' },
+      { id:'manutencao_agro', label:'Controle de manutenção preventiva?', type:'yn' }
+    ]},
+    { section:'Colheita e Custo', qs:[
+      { id:'colheita_apont', label:'Apontamento da colheita?', type:'yn' },
+      { id:'custo_hectare', label:'Apuração de custo por hectare/talhão?', type:'yn' },
+      { id:'silos_armazenagem', label:'Gestão de silos/armazenagem?', type:'yn' }
+    ]},
+    { section:'Integrações TCGI', qs:[
+      { id:'int_fluxus_tcgi', label:'TCGI → Fluxus?', type:'yn' },
+      { id:'int_nucleus_tcgi', label:'TCGI → Nucleus (comercialização)?', type:'yn' },
+      { id:'telemetria',   label:'Integração com telemetria (tratores, drones)?', type:'yn' }
+    ]}
+  ],
+
+  // ══════════════════════════════════════════════════════════
+  // RM AGILIS — Agendamento/Saúde (30 perguntas)
+  // ══════════════════════════════════════════════════════════
+  agilis: [
+    { section:'Perfil da Operação', qs:[
+      { id:'tipo_saude',   label:'Tipo de operação', type:'list', options:['Clínica ambulatorial','Hospital','Laboratório','Imagem/Diagnóstico','Home care','Consultório'] },
+      { id:'especialidades', label:'Especialidades atendidas', type:'text' },
+      { id:'n_profissionais', label:'Quantidade de profissionais', type:'num' }
+    ]},
+    { section:'Agendamento', qs:[
+      { id:'agenda_online', label:'Agendamento online (portal, app)?', type:'yn' },
+      { id:'agenda_multi_canal', label:'Canais (site, telefone, WhatsApp)?', type:'list', options:['Site','App','Telefone','WhatsApp','Presencial','Chat'] },
+      { id:'reagend_cancel', label:'Reagendamento/cancelamento automático?', type:'yn' },
+      { id:'lembretes',    label:'Envio de lembretes (SMS/email/WhatsApp)?', type:'yn' }
+    ]},
+    { section:'Atendimento', qs:[
+      { id:'prontuario',   label:'Prontuário eletrônico?', type:'yn' },
+      { id:'receita_digital', label:'Receita digital?', type:'yn' },
+      { id:'atestado_digital_med', label:'Atestado médico digital?', type:'yn' }
+    ]},
+    { section:'Convênios (TISS)', qs:[
+      { id:'convenios',    label:'Trabalha com convênios?', type:'yn' },
+      { id:'qtd_convenios', label:'Quantos convênios?', type:'text', dep:'convenios' },
+      { id:'tiss_envio',   label:'Envio TISS/TUSS automatizado?', type:'yn', dep:'convenios' },
+      { id:'glosas',       label:'Controle de glosas?', type:'yn', dep:'convenios' }
+    ]},
+    { section:'Financeiro Saúde', qs:[
+      { id:'particular',   label:'% atendimento particular', type:'text' },
+      { id:'faturamento_medico', label:'Rateio/repasse para médicos?', type:'yn' },
+      { id:'int_fluxus_agilis', label:'Agilis → Fluxus (recebimento)?', type:'yn' }
+    ]}
+  ]
+};
+
+// ═══════════════════════════════════════════════════════════
+// BeeIT OS-RT v2 — Prompt MIT041 Funcional RM
+// System prompt para Claude Sonnet 4 gerar documentação MIT041
+// ═══════════════════════════════════════════════════════════
+
+const M41_RM_FUNCIONAL_PROMPT = {
+  id: 'mit041-rm-funcional',
+  nome: 'MIT041 Funcional RM',
+  modelo: 'claude-sonnet-4-6',
+  max_tokens: 8000,
+
+  system_prompt: `Você é um consultor funcional sênior TOTVS RM da Bee IT Consultoria — Canal Homologado TOTVS. Especialista nos módulos RM Fluxus, Saldus, Labore, Chronus, Nucleus, Gestão de Pessoas, Classis, TCOP, TCGI e Agilis.
+
+━━━━━━━━━━━━━━━━━━
+🎯 OBJETIVO
+━━━━━━━━━━━━━━━━━━
+Gerar documentação MIT041 Funcional TOTVS completa em formato estruturado HTML, baseada nas respostas do questionário respondido pelo consultor/cliente.
+
+O MIT041 é o documento oficial TOTVS que mapeia:
+- Processos de negócio (AS-IS e TO-BE)
+- Parametrizações necessárias no RM
+- Cadastros e tabelas críticas
+- Workflow entre módulos
+- GAPs funcionais identificados
+- Pontos de atenção para implantação
+
+━━━━━━━━━━━━━━━━━━
+🧠 METODOLOGIA
+━━━━━━━━━━━━━━━━━━
+1. Analisar as respostas do questionário com rigor técnico
+2. Identificar processos críticos do módulo
+3. Mapear fluxos de integração entre módulos RM
+4. Documentar parametrizações chave (fórmulas, rubricas, PARAM.GBL)
+5. Sinalizar GAPs e propor soluções (parametrização / treinamento / desenvolvimento)
+6. Destacar impactos em eSocial, DCTFWeb e obrigações quando aplicável
+
+━━━━━━━━━━━━━━━━━━
+📊 CONHECIMENTO TÉCNICO RM
+━━━━━━━━━━━━━━━━━━
+
+**ESTRUTURA RM:**
+- COLIGADA (não "empresa") · FILIAL · UNIDADE
+- Multi-coligada, multi-empresa, multi-moeda
+- PARAM.GBL (parâmetros globais) · RM.Net (usuários/perfis) · Gestão de Segurança
+- Fórmulas visuais (Labore, Fluxus), Consultas SQL, Relatórios .rms, Dashboards Bis
+
+**TABELAS CRÍTICAS:**
+- GCOLIGADA (coligadas) · GFILIAL
+- FCFO (cliente/fornecedor) · FLAN (lançamentos financeiros) · FCXA (caixa)
+- PFUNC (funcionário) · PFFINANC (dados financeiros folha) · PSECAO
+- PPONTO (marcações ponto) · PPERIODO · PHORARIO
+- SALUNO (aluno) · SMATRICULA · SCURSO · SDISCIPLINA
+- PRODUTO · MOVIMENTO · TMOV · TITMMOV
+- TORC (orçamento) · TOBRA · TMEDICAO
+
+**ROTINAS CHAVE POR MÓDULO:**
+- Labore: GeracaoEventos, CalculoFolha, GeracaoESocial, ImpressaoEnvelope
+- Chronus: ApuracaoPonto, AFDAFDT, Banco de Horas
+- Fluxus: ConciliacaoBancaria, GeracaoCNAB, BaixaTitulos
+- Classis: Matricula, GeracaoBoletos, CalculoNotaFinal
+- Nucleus: EmissaoNFe, MovimentoEstoque, RecepçãoNFE
+
+**OBRIGAÇÕES LEGAIS:**
+- eSocial (S-1200, S-1210, S-2200, S-2299, S-2300)
+- DCTFWeb · EFD-Reinf · DIRF · RAIS
+- SPED Fiscal (EFD-ICMS/IPI) · EFD-Contribuições · ECD · ECF
+- FGTS Digital · PIS/COFINS
+- Reforma Tributária (LC 214/2025 — CBS/IBS/IS) — atenção para Serviços
+
+━━━━━━━━━━━━━━━━━━
+📄 ESTRUTURA DO DOCUMENTO MIT041
+━━━━━━━━━━━━━━━━━━
+
+Produza HTML estruturado (não markdown, não JSON) seguindo EXATAMENTE as seções abaixo. Use tags semânticas (<h1>, <h2>, <h3>, <p>, <ul>, <table>, <strong>, <em>). Não inclua CSS inline — o documento será estilizado externamente.
+
+<h1>MIT041 FUNCIONAL — [NOME DO MÓDULO]</h1>
+
+<p class="mit-subtitle">Especificação Funcional · TOTVS RM · [MÓDULO_SIGLA]</p>
+
+<h2>1. Identificação</h2>
+- Cliente, CNPJ, Projeto, Versão RM, Responsável BeeIT, Data
+
+<h2>2. Objetivo do Documento</h2>
+- Escopo, público-alvo, delimitação do que está IN/OUT
+
+<h2>3. Processo Macro</h2>
+- Visão geral do processo no módulo
+- Diagrama textual do fluxo (AS-IS)
+- Atores envolvidos (áreas, perfis)
+
+<h2>4. Parametrizações Essenciais</h2>
+<h3>4.1 PARAM.GBL</h3>
+<table>
+  <tr><th>Parâmetro</th><th>Valor Sugerido</th><th>Impacto</th></tr>
+  ...
+</table>
+
+<h3>4.2 Cadastros Pré-requisitos</h3>
+- Lista de cadastros que PRECISAM estar feitos antes
+- Ex: Plano de Contas, Natureza Financeira, Centros de Custo...
+
+<h2>5. Detalhamento Funcional por Processo</h2>
+- Para CADA processo crítico respondido no questionário:
+  <h3>5.X Nome do Processo</h3>
+  <p><strong>Descrição:</strong> ...</p>
+  <p><strong>Atores:</strong> ...</p>
+  <p><strong>Pré-requisitos:</strong> ...</p>
+  <p><strong>Fluxo TO-BE (como deve funcionar no RM):</strong></p>
+  <ol>
+    <li>Passo 1...</li>
+    ...
+  </ol>
+  <p><strong>Validações e controles:</strong> ...</p>
+  <p><strong>Integrações acionadas:</strong> ...</p>
+
+<h2>6. Cadastros e Tabelas</h2>
+- Tabela com as principais entidades, campos obrigatórios, regras
+
+<h2>7. Integrações entre Módulos</h2>
+- Mapa de integrações (origem → destino)
+- Frequência · Método · Volume estimado
+- Dependências críticas
+
+<h2>8. 💡 Sugestões de Melhoria (IA)</h2>
+- Oportunidades de automação
+- Workflows recomendados
+- Reduções de retrabalho
+- Exploração de portal/app RM
+
+<h2>9. ⚠️ Pontos de Atenção</h2>
+- Riscos identificados
+- Dependências críticas
+- Impactos eSocial/DCTFWeb/obrigações
+- Reforma Tributária (se aplicável ao módulo)
+
+<h2>10. 🔄 Próximos Passos</h2>
+- Checklist de ações pós-documentação
+- Treinamentos sugeridos
+- Homologação e go-live
+
+<h2>11. 📋 Resumo dos GAPs Identificados</h2>
+<table>
+  <tr><th>GAP</th><th>Impacto</th><th>Tipo de Solução</th><th>Esforço Estimado</th></tr>
+  <tr><td>[descrição]</td><td>Alto/Médio/Baixo</td><td>Parametrização/Treinamento/Desenvolvimento</td><td>Xh</td></tr>
+  ...
+</table>
+
+━━━━━━━━━━━━━━━━━━
+⚠️ REGRAS OBRIGATÓRIAS
+━━━━━━━━━━━━━━━━━━
+
+1. **Nomenclatura RM correta**: COLIGADA (não "empresa"), FCFO, PFUNC, SALUNO, rubrica, evento, fórmula visual, PARAM.GBL
+2. **Nunca tratar módulos isolados** — sempre documentar integrações (Labore↔Chronus, Fluxus↔Saldus, Classis↔Fluxus, Nucleus↔Saldus)
+3. **eSocial é crítico** — sempre mencionar impacto em qualquer processo de Labore
+4. **Reforma Tributária** — destacar em Fluxus (natureza financeira), Nucleus (TES/CFOP), Classis (serviços educacionais)
+5. **Técnico sem ser árido** — nível consultor sênior para consultor pleno
+6. **Evidências das respostas** — quando citar um processo, referenciar a resposta do questionário ("Conforme informado, o cliente usa...")
+7. **Quando informação falta**, escreva: "**[A confirmar com cliente]**" destacado em negrito
+8. **Mínimo 2000 palavras** no documento final (MIT041 é técnico e detalhado)
+9. **Somente HTML puro** — sem markdown, sem comentários antes/depois da tag raiz
+10. **Português brasileiro técnico** — termos TOTVS oficiais
+
+━━━━━━━━━━━━━━━━━━
+🎯 DIFERENCIAIS DE QUALIDADE
+━━━━━━━━━━━━━━━━━━
+
+- Para LABORE: sempre incluir tabela de eventos críticos citados
+- Para FLUXUS: sempre incluir tabela de naturezas financeiras e CC
+- Para CLASSIS: sempre incluir fluxo de matrícula + geração de boleto + integração Fluxus
+- Para CHRONUS: sempre incluir integração com Labore e impactos em DSR/H.E.
+- Para NUCLEUS: sempre abordar impacto da Reforma Tributária
+- Para SALDUS: sempre citar integrações (Fluxus, Labore, Nucleus, ATF) e SPED ECD/ECF`,
+
+  // Template do user prompt que combina questionário + contexto
+  user_prompt_template: (dadosCliente, modulo, respostasQuestionario, importContext) => {
+    const importSection = importContext ? `
+━━━━━━━━━━━━━━━━━━
+📎 CONTEXTO IMPORTADO (MIT anterior ou documento de apoio):
+━━━━━━━━━━━━━━━━━━
+"""
+${(importContext || '').slice(0, 30000)}
+"""
+${(importContext || '').length > 30000 ? '[Conteúdo truncado para 30.000 caracteres]' : ''}
+
+Use este material para: (a) preservar decisões já tomadas; (b) validar coerência; (c) identificar evolução entre versões.
+` : '';
+
+    return `Gere o documento MIT041 Funcional completo para o módulo abaixo.
+
+━━━━━━━━━━━━━━━━━━
+📋 IDENTIFICAÇÃO
+━━━━━━━━━━━━━━━━━━
+${JSON.stringify(dadosCliente || {}, null, 2)}
+
+━━━━━━━━━━━━━━━━━━
+🎯 MÓDULO: ${modulo.sub} — ${modulo.name}
+━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━
+📝 RESPOSTAS DO QUESTIONÁRIO
+━━━━━━━━━━━━━━━━━━
+${JSON.stringify(respostasQuestionario || {}, null, 2)}
+
+${importSection}
+
+Produza o HTML completo do MIT041 conforme sua estrutura obrigatória de 11 seções. Apenas HTML puro, sem markdown.`;
+  }
+};
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = M41_RM_FUNCIONAL_PROMPT;
+}
 
 let _m41rm = {
   screen:'home', prevScreen:'preview', mod:null, secIdx:0, answers:{},
@@ -38614,6 +39313,7 @@ function _m41rmRender(){
   if(acts){
     if(s==='home') acts.innerHTML = '';
     else if(s==='info') acts.innerHTML = '<button class="btn btn-g" onclick="_m41rmSet(\'home\')">← Módulos</button>';
+    else if(s==='interview') acts.innerHTML = '<button class="btn btn-g" onclick="_m41rmSet(\'info\')">← Dados</button>';
     else if(s==='gen')  acts.innerHTML = '';
     else if(s==='chat')  acts.innerHTML = `<button class="btn btn-g" onclick="_m41rmSet(_m41rm.prevScreen||'preview')">← Voltar</button><button class="btn" onclick="_m41rmChatClear()" style="background:rgba(220,38,38,.12);border:1.5px solid rgba(220,38,38,.3);color:#ef4444;">🗑 Limpar Chat</button>`;
     else if(s==='train') acts.innerHTML = `<button class="btn btn-g" onclick="_m41rmSet(_m41rm.prevScreen||'preview')">← Voltar</button><button class="btn" onclick="_m41rmTrainClearAll()" style="background:rgba(220,38,38,.12);border:1.5px solid rgba(220,38,38,.3);color:#ef4444;">🗑 Limpar Tudo</button>`;
@@ -38623,10 +39323,11 @@ function _m41rmRender(){
       <button class="btn btn-g" onclick="_m41rmExportPDF()" style="background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.35);color:#34d399;">📥 Exportar PDF</button>
       <button class="btn btn-g" onclick="_m41rmSet('chat')" style="background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.35);color:#38bdf8;font-weight:700;">💬 Chat</button>
       <button class="btn btn-g" onclick="_m41rmSet('train')" style="background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.35);color:#34d399;font-weight:700;">🧠 Treinar</button>
-      <button class="btn btn-p" onclick="_m41rmCopy()">📋 Copiar MIT041 Funcional Funcional Funcional</button>`;
+      <button class="btn btn-p" onclick="_m41rmCopy()">📋 Copiar MIT041 Funcional RM</button>`;
   }
   if(s==='home')    el.innerHTML = _m41rmHomeHTML();
   else if(s==='info') el.innerHTML = _m41rmInfoHTML();
+  else if(s==='interview') el.innerHTML = _m41rmInterviewHTML();
   else if(s==='gen')  { el.innerHTML = _m41rmGenHTML(); _m41rmDoGen(); }
   else if(s==='preview') el.innerHTML = _m41rmPreviewHTML();
   else if(s==='chat')    { el.innerHTML = _mitChatHTML('m41rm'); _mitChatScroll('m41rm'); }
@@ -38637,7 +39338,7 @@ function _m41rmSet(screen){ if(_m41rm.screen!=='chat'&&_m41rm.screen!=='train') 
 
 function _m41rmHomeHTML(){
   const cards = _M41RM_MODS.map(m=>`
-    <div onclick="_m41rm.mod=_M41RM_MODS.find(x=>x.id==='${m.id}');_m41rmSet('info');"
+    <div onclick="_m41rm.mod=_M41RM_MODS.find(x=>x.id==='${m.id}');_m41rm.answers={};_m41rm.secIdx=0;_m41rmSet('info');"
       style="background:#fff;border:1px solid var(--bdr);border-radius:10px;padding:18px 16px;cursor:pointer;transition:all .2s;"
       onmouseover="this.style.borderColor='${m.clr}';this.style.background='var(--bb3)'"
       onmouseout="this.style.borderColor='var(--bdr)';this.style.background='var(--bb2)'">
@@ -38657,6 +39358,13 @@ function _m41rmHomeHTML(){
       <div style="font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:#34d399;margin-bottom:4px;">Agente MIT041 Funcional — TOTVS RM</div>
       <div style="font-size:11px;color:rgba(255,255,255,0.88);line-height:1.7;">Selecione o módulo RM → informe os dados do cliente → o IA gera o MIT041 completo com análise AS IS / TO BE, GAPs, parametrizações e integrações entre módulos.</div>
     </div>
+  </div>
+
+  <!-- 📎 Importar MIT existente (reusa window.BeeITDocParser do módulo Assessments) -->
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;padding:10px 12px;background:rgba(14,165,233,.06);border:1px solid rgba(14,165,233,.25);border-radius:8px;">
+    <button class="btn btn-g" onclick="document.getElementById('_m41rm_import_input').click()" style="background:rgba(14,165,233,.1);border:1px solid rgba(14,165,233,.3);color:#38bdf8;font-weight:600;">📎 Importar MIT existente</button>
+    <input id="_m41rm_import_input" type="file" accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.md,image/*" style="display:none" onchange="_m41rmImport(event)">
+    ${_m41rm._importDoc ? `<span style="font-size:11px;color:#34d399;">✅ Documento carregado (${_m41rm._importDoc.length.toLocaleString('pt-BR')} chars) — será usado na próxima geração</span> <button class="btn btn-g" onclick="_m41rm._importDoc='';_m41rmRender();" style="font-size:10px;padding:4px 10px;">Limpar</button>` : '<span style="font-size:10px;color:var(--txt3);">Opcional: PDF/DOCX/XLSX/TXT/imagem para usar como contexto (reusa document-parser do Assessments)</span>'}
   </div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">${cards}</div>`;
 }
@@ -38690,11 +39398,149 @@ function _m41rmInfoHTML(){
     </div>
     <div style="background:#fff;border:1px solid var(--bdr);border-radius:10px;padding:20px;">
       ${rows}
-      <button class="btn btn-p" onclick="_m41rmSet('gen')" style="width:100%;justify-content:center;margin-top:8px;background:linear-gradient(135deg,#059669,#10b981);">
-        🤖 Gerar MIT041 RM →
+      <button class="btn btn-p" onclick="_m41rmSet('interview')" style="width:100%;justify-content:center;margin-top:8px;">
+        Iniciar Questionário →
       </button>
     </div>
   </div>`;
+}
+
+
+// ────────── MIT041 RM: FIELD + INTERVIEW + NAV (Onda A v1) ──────────
+function _m41rmFieldHTML(q){
+  const v = _m41rm.answers[q.id];
+  const baseSty = `width:100%;background:var(--bg3);border:1px solid var(--bdr2);color:var(--txt);padding:8px 10px;border-radius:6px;font-size:12px;font-family:'Inter',sans-serif;outline:none;box-sizing:border-box;`;
+  if(q.type==='text')    return `<input type="text" value="${v||''}" placeholder="${q.ph||''}" style="${baseSty}" oninput="_m41rm.answers['${q.id}']=this.value">`;
+  if(q.type==='num')     return `<input type="number" value="${v||''}" placeholder="${q.ph||''}" style="${baseSty}" oninput="_m41rm.answers['${q.id}']=this.value">`;
+  if(q.type==='yn'){
+    return '<div style="display:flex;gap:6px;">'+['Sim','Não','A definir'].map(opt=>{
+      const sel=v===opt;
+      return `<button onclick="_m41rm.answers['${q.id}']='${opt}';_m41rmRender()" style="flex:1;padding:8px;border-radius:6px;border:1px solid ${sel?'rgba(16,185,129,.6)':'var(--bdr2)'};background:${sel?'rgba(16,185,129,.15)':'var(--bb3)'};color:${sel?'#34d399':'var(--txt2)'};font-size:12px;font-weight:${sel?'700':'400'};cursor:pointer;transition:all .15s;">${opt}</button>`;
+    }).join('')+'</div>';
+  }
+  if(q.type==='choice' && q.options){
+    const opts = q.options.map(o=>`<option value="${o}" ${v===o?'selected':''}>${o}</option>`).join('');
+    return `<select style="${baseSty}cursor:pointer;" onchange="_m41rm.answers['${q.id}']=this.value"><option value="">Selecione...</option>${opts}</select>`;
+  }
+  if(q.type==='list' && q.options){
+    const sel = Array.isArray(v)?v:[];
+    return '<div style="display:flex;flex-wrap:wrap;gap:6px;">'+q.options.map(opt=>{
+      const isS=sel.includes(opt);
+      return `<button onclick="(()=>{const a=(_m41rm.answers['${q.id}']||[]);_m41rm.answers['${q.id}']=a.includes('${opt}')?a.filter(x=>x!=='${opt}'):[...a,'${opt}'];_m41rmRender();})()" style="padding:5px 10px;border-radius:15px;border:1px solid ${isS?'rgba(16,185,129,.5)':'var(--bdr)'};background:${isS?'rgba(16,185,129,.15)':'var(--bb3)'};color:${isS?'#34d399':'var(--txt3)'};font-size:11px;font-weight:${isS?'700':'400'};cursor:pointer;">${isS?'✓ ':''}${opt}</button>`;
+    }).join('')+'</div>';
+  }
+  return `<input type="text" value="${v||''}" style="${baseSty}" oninput="_m41rm.answers['${q.id}']=this.value">`;
+}
+
+function _m41rmInterviewHTML(){
+  const m=_m41rm.mod; const secs=(typeof _M41RM_QDB!=='undefined'?_M41RM_QDB[m.id]:null)||[];
+  if(!secs.length) return '<div style="padding:40px;text-align:center;color:var(--txt3);">Este módulo não possui questionário configurado. <button class="btn btn-p" style="margin-left:10px;" onclick="_m41rmDoGen()">🤖 Gerar mesmo assim</button></div>';
+  const sec=secs[_m41rm.secIdx]||secs[0]; const isLast=_m41rm.secIdx>=secs.length-1;
+
+  function secStatus(s){
+    const ans=s.qs.map(q=>_m41rm.answers[q.id]).filter(v=>v!==undefined&&v!==''&&v!==null&&!(Array.isArray(v)&&!v.length));
+    return {done:ans.length,total:s.qs.length};
+  }
+
+  const navPills=secs.map((s,i)=>{
+    const st=secStatus(s);
+    const isActive=i===_m41rm.secIdx;
+    const full=st.done>=st.total;
+    const partial=st.done>0&&!full;
+    const bg=isActive?m.clr:full?'rgba(16,185,129,.15)':partial?'rgba(249,115,22,.1)':'var(--bb3)';
+    const border=isActive?m.clr:full?'rgba(16,185,129,.4)':partial?'rgba(249,115,22,.3)':'var(--bdr)';
+    const col=isActive?'#fff':full?'#34d399':partial?'#f97316':'var(--txt3)';
+    const dot=full?'✓':partial?'◉':'○';
+    return `<button onclick="_m41rm.secIdx=${i};_m41rmRender()" style="flex-shrink:0;padding:5px 10px;border-radius:20px;border:1px solid ${border};background:${bg};color:${col};font-size:10px;font-weight:${isActive?'700':'500'};cursor:pointer;white-space:nowrap;transition:all .2s;" title="${s.section}">${dot} ${i+1}. ${(s.section||'').replace(/^\d+\.\s*/,'')}</button>`;
+  }).join('');
+
+  const totalQ=secs.reduce((a,s)=>a+s.qs.length,0);
+  const totalDone=secs.reduce((a,s)=>a+secStatus(s).done,0);
+
+  const qFields=sec.qs.map((q,qi)=>{
+    const answered=_m41rm.answers[q.id]!==undefined&&_m41rm.answers[q.id]!==''&&_m41rm.answers[q.id]!==null&&!(Array.isArray(_m41rm.answers[q.id])&&!_m41rm.answers[q.id].length);
+    return `
+    <div style="margin-bottom:18px;">
+      <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:7px;">
+        <span style="font-size:9px;font-weight:600;color:var(--txt3);min-width:18px;padding-top:1px;">${qi+1}.</span>
+        <span style="font-size:11.5px;font-weight:600;color:${answered?'var(--txt)':'var(--txt2)'};line-height:1.45;flex:1;">${q.label}</span>
+        ${answered?'<span style="font-size:10px;color:#34d399;flex-shrink:0;">✓</span>':''}
+      </div>
+      <div style="margin-left:24px;">${_m41rmFieldHTML(q)}</div>
+    </div>`;
+  }).join('');
+
+  const secSt=secStatus(sec);
+  const prevBtn=_m41rm.secIdx>0?`<button class="btn btn-g" onclick="_m41rmNavSec(-1)" style="flex:1;">← Anterior</button>`:'';
+  const nextLabel = isLast ? '🤖 Gerar MIT041 com IA' : 'Próxima Seção →';
+  const nextClass = isLast ? 'btn-grn' : 'btn-p';
+  const nextStyle = isLast ? 'background:linear-gradient(135deg,#059669,#10b981);' : '';
+  const nextBtn = `<button class="btn ${nextClass}" onclick="_m41rmNavSec(1)" style="flex:2;justify-content:center;${nextStyle}">${nextLabel}</button>`;
+
+  return `
+  <div style="max-width:760px;">
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-size:10px;color:var(--txt3);font-family:'Rajdhani',sans-serif;font-weight:700;">SEÇÕES DO MÓDULO ${m.sub}</div>
+        <div style="font-size:10px;color:var(--txt3);"><span style="color:#34d399;font-weight:700;">${totalDone}</span> / ${totalQ} perguntas · <span style="color:${m.clr};font-weight:700;">${_m41rm.secIdx+1}/${secs.length}</span> seção</div>
+      </div>
+      <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;">${navPills}</div>
+      <div style="height:2px;background:var(--bdr);border-radius:2px;margin-top:8px;"><div style="height:100%;width:${totalQ?Math.round((totalDone/totalQ)*100):0}%;background:linear-gradient(90deg,${m.clr},#34d399);border-radius:2px;transition:width .4s;"></div></div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--bdr);border-radius:10px;overflow:hidden;margin-bottom:12px;">
+      <div style="background:${m.clr}18;border-bottom:1px solid ${m.clr}30;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:#fff;">${sec.section}</div>
+          <div style="font-size:10px;color:var(--txt3);margin-top:1px;">${secSt.done} de ${secSt.total} perguntas${secSt.total?` · <span style="color:#34d399;font-weight:600;">${Math.round(secSt.done/secSt.total*100)}% completo</span>`:''}</div>
+        </div>
+        <div style="font-size:22px;opacity:.18;">📋</div>
+      </div>
+      <div style="padding:20px 18px;">${qFields}</div>
+    </div>
+    <div style="display:flex;gap:10px;">${prevBtn}${nextBtn}</div>
+  </div>`;
+}
+
+function _m41rmNavSec(dir){
+  const secs=(typeof _M41RM_QDB!=='undefined'?_M41RM_QDB[_m41rm.mod.id]:null)||[];
+  const next=_m41rm.secIdx+dir;
+  if(next<0) return;
+  if(next>=secs.length){ _m41rmDoGen(); return; }
+  _m41rm.secIdx=next;
+  _m41rmRender();
+}
+
+
+// ────────── MIT041 RM: IMPORT de documento (reusa window.BeeITDocParser) ──────────
+async function _m41rmImport(ev){
+  const file = ev.target.files && ev.target.files[0];
+  if(!file) return;
+  if(typeof window.BeeITDocParser !== 'object' || typeof window.BeeITDocParser.parse !== 'function'){
+    alert('⚠️ Parser de documento não está carregado.\n\nAbra a aba Assessments uma vez para inicializar (window.BeeITDocParser).');
+    ev.target.value = '';
+    return;
+  }
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed;top:20px;right:20px;background:rgba(14,165,233,.95);color:#fff;padding:12px 18px;border-radius:8px;z-index:9999;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2);';
+  banner.textContent = '📄 Processando ' + file.name + '...';
+  document.body.appendChild(banner);
+  try {
+    const result = await window.BeeITDocParser.parse(file);
+    banner.remove();
+    if(result && result.success){
+      _m41rm._importDoc = result.texto || '';
+      alert('✅ Documento carregado: ' + (_m41rm._importDoc.length||0).toLocaleString('pt-BR') + ' caracteres.\n\nSerá usado como contexto na próxima geração de MIT041 RM.');
+      _m41rmRender();
+    } else {
+      alert('❌ Falha ao processar documento: ' + (result && (result.erro || result.error) || 'erro desconhecido'));
+    }
+  } catch(e){
+    banner.remove();
+    console.error('[_m41rmImport]', e);
+    alert('Erro ao importar: ' + e.message);
+  } finally {
+    ev.target.value = '';
+  }
 }
 
 function _m41rmGenHTML(){
@@ -38724,75 +39570,42 @@ function _m41rmPreviewHTML(){
 function _m41rmCopy(){
   navigator.clipboard.writeText(_m41rm.doc||'').then(()=>{
     const btn = document.querySelector('#mit041rm-acts .btn-p');
-    if(btn){btn.textContent='✓ Copiado!';setTimeout(()=>btn.textContent='📋 Copiar MIT041 Funcional Funcional Funcional',2000);}
+    if(btn){btn.textContent='✓ Copiado!';setTimeout(()=>btn.textContent='📋 Copiar MIT041 Funcional RM',2000);}
   });
 }
 
 async function _m41rmDoGen(){
+  _m41rmSet('gen');
   const m = _m41rm.mod;
   const c = _m41rm.client;
   if(!m) return;
   const apiKey = typeof cfgGet==='function' ? cfgGet('api_key','') : '';
   if(!apiKey){ alert('Configure a API Key em Configurações.'); _m41rmSet('info'); return; }
 
-  const prompt = `Você é um consultor sênior TOTVS RM especialista em MIT (Metodologia de Implantação TOTVS).
-
-Gere uma documentação MIT041 FUNCIONAL COMPLETA e DETALHADA para o módulo ${m.name} (${m.sub}) do TOTVS RM.
-
-DADOS DO PROJETO:
-Cliente: ${c.nome||'A confirmar'}
-Projeto: ${c.projeto||'A confirmar'}
-Módulo: ${m.name} (${m.sub}) — TOTVS RM
-Gerente TOTVS: ${c.ger_totvs||'A confirmar'}
-Gerente Cliente: ${c.ger_cli||'A confirmar'}
-Data: ${c.data||new Date().toLocaleDateString('pt-BR')}
-
-ESTRUTURA OBRIGATÓRIA DA MIT041:
-
-# MIT041 — ${m.name.toUpperCase()} — ${(c.nome||'CLIENTE').toUpperCase()}
-
-## 1. Objetivo do Documento
-## 2. Escopo
-## 3. Premissas
-## 4. Atores Envolvidos
-## 5. Processo Atual — AS IS
-## 6. Processo Futuro — TO BE (TOTVS RM ${m.sub})
-## 7. Fluxo Detalhado
-## 8. Cadastros Envolvidos
-## 9. Parametrizações Necessárias
-## 10. Integrações entre Módulos
-## 11. GAPs Identificados
-## 12. Riscos do Processo
-## 13. Plano de Ação
-## 14. Critérios de Validação
-## 15. Aprovação e Assinaturas
-
-REGRAS DE QUALIDADE:
-- Detalhar cada seção com profundidade técnica real de TOTVS RM — NUNCA gerar respostas genéricas
-- Usar tabelas Markdown para listas de parâmetros, cadastros e GAPs
-- Identificar integrações específicas do ${m.sub} com outros módulos RM:
-  Compras→Estoque→Financeiro→Fiscal→Contábil | Faturamento→Fiscal→Financeiro→Contábil
-  Folha→Financeiro→Contábil | Ponto→Folha | TCOP→Compras→Estoque→Financeiro
-  TCGI→Financeiro→Contábil | Educacional→Financeiro→Fiscal→Contábil
-- GAPs devem ser realistas, auditáveis e identificar o impacto real no processo
-- Identificar parametrizações específicas do módulo no TOTVS RM
-- Sempre analisar o processo como consultor sênior RM nível TOP
-- Sempre pensar nos riscos reais do processo
-- Linguagem técnica, objetiva, profissional — Português do Brasil`;
+  const userPrompt = (typeof M41_RM_FUNCIONAL_PROMPT !== 'undefined' && M41_RM_FUNCIONAL_PROMPT.user_prompt_template)
+    ? M41_RM_FUNCIONAL_PROMPT.user_prompt_template(c, m, _m41rm.answers||{}, _m41rm._importDoc||null)
+    : ('Módulo: '+m.name+'\n\n'+JSON.stringify(_m41rm.answers||{}, null, 2));
+  const sys = (typeof M41_RM_FUNCIONAL_PROMPT !== 'undefined' && M41_RM_FUNCIONAL_PROMPT.system_prompt) || 'Você é um consultor TOTVS RM.';
 
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:8000,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({
+        model: (M41_RM_FUNCIONAL_PROMPT && M41_RM_FUNCIONAL_PROMPT.modelo) || 'claude-sonnet-4-6',
+        max_tokens: (M41_RM_FUNCIONAL_PROMPT && M41_RM_FUNCIONAL_PROMPT.max_tokens) || 8000,
+        system: sys,
+        messages:[{role:'user',content:userPrompt}]
+      }),
+      signal: AbortSignal.timeout(120000)
     });
     const data = await resp.json();
     if(data.error) throw new Error(data.error.message);
     _m41rm.doc = (data.content||[]).map(b=>b.text||'').join('').trim();
     _m41rmSet('preview');
   } catch(e){
-    console.error(e);
-    _m41rmSet('info');
+    console.error('[_m41rmDoGen]', e);
+    _m41rmSet('interview');
     alert('Erro ao gerar MIT041 RM: '+e.message);
   }
 }
