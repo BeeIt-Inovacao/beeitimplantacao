@@ -25,7 +25,7 @@ Referência completa: *Laudo de Estratégia Técnica v2* (arquivo externo).
 | **S2** | Migrations Supabase (snapshot, history, tenant_config, user_tenant) com RLS | 🟡 em andamento | 🟢 |
 | **S3** | Hardening Edge `protheus-proxy` — CORS allow-list, JWT verify, path allow-list, audit | ✅ feito (commit `d4b257c`, **não deployada**) | 🟠 |
 | **S4** | Auth Hook (`custom_access_token_hook`) + RPC `provision_tenant_protheus` + `scripts/setup-tenant.js` + plano Sprint 5 | ✅ feito | 🟢 |
-| **S5** | Adaptação do monólito **sem reescrita** — fetch interceptor em `src/core/`, build injector, legacy-aliases allow-list na Edge. Plano completo em [SPRINT-5-PLAN.md](SPRINT-5-PLAN.md) | ⏳ pendente | 🔴 |
+| **S5** | Adaptação do monólito **sem reescrita** — fetch interceptor em `src/core/`, build injector, legacy-aliases allow-list na Edge. Plano completo em [SPRINT-5-PLAN.md](SPRINT-5-PLAN.md) | 🟡 em andamento — 5.2 ✅ 5.3 ✅ · pendente: 5.4 build-modules, 5.5 deploy.yml, 5.6 dev test | 🔴 |
 | **S6** | Migrar paths legacy (`/SA1/`, `/CT1/` etc) do monólito para `/api/v1/bda/dynamic` + remover aliases da allow-list legacy | ⏳ pendente | 🟠 |
 | **S7** | Hardening de rede no Protheus — firewall libera apenas IP do Supabase | ⏳ pendente | 🟠 |
 | **S8** | Módulo prova `src/modules/dict-viewer` + extração MATA410/415/460 | ⏳ pendente | 🔴 |
