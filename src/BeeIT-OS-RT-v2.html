@@ -30888,6 +30888,17 @@ function xpCTBAll(){xpCTBLP();window.setTimeout(function(){xpCTBMV();},400);}
 
 
 
+
+// ── Helper: detecta erro "sem créditos" da Anthropic e retorna mensagem amigável ──
+function _beeitAnthropicErrorMsg(status, errMsg) {
+  const isBilling = /credit.balance|credit_balance|too low|purchase credits|insufficient/i.test(errMsg||'');
+  if (isBilling) {
+    return `❌ SALDO ANTHROPIC INSUFICIENTE\n\n💳 **A conta de API Anthropic associada à sua chave está sem créditos.**\n\nIsso é cobrança da Anthropic (não do BeeIT) — cada chamada IA consome tokens que custam ~$0.01-0.05.\n\n🔗 **Como resolver (2-3 min):**\n\n1. Acesse https://console.anthropic.com/settings/billing\n2. Adicione créditos (mínimo US$ 5) ou ative **Auto Reload** (recarga automática ao cair de um limite)\n3. Volte aqui e tente de novo — **não precisa trocar a chave** em Configurações\n\n💡 **Custo típico:** ~$0.03 por MIT041 completo. US$ 20 = ~500 gerações (dura meses).\n\n---\n\n_Mensagem técnica da Anthropic: "${(errMsg||'').slice(0,200)}"_`;
+  }
+  return `❌ ERRO DA API (${status}): ${errMsg}\n\nVerifique a chave de API em Configurações → API Anthropic.`;
+}
+window._beeitAnthropicErrorMsg = _beeitAnthropicErrorMsg;
+
 // ── Global error handler — mostra erros JS na tela ──────────────────────
 window.addEventListener('error', function(e){
   console.error('Global JS error:', e.message, e.filename, e.lineno);
@@ -34260,7 +34271,7 @@ REGRAS FINAIS DE FORMATAÇÃO (OBRIGATÓRIO):
     if(!r.ok){
       const errBody=await r.json().catch(()=>({}));
       const errMsg=errBody?.error?.message||`HTTP ${r.status}`;
-      _m41.doc=`❌ ERRO DA API (${r.status}): ${errMsg}\n\nVerifique a chave de API em Configurações.`;
+      _m41.doc = _beeitAnthropicErrorMsg(r.status, errMsg);
       _m41StopGenTimer();_m41Set('preview');return;
     }
     // Finaliza barra antes de transitar
@@ -40446,7 +40457,7 @@ async function _m41rmDoGen(){
   } catch(e){
     console.error('[_m41rmDoGen]', e);
     _m41rmSet('interview');
-    alert('Erro ao gerar MIT041 RM: '+e.message);
+    alert(typeof _beeitAnthropicErrorMsg==='function'?_beeitAnthropicErrorMsg(0,e.message).replace(/\\n\\n/g,'\\n\\n').substring(0,500):'Erro ao gerar MIT041 RM: '+e.message);
   }
 }
 
