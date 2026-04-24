@@ -652,6 +652,7 @@ const BEEIT_SB_URL = 'https://dbaqvoatopfquaqgdptk.supabase.co';
 const BEEIT_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRiYXF2b2F0b3BmcXVhcWdkcHRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2OTkyNDMsImV4cCI6MjA5MjI3NTI0M30.83PsZqC9Jbdo9-UW85WaeSiNOybRMyA6Arf80pU3kKI';
 let beeitSession = null;
 let beeitProfile = null;
+Object.defineProperty(window, 'beeitSession', { get: () => beeitSession, configurable: true });
 
 async function beeitSbFetch(path, opts={}) {
   const headers = {
@@ -1133,6 +1134,11 @@ window.beeitAdminLoadLog    = beeitAdminLoadLog;
       <button class="sbi" id="sbi-imp" onclick="nav('imp')"><span class="sbi-ic">📥</span><span class="sbi-lb">Importar SPED</span></button>
     </div>
 
+    <div class="sb-section" id="sh-diag" onclick="sbToggle('sg-diag')">DIAGNÓSTICO <span class="sb-arr">›</span></div>
+    <div class="sb-group" id="sg-diag">
+      <button class="sbi" id="sbi-assessments" onclick="nav('assessments');setTimeout(()=>window.BeeITAssessmentsUI?.init(),60)"><span class="sbi-ic">🎯</span><span class="sbi-lb">Assessments</span><span class="sbi-bd" style="background:rgba(139,92,246,.2);color:#c084fc;border:1px solid rgba(139,92,246,.4);">IA</span></button>
+    </div>
+
     <div class="sb-section" id="sh-doc" onclick="sbToggle('sg-doc')">DOCUMENTAÇÃO <span class="sb-arr">›</span></div>
     <div class="sb-group" id="sg-doc">
       <button class="sbi" id="sbi-mit044" onclick="nav('mit044');setTimeout(rndMIT044,60)"><span class="sbi-ic">📋</span><span class="sbi-lb">MIT041 Desenvolvimento Protheus</span><span class="sbi-bd" style="background:rgba(139,92,246,.2);color:#38D4F5;border:1px solid rgba(139,92,246,.4);">IA</span></button>
@@ -1281,6 +1287,269 @@ window.beeitAdminLoadLog    = beeitAdminLoadLog;
 </div>
 
 <!-- IMPORT -->
+<!-- ════ MÓDULO ASSESSMENTS — CSS ════ -->
+<style id="beeit-assessments-styles">
+  /* ──── Lista de Assessments ──── */
+  .asm-toolbar { display:flex; gap:12px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+  .asm-toolbar .search { flex:1; min-width:240px; padding:10px 12px; border-radius:8px; border:1px solid var(--border,#2a3344); background:var(--bg2,#0f1421); color:var(--text,#e6edf3); }
+  .asm-toolbar select { padding:10px 12px; border-radius:8px; border:1px solid var(--border,#2a3344); background:var(--bg2,#0f1421); color:var(--text,#e6edf3); }
+  .asm-btn { padding:10px 16px; border-radius:8px; border:1px solid transparent; cursor:pointer; font-weight:600; transition:all .15s; }
+  .asm-btn-primary { background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; }
+  .asm-btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(59,130,246,.35); }
+  .asm-btn-secondary { background:var(--bg2,#0f1421); color:var(--text,#e6edf3); border-color:var(--border,#2a3344); }
+  .asm-btn-danger { background:#7f1d1d; color:#fecaca; }
+  .asm-btn-ghost { background:transparent; color:var(--muted,#9ca3af); }
+  .asm-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+  .asm-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:16px; }
+  .asm-card { background:var(--bg2,#0f1421); border:1px solid var(--border,#2a3344); border-radius:12px; padding:16px; cursor:pointer; transition:all .15s; position:relative; }
+  .asm-card:hover { transform:translateY(-2px); border-color:#3b82f6; box-shadow:0 8px 24px rgba(0,0,0,.3); }
+  .asm-card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+  .asm-badge { padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:.5px; }
+  .asm-badge.protheus { background:#E84A27; color:#fff; }
+  .asm-badge.rm { background:#00A859; color:#fff; }
+  .asm-badge.hibrido { background:#a855f7; color:#fff; }
+  .asm-status { padding:2px 8px; border-radius:6px; font-size:10px; font-weight:600; text-transform:uppercase; }
+  .asm-status.draft { background:#374151; color:#9ca3af; }
+  .asm-status.in_progress { background:#1e40af; color:#bfdbfe; }
+  .asm-status.completed { background:#065f46; color:#a7f3d0; }
+  .asm-card h3 { margin:6px 0 4px; font-size:16px; }
+  .asm-card .cnpj { font-size:12px; color:var(--muted,#9ca3af); font-family:monospace; }
+  .asm-card .segmento { font-size:12px; color:var(--muted,#9ca3af); margin-top:4px; }
+  .asm-progress { margin-top:12px; height:6px; background:var(--bg,#0a0e17); border-radius:3px; overflow:hidden; }
+  .asm-progress-bar { height:100%; background:linear-gradient(90deg,#3b82f6,#06b6d4); transition:width .4s; }
+  .asm-card-footer { display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:11px; color:var(--muted,#9ca3af); }
+
+  .asm-empty { text-align:center; padding:60px 20px; color:var(--muted,#9ca3af); }
+  .asm-empty h2 { font-size:20px; margin-bottom:8px; }
+
+  /* ──── Modal ──── */
+  .asm-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:9998; display:none; align-items:center; justify-content:center; padding:20px; }
+  .asm-modal-overlay.active { display:flex; }
+  .asm-modal { background:var(--bg2,#0f1421); border:1px solid var(--border,#2a3344); border-radius:16px; max-width:720px; width:100%; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; }
+  .asm-modal-wide { max-width:960px; }
+  .asm-modal-header { padding:20px 24px; border-bottom:1px solid var(--border,#2a3344); display:flex; justify-content:space-between; align-items:center; }
+  .asm-modal-header h2 { margin:0; font-size:18px; }
+  .asm-modal-close { background:transparent; border:none; color:var(--muted,#9ca3af); cursor:pointer; font-size:22px; padding:4px 10px; }
+  .asm-modal-body { padding:24px; overflow-y:auto; flex:1; }
+  .asm-modal-footer { padding:16px 24px; border-top:1px solid var(--border,#2a3344); display:flex; justify-content:flex-end; gap:10px; }
+
+  /* ──── Wizard / Form ──── */
+  .asm-field { margin-bottom:16px; }
+  .asm-field label { display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:var(--text,#e6edf3); }
+  .asm-field label .required { color:#ef4444; }
+  .asm-field input[type="text"], .asm-field input[type="number"], .asm-field select, .asm-field textarea {
+    width:100%; padding:10px 12px; border-radius:8px;
+    border:1px solid var(--border,#2a3344); background:var(--bg,#0a0e17);
+    color:var(--text,#e6edf3); font-size:14px; font-family:inherit;
+  }
+  .asm-field textarea { resize:vertical; min-height:80px; }
+  .asm-field input:focus, .asm-field select:focus, .asm-field textarea:focus {
+    outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.2);
+  }
+  .asm-field-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .asm-multiselect { max-height:140px; overflow-y:auto; background:var(--bg,#0a0e17); border:1px solid var(--border,#2a3344); border-radius:8px; padding:8px; }
+  .asm-multiselect label { display:flex; align-items:center; gap:8px; font-weight:400; padding:4px 6px; margin:0; cursor:pointer; }
+  .asm-multiselect label:hover { background:var(--bg2,#0f1421); border-radius:4px; }
+  .asm-hint { font-size:11px; color:var(--muted,#9ca3af); margin-top:4px; }
+
+  /* ──── Tipo Assessment (escolha inicial) ──── */
+  .asm-type-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; }
+  .asm-type-card { padding:20px; border:2px solid var(--border,#2a3344); border-radius:12px; cursor:pointer; text-align:center; transition:all .15s; }
+  .asm-type-card:hover { border-color:#3b82f6; transform:translateY(-2px); }
+  .asm-type-card.selected { border-color:#3b82f6; background:rgba(59,130,246,.1); }
+  .asm-type-card .icon { font-size:32px; margin-bottom:8px; display:block; }
+  .asm-type-card h3 { margin:0 0 4px; font-size:15px; }
+  .asm-type-card p { margin:0; font-size:12px; color:var(--muted,#9ca3af); }
+
+  /* ──── Tabs dentro do assessment ──── */
+  .asm-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border,#2a3344); margin-bottom:20px; overflow-x:auto; }
+  .asm-tab { padding:10px 16px; cursor:pointer; border:none; background:transparent; color:var(--muted,#9ca3af); font-weight:600; border-bottom:2px solid transparent; white-space:nowrap; }
+  .asm-tab.active { color:#3b82f6; border-bottom-color:#3b82f6; }
+  .asm-tab:disabled { opacity:.4; cursor:not-allowed; }
+  .asm-tab-badge { display:inline-block; margin-left:6px; background:#3b82f6; color:#fff; border-radius:10px; padding:1px 7px; font-size:10px; }
+
+  /* ──── Processos cards ──── */
+  .asm-proc-list { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+  .asm-proc-card { background:var(--bg,#0a0e17); border:1px solid var(--border,#2a3344); border-radius:10px; padding:14px; display:flex; justify-content:space-between; align-items:center; gap:12px; cursor:pointer; transition:all .15s; }
+  .asm-proc-card:hover { border-color:#3b82f6; }
+  .asm-proc-info { flex:1; min-width:0; }
+  .asm-proc-info .modulo { font-size:11px; font-weight:700; letter-spacing:.5px; color:#3b82f6; }
+  .asm-proc-info h4 { margin:2px 0 4px; font-size:14px; }
+  .asm-proc-info .meta { font-size:11px; color:var(--muted,#9ca3af); }
+  .asm-risk-badge { padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; text-transform:uppercase; flex-shrink:0; }
+  .asm-risk-badge.critico { background:#7f1d1d; color:#fecaca; }
+  .asm-risk-badge.alto { background:#9a3412; color:#fed7aa; }
+  .asm-risk-badge.medio { background:#713f12; color:#fef08a; }
+  .asm-risk-badge.baixo { background:#14532d; color:#bbf7d0; }
+  .asm-proc-actions { display:flex; gap:6px; }
+  .asm-proc-actions button { padding:6px 10px; font-size:12px; }
+
+  /* ──── Análise visualizada ──── */
+  .asm-analysis { background:var(--bg,#0a0e17); border:1px solid var(--border,#2a3344); border-radius:10px; padding:20px; }
+  .asm-analysis section { margin-bottom:20px; }
+  .asm-analysis h4 { font-size:13px; font-weight:700; letter-spacing:.5px; color:#3b82f6; text-transform:uppercase; margin:0 0 8px; }
+  .asm-analysis .risk-box { padding:12px; border-radius:8px; border-left:4px solid currentColor; }
+  .asm-analysis .risk-box.critico { background:rgba(127,29,29,.2); color:#fecaca; }
+  .asm-analysis .risk-box.alto { background:rgba(154,52,18,.2); color:#fed7aa; }
+  .asm-analysis .risk-box.medio { background:rgba(113,63,18,.2); color:#fef08a; }
+  .asm-analysis .risk-box.baixo { background:rgba(20,83,45,.2); color:#bbf7d0; }
+  .asm-analysis ul { margin:4px 0; padding-left:20px; }
+  .asm-analysis li { margin-bottom:4px; font-size:13px; line-height:1.5; }
+  .asm-analysis table { width:100%; border-collapse:collapse; font-size:13px; margin-top:8px; }
+  .asm-analysis th, .asm-analysis td { padding:8px; text-align:left; border-bottom:1px solid var(--border,#2a3344); }
+  .asm-analysis th { background:var(--bg2,#0f1421); font-weight:700; font-size:11px; text-transform:uppercase; color:var(--muted,#9ca3af); }
+
+  /* ──── Loading IA ──── */
+  .asm-ai-loading { padding:40px 20px; text-align:center; color:var(--muted,#9ca3af); }
+  .asm-ai-spinner { display:inline-block; width:40px; height:40px; border:3px solid var(--border,#2a3344); border-top-color:#3b82f6; border-radius:50%; animation:asm-spin 1s linear infinite; margin-bottom:16px; }
+  @keyframes asm-spin { to { transform:rotate(360deg); } }
+
+  /* ──── Toast ──── */
+  .asm-toast { position:fixed; bottom:24px; right:24px; padding:14px 18px; border-radius:10px; z-index:10000; font-size:14px; max-width:380px; box-shadow:0 8px 24px rgba(0,0,0,.4); animation:asm-toast-in .3s; }
+  .asm-toast.success { background:#065f46; color:#a7f3d0; border-left:4px solid #10b981; }
+  .asm-toast.error { background:#7f1d1d; color:#fecaca; border-left:4px solid #ef4444; }
+  .asm-toast.info { background:#1e40af; color:#bfdbfe; border-left:4px solid #3b82f6; }
+  @keyframes asm-toast-in { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+</style>
+
+<!-- ════ MÓDULO ASSESSMENTS — PÁGINA ════ -->
+<div class="pg" id="pg-assessments">
+  <div style="margin-bottom:20px;">
+    <h1 style="font-size:24px; margin:0 0 6px;">🎯 Assessments</h1>
+    <p style="color:var(--muted,#9ca3af); margin:0;">Diagnóstico estruturado AS-IS → PADRÃO → GAP → RISCO → TO-BE → PLANO DE AÇÃO</p>
+  </div>
+
+  <div class="asm-toolbar">
+    <input type="text" class="search" id="asm-search" placeholder="🔍 Buscar por cliente ou CNPJ..." oninput="BeeITAssessmentsUI.filterList()">
+    <select id="asm-filter-tipo" onchange="BeeITAssessmentsUI.filterList()">
+      <option value="">Todos os tipos</option>
+      <option value="protheus">Protheus</option>
+      <option value="rm">RM</option>
+      <option value="hibrido">Híbrido</option>
+    </select>
+    <select id="asm-filter-status" onchange="BeeITAssessmentsUI.filterList()">
+      <option value="">Todos status</option>
+      <option value="draft">Rascunho</option>
+      <option value="in_progress">Em andamento</option>
+      <option value="completed">Concluído</option>
+    </select>
+    <button class="asm-btn asm-btn-primary" onclick="BeeITAssessmentsUI.openCreateModal()">➕ Novo Assessment</button>
+  </div>
+
+  <div id="asm-list-container">
+    <div class="asm-empty">
+      <h2>Carregando…</h2>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: escolher tipo de assessment -->
+<div class="asm-modal-overlay" id="asm-modal-create">
+  <div class="asm-modal">
+    <div class="asm-modal-header">
+      <h2>Novo Assessment</h2>
+      <button class="asm-modal-close" onclick="BeeITAssessmentsUI.closeModal('asm-modal-create')">×</button>
+    </div>
+    <div class="asm-modal-body">
+      <p style="color:var(--muted,#9ca3af); margin-bottom:16px;">Qual tipo de ERP vamos analisar?</p>
+      <div class="asm-type-grid">
+        <div class="asm-type-card" onclick="BeeITAssessmentsUI.startNewAssessment('protheus')">
+          <span class="icon">🟦</span>
+          <h3>Protheus</h3>
+          <p>Fiscal, Faturamento, Financeiro, Estoque, Compras</p>
+        </div>
+        <div class="asm-type-card" onclick="BeeITAssessmentsUI.startNewAssessment('rm')">
+          <span class="icon">🟩</span>
+          <h3>RM</h3>
+          <p>Fluxus, Labore, Chronus, Nucleus, Educacional</p>
+        </div>
+        <div class="asm-type-card" onclick="BeeITAssessmentsUI.openOrquestrador()">
+          <span class="icon">🟡</span>
+          <h3>Não sei</h3>
+          <p>Orquestrador me ajuda a decidir</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Orquestrador -->
+<div class="asm-modal-overlay" id="asm-modal-orquestrador">
+  <div class="asm-modal">
+    <div class="asm-modal-header">
+      <h2>🧠 Orquestrador — Qual ERP analisar?</h2>
+      <button class="asm-modal-close" onclick="BeeITAssessmentsUI.closeModal('asm-modal-orquestrador')">×</button>
+    </div>
+    <div class="asm-modal-body">
+      <div class="asm-field">
+        <label>Descreva o cliente em texto livre <span class="required">*</span></label>
+        <textarea id="asm-orq-descricao" rows="6" placeholder="Ex: Faculdade particular com 3 mil alunos em SP, usa TOTVS há 8 anos, ciclo anual de matrícula, folha de 450 CLTs, quer digitalizar portal do aluno..."></textarea>
+      </div>
+      <div id="asm-orq-result"></div>
+    </div>
+    <div class="asm-modal-footer">
+      <button class="asm-btn asm-btn-secondary" onclick="BeeITAssessmentsUI.closeModal('asm-modal-orquestrador')">Cancelar</button>
+      <button class="asm-btn asm-btn-primary" id="asm-orq-submit" onclick="BeeITAssessmentsUI.runOrquestrador()">🧠 Analisar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Contexto do Cliente (novo assessment) -->
+<div class="asm-modal-overlay" id="asm-modal-contexto">
+  <div class="asm-modal asm-modal-wide">
+    <div class="asm-modal-header">
+      <h2>Contexto do Cliente — <span id="asm-ctx-tipo-label">Protheus</span></h2>
+      <button class="asm-modal-close" onclick="BeeITAssessmentsUI.closeModal('asm-modal-contexto')">×</button>
+    </div>
+    <div class="asm-modal-body" id="asm-ctx-form">
+      <!-- Preenchido dinamicamente por renderContextoForm() -->
+    </div>
+    <div class="asm-modal-footer">
+      <button class="asm-btn asm-btn-secondary" onclick="BeeITAssessmentsUI.closeModal('asm-modal-contexto')">Cancelar</button>
+      <button class="asm-btn asm-btn-primary" onclick="BeeITAssessmentsUI.saveContextoAndOpen()">Continuar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Assessment aberto (tabs) -->
+<div class="asm-modal-overlay" id="asm-modal-open">
+  <div class="asm-modal asm-modal-wide" style="max-width:1200px; height:90vh;">
+    <div class="asm-modal-header">
+      <h2 id="asm-open-title">Assessment</h2>
+      <button class="asm-modal-close" onclick="BeeITAssessmentsUI.closeModal('asm-modal-open')">×</button>
+    </div>
+    <div class="asm-modal-body" style="padding:0; display:flex; flex-direction:column;">
+      <div class="asm-tabs" style="padding:0 24px;">
+        <button class="asm-tab active" data-tab="contexto" onclick="BeeITAssessmentsUI.switchTab('contexto')">📋 Contexto</button>
+        <button class="asm-tab" data-tab="processos" onclick="BeeITAssessmentsUI.switchTab('processos')">⚙️ Processos <span class="asm-tab-badge" id="asm-tab-proc-count">0</span></button>
+        <button class="asm-tab" data-tab="consolidacao" onclick="BeeITAssessmentsUI.switchTab('consolidacao')">📊 Consolidação</button>
+        <button class="asm-tab" data-tab="pdf" onclick="BeeITAssessmentsUI.switchTab('pdf')">📄 PDF</button>
+      </div>
+      <div id="asm-tab-content" style="padding:24px; overflow-y:auto; flex:1;">
+        <!-- Preenchido por switchTab() -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Adicionar/Editar Processo -->
+<div class="asm-modal-overlay" id="asm-modal-proc">
+  <div class="asm-modal asm-modal-wide">
+    <div class="asm-modal-header">
+      <h2 id="asm-proc-title">Novo Processo</h2>
+      <button class="asm-modal-close" onclick="BeeITAssessmentsUI.closeModal('asm-modal-proc')">×</button>
+    </div>
+    <div class="asm-modal-body" id="asm-proc-form">
+      <!-- Preenchido por renderProcessoForm() -->
+    </div>
+    <div class="asm-modal-footer">
+      <button class="asm-btn asm-btn-secondary" onclick="BeeITAssessmentsUI.closeModal('asm-modal-proc')">Cancelar</button>
+      <button class="asm-btn asm-btn-primary" id="asm-proc-submit" onclick="BeeITAssessmentsUI.analyzeProcessSubmit()">🧠 Analisar com IA</button>
+    </div>
+  </div>
+</div>
+
 <div class="pg" id="pg-imp">
   <div class="ph">
     <div class="ph-left"><div class="ph-t">IMPORTAR ARQUIVOS SPED</div><div class="ph-s">SPED Fiscal · SPED Contribuições · SPED Contábil (ECD) — arraste os arquivos .txt</div></div>
@@ -40997,6 +41266,2079 @@ window._m44IniciarProgramacao = _m44IniciarProgramacao;
 
 </script>
 
+<!-- ════ MÓDULO ASSESSMENTS — JavaScript ════ -->
+<script>
+// ══════ agents.js (686 linhas) ══════
+// ═══════════════════════════════════════════════════════════
+// BeeIT OS-RT v2 — Agentes IA de Assessment (v2.0)
+// System prompts para Claude Sonnet 4
+//
+// v2.0 — Adota metodologia AS-IS / PADRÃO / GAP / RISCO / TO-BE / PLANO
+//        Análise processo-a-processo (não formulário único)
+// ═══════════════════════════════════════════════════════════
+
+// ────────────────────────────────────────────────────────────
+// AGENTE 1 — ASSESSMENT PROTHEUS (análise de processo)
+// ────────────────────────────────────────────────────────────
+const AGENT_PROTHEUS = {
+  id: 'protheus-assessor',
+  nome: 'Especialista Protheus',
+  modelo: 'claude-sonnet-4-20250514',
+  max_tokens: 6000,
+
+  system_prompt: `Você é um consultor sênior especialista em TOTVS Protheus, atuando pela Bee IT Consultoria.
+Sua missão é realizar um assessment completo de processos do cliente, estruturando:
+- AS-IS (processo atual)
+- PADRÃO PROTHEUS
+- GAPs
+- RISCOS
+- TO-BE
+- PLANO DE AÇÃO
+
+━━━━━━━━━━━━━━━━━━
+🎯 OBJETIVO
+━━━━━━━━━━━━━━━━━━
+Diagnosticar o uso do Protheus no cliente e identificar oportunidades de melhoria, correção e padronização.
+
+━━━━━━━━━━━━━━━━━━
+🧠 METODOLOGIA
+━━━━━━━━━━━━━━━━━━
+Sempre seguir:
+1. Identificar módulo
+2. Entender processo atual (AS-IS)
+3. Mapear como deveria funcionar no Protheus
+4. Identificar divergências (GAP)
+5. Classificar risco
+6. Definir TO-BE
+7. Criar plano de ação
+
+━━━━━━━━━━━━━━━━━━
+📊 MÓDULOS PROTHEUS (OBRIGATÓRIO COBRIR)
+━━━━━━━━━━━━━━━━━━
+FISCAL:
+- TES (Tipos de Entrada e Saída)
+- NCM
+- CST/CSOSN
+- integração com faturamento
+- SPED Fiscal, EFD-Contribuições
+- Reforma Tributária (CBS/IBS/IS — LC 214/2025)
+
+FATURAMENTO:
+- pedido de venda
+- faturamento
+- emissão de NF-e
+- integração com fiscal
+
+FINANCEIRO:
+- contas a pagar/receber
+- baixa
+- natureza financeira
+- conciliação
+
+ESTOQUE:
+- movimentação
+- saldo
+- inventário
+
+COMPRAS:
+- requisição
+- pedido
+- aprovação
+- fornecedor
+
+━━━━━━━━━━━━━━━━━━
+🧠 PERGUNTAS INTELIGENTES
+━━━━━━━━━━━━━━━━━━
+Sempre perguntar (ou validar se as respostas vieram no input):
+- Como o processo inicia?
+- Quem executa?
+- Existe validação ou aprovação?
+- Existe integração com outro módulo?
+- Existe retrabalho?
+- Já ocorreu erro?
+- Existe controle ou é manual?
+
+━━━━━━━━━━━━━━━━━━
+📊 SAÍDA (FORMATO JSON ESTRITO)
+━━━━━━━━━━━━━━━━━━
+Você SEMPRE responde com JSON puro no seguinte schema — sem markdown, sem texto fora do JSON:
+
+{
+  "contexto": {
+    "erp": "Protheus",
+    "modulo": "FISCAL | FATURAMENTO | FINANCEIRO | ESTOQUE | COMPRAS | OUTRO",
+    "processo": "Nome específico do processo analisado",
+    "rotinas_envolvidas": ["MATA080", "MATA103"],
+    "tabelas_envolvidas": ["SA1", "SF2"]
+  },
+  "as_is": {
+    "descricao": "Descrição detalhada do processo atual conforme relatado pelo consultor",
+    "quem_executa": "Perfil/área responsável",
+    "frequencia": "Diária | Semanal | Mensal | Eventual",
+    "ferramentas_atuais": ["Protheus", "Excel"],
+    "volume": "Quantificação quando possível"
+  },
+  "padrao_protheus": {
+    "descricao": "Como o processo deveria funcionar no Protheus standard",
+    "rotinas_corretas": ["MATA103 para entrada de NF"],
+    "parametros_mv": ["MV_ESTNEG=.F. para bloquear saldo negativo"],
+    "boas_praticas": ["Aprovação obrigatória em SIGACOM para valores acima do limite"]
+  },
+  "gap": {
+    "descricao": "Divergências claras entre AS-IS e padrão Protheus",
+    "itens": [
+      { "item": "Nota emitida sem validação de CFOP x TES", "impacto": "alto" }
+    ]
+  },
+  "risco": {
+    "nivel": "baixo | medio | alto | critico",
+    "categoria": "Fiscal | Operacional | Financeiro | Compliance | Integridade de dados",
+    "descricao": "Explicação do risco identificado",
+    "impacto_potencial": "Ex: autuação fiscal, multa por SPED inconsistente",
+    "probabilidade": "baixa | media | alta"
+  },
+  "to_be": {
+    "descricao": "Processo ideal futuro usando o Protheus adequadamente",
+    "beneficios": ["Eliminação de retrabalho", "Consistência Fiscal↔Faturamento"],
+    "pre_requisitos": ["Treinamento time fiscal", "Parametrização de TES"]
+  },
+  "plano_acao": [
+    {
+      "acao": "Revisar e parametrizar TES 501 para saída com ST",
+      "prioridade": "alta | media | baixa",
+      "tipo": "configuracao | treinamento | desenvolvimento | processo",
+      "esforco_estimado_horas": 8,
+      "responsavel_sugerido": "Consultor Fiscal BeeIT + Analista Cliente"
+    }
+  ],
+  "impacto_cruzado_modulos": {
+    "descricao": "Como este processo/GAP afeta outros módulos do Protheus",
+    "modulos_afetados": ["FISCAL impacta FATURAMENTO e FINANCEIRO"]
+  }
+}
+
+━━━━━━━━━━━━━━━━━━
+⚠️ REGRAS OBRIGATÓRIAS
+━━━━━━━━━━━━━━━━━━
+1. Sempre pensar como consultor funcional sênior — não superficial
+2. Não responder genérico — cada campo do JSON deve ter substância real
+3. Não assumir processo sem validar — se AS-IS veio incompleto, sinalize em "gap.itens" como "Informação insuficiente — necessita validação com cliente"
+4. Sempre identificar impacto entre módulos (campo "impacto_cruzado_modulos" é obrigatório)
+5. Sempre conectar Fiscal ↔ Faturamento ↔ Financeiro (tripé do Protheus)
+6. Nomenclatura correta: SA1/SA2, SF2/SD2, SE1/SE2, CT5, rotinas MATAxxx, parâmetros MV_
+7. Para 2026+: considere Reforma Tributária (CBS/IBS/IS) sempre que módulo FISCAL ou houver tributação
+8. Classificação de risco:
+   - CRÍTICO: risco fiscal iminente, autuação provável, paralisação operacional
+   - ALTO: retrabalho sistemático, inconsistência de dados, não conformidade regulatória
+   - MÉDIO: ineficiência, falta de controle, dependência de pessoa-chave
+   - BAIXO: oportunidade de melhoria, padronização desejável
+9. Plano de ação: AÇÕES ESPECÍFICAS E EXECUTÁVEIS — nunca genéricas
+10. APENAS JSON puro — sem markdown, sem texto adicional
+11. Português brasileiro técnico, termos TOTVS oficiais`,
+
+  user_prompt_template: (dadosProcesso) => `Analise o processo abaixo e produza o diagnóstico estruturado em JSON.
+
+CLIENTE:
+\`\`\`json
+${JSON.stringify(dadosProcesso.contexto_cliente || {}, null, 2)}
+\`\`\`
+
+MÓDULO: ${dadosProcesso.modulo || 'não especificado'}
+PROCESSO: ${dadosProcesso.processo || 'não especificado'}
+
+AS-IS (relatado pelo consultor):
+"""
+${dadosProcesso.descricao_as_is || ''}
+"""
+
+RESPOSTAS ÀS PERGUNTAS INTELIGENTES:
+${Object.entries(dadosProcesso.perguntas_inteligentes || {}).map(([q, r]) => `- ${q}: ${r}`).join('\n')}
+
+OBSERVAÇÕES:
+"""
+${dadosProcesso.observacoes || '(nenhuma)'}
+"""
+
+Produza JSON completo conforme schema. Apenas JSON puro.`
+};
+
+// ────────────────────────────────────────────────────────────
+// AGENTE 2 — ASSESSMENT RM
+// System prompt oficial Bee IT — metodologia AS-IS/GAP/TO-BE
+// ────────────────────────────────────────────────────────────
+const AGENT_RM = {
+  id: 'rm-assessor',
+  nome: 'Especialista RM',
+  modelo: 'claude-sonnet-4-20250514',
+  max_tokens: 6000,
+
+  system_prompt: `Você é um consultor sênior especialista em TOTVS RM, atuando pela Bee IT Consultoria.
+Sua missão é realizar um assessment completo dos processos do cliente, estruturando:
+- AS-IS
+- PADRÃO RM
+- GAPs
+- RISCOS
+- TO-BE
+- PLANO DE AÇÃO
+
+━━━━━━━━━━━━━━━━━━
+🎯 OBJETIVO
+━━━━━━━━━━━━━━━━━━
+Diagnosticar o uso do RM e identificar melhorias operacionais, funcionais e de integração.
+
+━━━━━━━━━━━━━━━━━━
+🧠 METODOLOGIA
+━━━━━━━━━━━━━━━━━━
+Sempre seguir:
+1. Identificar módulo
+2. Entender processo atual
+3. Mapear padrão RM
+4. Identificar GAP
+5. Classificar risco
+6. Definir TO-BE
+7. Criar plano de ação
+
+━━━━━━━━━━━━━━━━━━
+📊 MÓDULOS RM (OBRIGATÓRIO)
+━━━━━━━━━━━━━━━━━━
+FLUXUS (Financeiro):
+- lançamentos
+- baixa
+- natureza
+- integração contábil
+
+LABORE (Folha):
+- eventos
+- cálculo
+- encargos
+- eSocial
+
+CHRONUS (Ponto):
+- marcações
+- jornada
+- integração com folha
+
+NUCLEUS:
+- movimentos
+- documentos
+- estoque
+
+GESTÃO DE PESSOAS:
+- cadastro
+- estrutura organizacional
+- workflow
+
+EDUCACIONAL:
+- matrícula
+- contrato
+- cobrança
+
+━━━━━━━━━━━━━━━━━━
+🧠 PERGUNTAS INTELIGENTES
+━━━━━━━━━━━━━━━━━━
+- Como o processo inicia?
+- Existe integração entre módulos?
+- Existe retrabalho?
+- Existe erro recorrente?
+- Existe validação?
+- Existe automação?
+- O processo depende de outro módulo?
+
+━━━━━━━━━━━━━━━━━━
+📊 SAÍDA (FORMATO JSON ESTRITO)
+━━━━━━━━━━━━━━━━━━
+Responda SEMPRE com JSON puro, sem markdown, sem texto fora do JSON, no schema:
+
+{
+  "contexto": {
+    "erp": "RM",
+    "modulo": "FLUXUS | LABORE | CHRONUS | NUCLEUS | GESTAO_PESSOAS | EDUCACIONAL | OUTRO",
+    "processo": "Nome específico do processo analisado",
+    "tabelas_envolvidas": ["GCOLIGADA", "FCFO", "PFUNC", "SALUNO"]
+  },
+  "as_is": {
+    "descricao": "Descrição detalhada do processo atual conforme relatado pelo consultor",
+    "quem_executa": "Perfil/área responsável",
+    "frequencia": "Diária | Semanal | Mensal | Eventual",
+    "ferramentas_atuais": ["RM", "Excel"],
+    "volume": "Quantificação quando possível"
+  },
+  "padrao_rm": {
+    "descricao": "Como o processo deveria funcionar no RM standard",
+    "funcionalidades_nativas": ["Lançamento automático Fluxus → contábil", "..."],
+    "parametrizacoes_chave": ["Parametrização X em RM.exe.config", "..."],
+    "boas_praticas": []
+  },
+  "gap": {
+    "descricao": "Divergências entre AS-IS e padrão RM",
+    "itens": [
+      { "item": "Lançamento Fluxus sem integração automática com contábil", "impacto": "alto" }
+    ]
+  },
+  "risco": {
+    "nivel": "baixo | medio | alto | critico",
+    "categoria": "Trabalhista/eSocial | Operacional | Financeiro | Compliance | Integridade de dados",
+    "descricao": "Explicação do risco identificado",
+    "impacto_potencial": "Ex: evento eSocial rejeitado, folha incorreta, multa DCTFWeb",
+    "probabilidade": "baixa | media | alta"
+  },
+  "to_be": {
+    "descricao": "Processo ideal futuro usando o RM adequadamente",
+    "beneficios": ["Eliminação de retrabalho", "Folha ↔ Ponto ↔ Financeiro integrados"],
+    "pre_requisitos": ["Treinamento", "Parametrização correta"]
+  },
+  "plano_acao": [
+    {
+      "acao": "Parametrizar integração automática Chronus → Labore",
+      "prioridade": "alta | media | baixa",
+      "tipo": "configuracao | treinamento | desenvolvimento | processo | formula_rm",
+      "esforco_estimado_horas": 8,
+      "responsavel_sugerido": "Consultor RM BeeIT + Analista Cliente"
+    }
+  ],
+  "impacto_cruzado_modulos": {
+    "descricao": "Como este processo/GAP afeta outros módulos RM (obrigatório — nunca tratar módulos isolados)",
+    "modulos_afetados": ["FLUXUS impacta contábil", "LABORE impacta CHRONUS e FLUXUS"]
+  }
+}
+
+━━━━━━━━━━━━━━━━━━
+⚠️ REGRAS
+━━━━━━━━━━━━━━━━━━
+- Sempre analisar integração entre módulos
+- Folha ↔ Ponto ↔ Financeiro
+- Nunca tratar módulos isolados
+- Sempre identificar impacto operacional
+
+ADICIONAIS DE EXECUÇÃO:
+- Se AS-IS estiver incompleto, sinalize em "gap.itens" como "Informação insuficiente — validar com cliente"
+- Use nomenclatura RM correta: COLIGADA (não "empresa"), FCFO (cliente/fornecedor), PFUNC (funcionário), SALUNO (aluno), fórmulas visuais, rubricas
+- Módulo LABORE: sempre avaliar impacto eSocial (S-1200, S-1210, S-2200, S-2299), DCTFWeb, DIRF
+- Classificação de risco:
+  - CRÍTICO: evento eSocial rejeitado, folha incorreta, autuação trabalhista iminente
+  - ALTO: inconsistência Fluxus ↔ contábil, retrabalho sistemático, Chronus não integrado à Labore
+  - MÉDIO: ineficiência operacional, dependência de usuário-chave
+  - BAIXO: oportunidade de melhoria
+- APENAS JSON puro, sem markdown
+- Português brasileiro, termos RM oficiais`,
+
+  user_prompt_template: (dadosProcesso) => `Analise o processo RM abaixo e produza o diagnóstico estruturado em JSON.
+
+CLIENTE:
+\`\`\`json
+${JSON.stringify(dadosProcesso.contexto_cliente || {}, null, 2)}
+\`\`\`
+
+MÓDULO: ${dadosProcesso.modulo || 'não especificado'}
+PROCESSO: ${dadosProcesso.processo || 'não especificado'}
+
+AS-IS (relatado pelo consultor):
+"""
+${dadosProcesso.descricao_as_is || ''}
+"""
+
+RESPOSTAS ÀS PERGUNTAS INTELIGENTES:
+${Object.entries(dadosProcesso.perguntas_inteligentes || {}).map(([q, r]) => `- ${q}: ${r}`).join('\n')}
+
+OBSERVAÇÕES:
+"""
+${dadosProcesso.observacoes || '(nenhuma)'}
+"""
+
+Produza JSON completo conforme schema. Apenas JSON puro.`
+};
+
+// ────────────────────────────────────────────────────────────
+// AGENTE 3 — ORQUESTRADOR (classifica Protheus vs RM)
+// ────────────────────────────────────────────────────────────
+const AGENT_ORQUESTRADOR = {
+  id: 'orquestrador',
+  nome: 'Orquestrador de Assessments',
+  modelo: 'claude-sonnet-4-20250514',
+  max_tokens: 2000,
+
+  system_prompt: `Você é o Orquestrador de Assessments da BeeIT. Analisa descrição livre de cliente TOTVS e classifica: Protheus, RM ou híbrido.
+
+HEURÍSTICAS:
+
+🟦 PROTHEUS quando:
+- Indústria, Distribuição, Atacado, Varejo, Agronegócio, Logística
+- Menciona: PCP, MRP, expedição, EDI, ST, bloco K, SPED Fiscal complexo
+- Volume: >5mil NFe/mês, muitos SKUs, multi-UF com complexidade tributária
+- Palavras-chave: produção, estoque, distribuição, NFe, CFOP, TES, CST, ICMS-ST
+
+🟩 RM quando:
+- Educação, Saúde, Construção Civil, Serviços recorrentes, Condomínios
+- Menciona: alunos, matrícula, pacientes, TISS, obras, medições, contratos recorrentes
+- Forte na folha: >500 CLT, eSocial complexo, fórmulas
+- Palavras-chave: aluno, matrícula, convênio, leito, obra, mensalidade, folha, CLT
+
+🟡 HÍBRIDO quando:
+- Grande grupo com braços industriais + serviços
+- Educação + lojas físicas
+- Saúde + farmácia industrial
+- Grupos >R$500mi com operação diversificada
+
+SAÍDA (JSON obrigatório):
+
+{
+  "classificacao": "protheus | rm | hibrido",
+  "confianca_percent": 85,
+  "raciocinio": "Breve 2-3 frases",
+  "sinais_detectados": {
+    "indicadores_protheus": [],
+    "indicadores_rm": []
+  },
+  "recomendacao_acao": "Iniciar Assessment Protheus | Iniciar Assessment RM | Iniciar ambos",
+  "processos_sugeridos_para_analise": [
+    { "modulo": "FISCAL", "processo": "Emissão de NFe", "justificativa": "..." }
+  ],
+  "perguntas_para_confirmar": [],
+  "alerta_atencao": null
+}
+
+REGRAS:
+1. Confiança < 70% → sugerir perguntas para confirmar
+2. Se descrição ambígua, pedir contexto
+3. "processos_sugeridos_para_analise" → sugira 3-5 processos prioritários
+4. APENAS JSON puro
+5. Português brasileiro`,
+
+  user_prompt_template: (descricao_livre, contexto_rapido) => `Analise e classifique.
+
+DESCRIÇÃO:
+"""
+${descricao_livre}
+"""
+
+CONTEXTO:
+${JSON.stringify(contexto_rapido || {}, null, 2)}
+
+Produza JSON conforme schema. Apenas JSON puro.`
+};
+
+// ────────────────────────────────────────────────────────────
+// AGENTE 4 — CONSOLIDADOR (junta várias análises em sumário)
+// ────────────────────────────────────────────────────────────
+const AGENT_CONSOLIDADOR = {
+  id: 'consolidador',
+  nome: 'Consolidador de Assessment',
+  modelo: 'claude-sonnet-4-20250514',
+  max_tokens: 6000,
+
+  system_prompt: `Você é consultor sênior BeeIT especializado em consolidar múltiplas análises de processos (formato AS-IS/GAP/TO-BE) em Sumário Executivo coerente e acionável para liderança do cliente.
+
+Entrega:
+1. Sumário executivo (2-3 parágrafos para board)
+2. Visão consolidada de riscos (ordenados por criticidade)
+3. Roadmap em fases
+4. Estimativa total de esforço
+5. Insights cruzados entre módulos
+
+SAÍDA (JSON obrigatório):
+
+{
+  "sumario_executivo": "Parágrafo 1: situação geral. Parágrafo 2: principais descobertas. Parágrafo 3: recomendação estratégica BeeIT.",
+  "visao_consolidada": {
+    "total_processos_analisados": 8,
+    "modulos_cobertos": ["FISCAL", "FATURAMENTO", "FINANCEIRO"],
+    "gaps_criticos_count": 3,
+    "gaps_altos_count": 5,
+    "gaps_medios_count": 4
+  },
+  "riscos_prioritarios": [
+    { "nivel": "critico", "descricao": "...", "modulos_afetados": [], "acao_imediata": "..." }
+  ],
+  "insights_cruzados": [
+    "GAP de TES no Fiscal gera retrabalho em Faturamento e divergência em Financeiro"
+  ],
+  "roadmap_consolidado": [
+    {
+      "fase": "Fase 1 — Estabilização Fiscal",
+      "duracao_semanas": 4,
+      "foco": "Corrigir riscos críticos de compliance",
+      "entregaveis": [],
+      "acoes_incluidas": []
+    }
+  ],
+  "estimativa_esforco": {
+    "horas_totais_consultoria": 320,
+    "dias_corridos_projeto": 60,
+    "equipe_sugerida": {
+      "consultor_senior": 1,
+      "consultor_pleno": 2,
+      "analista_cliente": 1
+    }
+  },
+  "recomendacao_final_beeit": "Recomendação estratégica da BeeIT (quick-wins vs projeto completo vs contrato recorrente)"
+}
+
+REGRAS:
+1. Não duplicar info já nas análises individuais
+2. Procurar PADRÕES entre GAPs (tema transversal)
+3. Roadmap PRAGMÁTICO — começar por riscos críticos fiscais/regulatórios
+4. Estimativa coerente (soma individuais + 15-25% overhead gestão)
+5. Tom executivo (board/diretoria do cliente)
+6. APENAS JSON puro`,
+
+  user_prompt_template: (contextoCliente, analisesProcessos) => `Consolide análises abaixo em Sumário Executivo.
+
+CLIENTE:
+\`\`\`json
+${JSON.stringify(contextoCliente, null, 2)}
+\`\`\`
+
+ANÁLISES (${analisesProcessos.length} processos):
+\`\`\`json
+${JSON.stringify(analisesProcessos, null, 2)}
+\`\`\`
+
+Produza JSON consolidado. Apenas JSON puro.`
+};
+
+// ────────────────────────────────────────────────────────────
+// PROCESSOS PADRÃO POR MÓDULO (para o wizard pré-popular)
+// ────────────────────────────────────────────────────────────
+const PROCESSOS_PADRAO = {
+  protheus: {
+    FISCAL: [
+      'Configuração e manutenção de TES',
+      'Cadastro e revisão de NCM',
+      'Definição de CST/CSOSN por operação',
+      'Geração de SPED Fiscal (EFD-ICMS/IPI)',
+      'Geração de EFD-Contribuições',
+      'Integração Fiscal ↔ Faturamento (NFe)',
+      'Apuração mensal de ICMS/IPI',
+      'Preparação para Reforma Tributária (CBS/IBS/IS)'
+    ],
+    FATURAMENTO: [
+      'Pedido de venda',
+      'Faturamento de NFe',
+      'Emissão e transmissão de NFe (MATA460)',
+      'Cancelamento e carta de correção',
+      'Faturamento em lote',
+      'Integração com pré-pedido/CRM',
+      'Gestão de preços e descontos'
+    ],
+    FINANCEIRO: [
+      'Contas a Pagar (SE2)',
+      'Contas a Receber (SE1)',
+      'Baixa de títulos e conciliação bancária',
+      'Fluxo de caixa',
+      'Natureza financeira e classificação',
+      'Cobrança bancária e remessa CNAB',
+      'Fechamento financeiro mensal'
+    ],
+    ESTOQUE: [
+      'Movimentação de estoque (entrada/saída)',
+      'Saldo e estoque mínimo',
+      'Inventário físico vs sistema',
+      'Transferência entre filiais',
+      'Custos médios e giro',
+      'Bloqueio de saldo negativo (MV_ESTNEG)'
+    ],
+    COMPRAS: [
+      'Requisição de compra',
+      'Pedido de compra',
+      'Workflow de aprovação (SIGAAPR)',
+      'Cadastro e qualificação de fornecedor',
+      'Cotação e análise de preço',
+      'Recebimento e pré-nota'
+    ]
+  },
+  rm: {
+    FLUXUS: [
+      'Lançamentos financeiros',
+      'Baixa de títulos',
+      'Natureza financeira',
+      'Fluxo de caixa',
+      'Conciliação bancária',
+      'Integração contábil (lançamentos)',
+      'Contas a Pagar',
+      'Contas a Receber',
+      'Boletos recorrentes'
+    ],
+    LABORE: [
+      'Cadastro de eventos (rubricas)',
+      'Cálculo de folha mensal',
+      'Encargos sociais e tributários',
+      'eSocial — envio de eventos (S-1200/S-1210/S-2200/S-2299)',
+      'DCTFWeb',
+      'Férias e 13º salário',
+      'Fórmulas e rubricas customizadas',
+      'Integração Labore → Financeiro (Fluxus)',
+      'Integração Labore → Contábil'
+    ],
+    CHRONUS: [
+      'Marcação de ponto',
+      'Apuração de jornada',
+      'Banco de horas',
+      'Tratamento de ocorrências',
+      'Integração Chronus → Labore (Ponto → Folha)'
+    ],
+    NUCLEUS: [
+      'Movimentos de entrada/saída',
+      'Emissão e controle de documentos',
+      'Estoque — movimentação e saldo',
+      'Compras e recebimento',
+      'Faturamento'
+    ],
+    GESTAO_PESSOAS: [
+      'Cadastro de colaboradores',
+      'Estrutura organizacional (departamentos/seções)',
+      'Workflow de admissão/desligamento',
+      'Workflow de férias',
+      'Workflow de alteração cadastral',
+      'Integração Gestão de Pessoas → Labore'
+    ],
+    EDUCACIONAL: [
+      'Matrícula de aluno',
+      'Gestão de contrato educacional',
+      'Cobrança — geração de boletos recorrentes',
+      'Diário de classe',
+      'Notas e frequência',
+      'Integração Educacional → Financeiro (Fluxus)',
+      'Portal do aluno/responsável'
+    ]
+  }
+};
+
+// ────────────────────────────────────────────────────────────
+// PERGUNTAS INTELIGENTES (templates por ERP, usados no wizard)
+// Protheus: 7 perguntas (prompt Protheus)
+// RM:       7 perguntas (prompt RM — foco em integração/automação)
+// ────────────────────────────────────────────────────────────
+const PERGUNTAS_INTELIGENTES_PROTHEUS = [
+  { id: 'como_inicia',       label: 'Como o processo inicia?',                              obrigatorio: true  },
+  { id: 'quem_executa',      label: 'Quem executa (perfil/área)?',                          obrigatorio: true  },
+  { id: 'validacao',         label: 'Existe validação ou aprovação?',                       obrigatorio: false },
+  { id: 'integracao',        label: 'Existe integração com outro módulo? Qual?',            obrigatorio: false },
+  { id: 'retrabalho',        label: 'Existe retrabalho? Descreva.',                         obrigatorio: false },
+  { id: 'erros_ocorridos',   label: 'Já ocorreu erro? Descreva.',                           obrigatorio: false },
+  { id: 'controle_manual',   label: 'Existe controle ou é manual (ex: planilha paralela)?', obrigatorio: false }
+];
+
+const PERGUNTAS_INTELIGENTES_RM = [
+  { id: 'como_inicia',        label: 'Como o processo inicia?',                             obrigatorio: true  },
+  { id: 'integracao',         label: 'Existe integração entre módulos?',                    obrigatorio: true  },
+  { id: 'retrabalho',         label: 'Existe retrabalho?',                                  obrigatorio: false },
+  { id: 'erro_recorrente',    label: 'Existe erro recorrente?',                             obrigatorio: false },
+  { id: 'validacao',          label: 'Existe validação?',                                   obrigatorio: false },
+  { id: 'automacao',          label: 'Existe automação?',                                   obrigatorio: false },
+  { id: 'dependencia_modulo', label: 'O processo depende de outro módulo? Qual?',           obrigatorio: false }
+];
+
+// Alias retrocompatível
+const PERGUNTAS_INTELIGENTES_TEMPLATE = PERGUNTAS_INTELIGENTES_PROTHEUS;
+
+// ────────────────────────────────────────────────────────────
+// EXPORT
+// ────────────────────────────────────────────────────────────
+const AGENTS = {
+  protheus: AGENT_PROTHEUS,
+  rm: AGENT_RM,
+  orquestrador: AGENT_ORQUESTRADOR,
+  consolidador: AGENT_CONSOLIDADOR
+};
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    AGENTS,
+    AGENT_PROTHEUS,
+    AGENT_RM,
+    AGENT_ORQUESTRADOR,
+    AGENT_CONSOLIDADOR,
+    PROCESSOS_PADRAO,
+    PERGUNTAS_INTELIGENTES_PROTHEUS,
+    PERGUNTAS_INTELIGENTES_RM,
+    PERGUNTAS_INTELIGENTES_TEMPLATE
+  };
+}
+
+
+// ──────────────────────────────────────────────────
+// ══════ qdb-protheus.js ══════
+// ═══════════════════════════════════════════════════════════
+// BeeIT OS-RT v2 — QDB Protheus v2.0
+// 
+// ⚠️ MUDANÇA ARQUITETURAL v2.0:
+// Não é mais formulário gigante. Agora é:
+//   1. Contexto do Cliente (dados básicos — 1 tela)
+//   2. Análise de Processos (N processos, 1 por vez, usa AGENT_PROTHEUS)
+//   3. Consolidação (AGENT_CONSOLIDADOR junta tudo)
+// ═══════════════════════════════════════════════════════════
+
+const QDB_PROTHEUS_CONTEXTO = {
+  id: 'protheus',
+  nome: 'Assessment Protheus',
+  descricao: 'Diagnóstico AS-IS / PADRÃO / GAP / TO-BE / PLANO DE AÇÃO por processo',
+  metodologia: 'AS-IS → PADRÃO PROTHEUS → GAP → RISCO → TO-BE → PLANO DE AÇÃO',
+  icone: 'P',
+  cor: '#E84A27',
+  estimativa_min_por_processo: 8,
+
+  // ────────── CONTEXTO DO CLIENTE (1 única seção preenchida no início) ──────────
+  contexto_cliente: {
+    id: 'contexto',
+    titulo: 'Contexto do Cliente',
+    descricao: 'Informações básicas que serão compartilhadas entre todas as análises de processo',
+    perguntas: [
+      { id: 'razao_social', label: 'Razão social', tipo: 'text', obrigatorio: true, placeholder: 'Ex: Indústria ABC LTDA' },
+      { id: 'cnpj', label: 'CNPJ principal', tipo: 'text', obrigatorio: true, mascara: 'cnpj', placeholder: '00.000.000/0000-00' },
+      { id: 'segmento', label: 'Segmento de atuação', tipo: 'select', obrigatorio: true,
+        opcoes: ['Indústria', 'Distribuição/Atacado', 'Varejo', 'Agronegócio', 'Construção Civil', 'Logística', 'Serviços', 'Outro'] },
+      { id: 'regime_tributario', label: 'Regime tributário', tipo: 'select', obrigatorio: true,
+        opcoes: ['Simples Nacional', 'Lucro Presumido', 'Lucro Real'] },
+      { id: 'faturamento_anual', label: 'Faturamento anual aproximado', tipo: 'select', obrigatorio: false,
+        opcoes: ['Até R$ 10mi', 'R$ 10mi – 50mi', 'R$ 50mi – 200mi', 'R$ 200mi – 1bi', 'Acima de R$ 1bi'] },
+      { id: 'n_funcionarios', label: 'Nº colaboradores', tipo: 'number', obrigatorio: false, placeholder: 'Ex: 250' },
+      { id: 'n_filiais', label: 'Nº filiais/CNPJs no grupo', tipo: 'number', obrigatorio: true, placeholder: 'Ex: 3' },
+      { id: 'ufs_operacao', label: 'UFs onde opera', tipo: 'multiselect', obrigatorio: true,
+        opcoes: ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'] },
+      { id: 'versao_protheus', label: 'Versão/Release Protheus', tipo: 'text', obrigatorio: false, placeholder: 'Ex: 12.1.33' },
+      { id: 'hospedagem', label: 'Tipo de hospedagem', tipo: 'select', obrigatorio: false,
+        opcoes: ['TOTVS Cloud (PaaS)', 'Cloud pública (AWS/Azure/GCP)', 'On-premises', 'Híbrido', 'A decidir'] },
+      { id: 'vol_nf_mes', label: 'Volume mensal de NFe (entrada + saída)', tipo: 'select', obrigatorio: false,
+        opcoes: ['Até 500', '500 – 2.000', '2.000 – 10.000', '10.000 – 50.000', 'Acima de 50.000'] },
+      { id: 'objetivo_projeto', label: 'Objetivo do assessment', tipo: 'select', obrigatorio: true,
+        opcoes: ['Diagnóstico pré-implantação', 'Upgrade de versão', 'Migração de outro ERP', 'Saneamento/Reconfiguração', 'Auditoria de processos', 'Expansão'] },
+      { id: 'consultor_responsavel', label: 'Consultor BeeIT responsável', tipo: 'text', obrigatorio: true, placeholder: 'Nome do consultor' },
+      { id: 'contato_cliente', label: 'Contato principal no cliente', tipo: 'text', obrigatorio: false, placeholder: 'Nome · Cargo · Email' }
+    ]
+  },
+
+  // ────────── ANÁLISE DE PROCESSO (template reutilizável) ──────────
+  // Para cada processo adicionado ao assessment, consultor preenche isso:
+  template_analise_processo: {
+    id: 'analise_processo',
+    titulo: 'Analisar processo',
+    descricao: 'Descreva o processo atual — a IA vai produzir AS-IS/PADRÃO/GAP/RISCO/TO-BE/PLANO',
+    perguntas: [
+      { id: 'modulo', label: 'Módulo Protheus', tipo: 'select', obrigatorio: true,
+        opcoes: ['FISCAL', 'FATURAMENTO', 'FINANCEIRO', 'ESTOQUE', 'COMPRAS', 'OUTRO'] },
+      { id: 'processo_nome', label: 'Nome do processo', tipo: 'text-com-sugestoes', obrigatorio: true,
+        placeholder: 'Ex: Emissão de NFe · Baixa de título · Inventário mensal',
+        // sugestões dinâmicas baseadas no módulo selecionado (vide PROCESSOS_PADRAO em agents.js)
+        sugestoes_fonte: 'PROCESSOS_PADRAO.protheus' },
+      { id: 'descricao_as_is', label: 'Descrição do processo atual (AS-IS)', tipo: 'textarea', obrigatorio: true,
+        placeholder: 'Descreva como o processo é executado hoje. Quanto mais detalhes, melhor a análise.',
+        rows: 8 },
+      // As 7 perguntas inteligentes
+      { id: 'pi_como_inicia', label: '1) Como o processo inicia?', tipo: 'textarea', obrigatorio: true, rows: 2 },
+      { id: 'pi_quem_executa', label: '2) Quem executa (perfil/área)?', tipo: 'text', obrigatorio: true },
+      { id: 'pi_validacao', label: '3) Existe validação ou aprovação?', tipo: 'textarea', obrigatorio: false, rows: 2 },
+      { id: 'pi_integracao', label: '4) Existe integração com outro módulo?', tipo: 'textarea', obrigatorio: false, rows: 2 },
+      { id: 'pi_retrabalho', label: '5) Existe retrabalho?', tipo: 'textarea', obrigatorio: false, rows: 2 },
+      { id: 'pi_erros', label: '6) Já ocorreu erro? Descreva.', tipo: 'textarea', obrigatorio: false, rows: 2 },
+      { id: 'pi_controle', label: '7) Existe controle ou é manual (planilha paralela, etc.)?', tipo: 'textarea', obrigatorio: false, rows: 2 },
+      // Observações adicionais
+      { id: 'observacoes', label: 'Observações adicionais (opcional)', tipo: 'textarea', obrigatorio: false, rows: 3,
+        placeholder: 'Qualquer contexto extra relevante — ambiente, histórico, restrições, etc.' }
+    ]
+  }
+};
+
+if (typeof module !== 'undefined' && module.exports) module.exports = QDB_PROTHEUS_CONTEXTO;
+
+
+// ──────────────────────────────────────────────────
+// ══════ qdb-rm.js ══════
+// ═══════════════════════════════════════════════════════════
+// BeeIT OS-RT v2 — QDB RM v2.0
+// Simétrico ao Protheus v2 — metodologia AS-IS/PADRÃO/GAP/TO-BE/PLANO
+// ═══════════════════════════════════════════════════════════
+
+const QDB_RM_CONTEXTO = {
+  id: 'rm',
+  nome: 'Assessment RM',
+  descricao: 'Diagnóstico AS-IS / PADRÃO / GAP / TO-BE / PLANO DE AÇÃO por processo RM',
+  metodologia: 'AS-IS → PADRÃO RM → GAP → RISCO → TO-BE → PLANO DE AÇÃO',
+  icone: 'R',
+  cor: '#00A859',
+  estimativa_min_por_processo: 8,
+
+  // ────────── CONTEXTO DO CLIENTE ──────────
+  contexto_cliente: {
+    id: 'contexto',
+    titulo: 'Contexto do Cliente',
+    descricao: 'Informações base compartilhadas entre todas as análises de processo',
+    perguntas: [
+      { id: 'razao_social', label: 'Razão social', tipo: 'text', obrigatorio: true, placeholder: 'Ex: Faculdade XYZ LTDA' },
+      { id: 'cnpj', label: 'CNPJ principal', tipo: 'text', obrigatorio: true, mascara: 'cnpj' },
+      { id: 'segmento', label: 'Segmento de atuação', tipo: 'select', obrigatorio: true,
+        opcoes: ['Educação', 'Saúde', 'Construção Civil', 'Serviços', 'Indústria', 'Condomínios', 'Varejo', 'Outro'] },
+      { id: 'segmento_detalhe', label: 'Detalhe do segmento (nicho específico)', tipo: 'text', obrigatorio: false,
+        placeholder: 'Ex: Faculdade presencial+EAD / Hospital 120 leitos / Construtora incorporadora' },
+      { id: 'n_coligadas', label: 'Nº coligadas no grupo', tipo: 'number', obrigatorio: true, placeholder: 'Ex: 2' },
+      { id: 'n_filiais', label: 'Nº filiais/unidades', tipo: 'number', obrigatorio: true, placeholder: 'Ex: 5' },
+      { id: 'n_colaboradores', label: 'Nº total de colaboradores (incluindo terceiros)', tipo: 'select', obrigatorio: true,
+        opcoes: ['Até 50', '50 – 200', '200 – 1.000', '1.000 – 5.000', 'Acima de 5.000'] },
+      { id: 'versao_rm', label: 'Versão/Release RM', tipo: 'text', obrigatorio: false, placeholder: 'Ex: 12.1.2405' },
+      { id: 'hospedagem', label: 'Tipo de hospedagem', tipo: 'select', obrigatorio: false,
+        opcoes: ['TOTVS Cloud (PaaS)', 'Cloud pública (AWS/Azure/GCP)', 'On-premises', 'Híbrido', 'A decidir'] },
+      { id: 'modulos_ativos', label: 'Módulos RM em uso ou escopo', tipo: 'multiselect', obrigatorio: false,
+        opcoes: [
+          'Fluxus (Financeiro)',
+          'Labore (Folha)',
+          'Chronus (Ponto)',
+          'Nucleus (Back-office)',
+          'Gestão de Pessoas',
+          'Educacional (Classis/Ensino)',
+          'Saldus (Contábil)',
+          'Bis (BI)',
+          'Portal (Web)',
+          'Outro'
+        ] },
+      { id: 'objetivo_projeto', label: 'Objetivo do assessment', tipo: 'select', obrigatorio: true,
+        opcoes: ['Diagnóstico pré-implantação', 'Upgrade de versão', 'Migração de outro sistema', 'Saneamento/Reconfiguração', 'Auditoria de processos', 'Expansão modular'] },
+      { id: 'consultor_responsavel', label: 'Consultor BeeIT responsável', tipo: 'text', obrigatorio: true },
+      { id: 'contato_cliente', label: 'Contato principal no cliente', tipo: 'text', obrigatorio: false }
+    ]
+  },
+
+  // ────────── ANÁLISE DE PROCESSO ──────────
+  template_analise_processo: {
+    id: 'analise_processo_rm',
+    titulo: 'Analisar processo RM',
+    descricao: 'Descreva o processo atual — a IA vai produzir AS-IS/PADRÃO/GAP/RISCO/TO-BE/PLANO',
+    perguntas: [
+      { id: 'modulo', label: 'Módulo RM', tipo: 'select', obrigatorio: true,
+        opcoes: ['FLUXUS', 'LABORE', 'CHRONUS', 'NUCLEUS', 'GESTAO_PESSOAS', 'EDUCACIONAL', 'OUTRO'] },
+      { id: 'processo_nome', label: 'Nome do processo', tipo: 'text-com-sugestoes', obrigatorio: true,
+        placeholder: 'Ex: Lançamento Fluxus · Cálculo de folha · Matrícula de aluno',
+        sugestoes_fonte: 'PROCESSOS_PADRAO.rm' },
+      { id: 'descricao_as_is', label: 'Descrição do processo atual (AS-IS)', tipo: 'textarea', obrigatorio: true,
+        placeholder: 'Descreva como o processo é executado hoje.',
+        rows: 8 },
+      // 7 perguntas inteligentes OFICIAIS do prompt RM
+      { id: 'pi_como_inicia',        label: '1) Como o processo inicia?',                       tipo: 'textarea', obrigatorio: true,  rows: 2 },
+      { id: 'pi_integracao',         label: '2) Existe integração entre módulos?',              tipo: 'textarea', obrigatorio: true,  rows: 2 },
+      { id: 'pi_retrabalho',         label: '3) Existe retrabalho?',                            tipo: 'textarea', obrigatorio: false, rows: 2 },
+      { id: 'pi_erro_recorrente',    label: '4) Existe erro recorrente?',                       tipo: 'textarea', obrigatorio: false, rows: 2 },
+      { id: 'pi_validacao',          label: '5) Existe validação?',                             tipo: 'textarea', obrigatorio: false, rows: 2 },
+      { id: 'pi_automacao',          label: '6) Existe automação?',                             tipo: 'textarea', obrigatorio: false, rows: 2 },
+      { id: 'pi_dependencia_modulo', label: '7) O processo depende de outro módulo? Qual?',     tipo: 'textarea', obrigatorio: false, rows: 2 },
+      { id: 'observacoes', label: 'Observações adicionais', tipo: 'textarea', obrigatorio: false, rows: 3 }
+    ]
+  }
+};
+
+if (typeof module !== 'undefined' && module.exports) module.exports = QDB_RM_CONTEXTO;
+
+
+// ──────────────────────────────────────────────────
+// ══════ assessments-integration.js ══════
+// ═══════════════════════════════════════════════════════════
+// BeeIT OS-RT v2 — Integração Assessments (Supabase + Claude API)
+// 
+// Exporta (no objeto global window.BeeITAssessments):
+//   - createAssessment(tipo, contextoCliente)
+//   - saveAssessment(id, dados)
+//   - loadAssessment(id)
+//   - listAssessments(filtros)
+//   - deleteAssessment(id)
+//   - analyzeProcess(assessmentId, dadosProcesso) → chama AGENT_PROTHEUS ou AGENT_RM
+//   - classifyClient(descricaoLivre, contexto) → chama AGENT_ORQUESTRADOR
+//   - consolidateAssessment(assessmentId) → chama AGENT_CONSOLIDADOR
+//
+// Dependências esperadas no escopo global (já existentes no BeeIT OS-RT v2):
+//   - supabase (cliente Supabase inicializado)
+//   - beeitSession.access_token (JWT do usuário logado)
+//   - ANTHROPIC_KEY (chave da Anthropic para chamadas diretas)
+//   - AGENTS (objeto com os 4 agentes — importado de agents.js)
+// ═══════════════════════════════════════════════════════════
+
+(function() {
+  'use strict';
+
+  const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
+
+  // ──────────────────────────────────────────────────────────
+  // HELPERS — tratamento de JSON retornado pela IA
+  // ──────────────────────────────────────────────────────────
+
+  /**
+   * Remove cercas markdown (```json ... ```) e extrai primeiro objeto JSON válido.
+   * Mesmo padrão usado no CT5 agent (trata truncagem parcial).
+   */
+  function extractJSON(rawText) {
+    if (!rawText || typeof rawText !== 'string') {
+      throw new Error('Texto vazio retornado pela IA');
+    }
+
+    // 1. Remover markdown fences
+    let cleaned = rawText
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```\s*$/i, '')
+      .trim();
+
+    // 2. Tentar parse direto
+    try {
+      return JSON.parse(cleaned);
+    } catch (e) {
+      // 3. Fallback: extrair primeiro bloco { ... } balanceado
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      if (match) {
+        try { return JSON.parse(match[0]); } catch (e2) { /* fall through */ }
+      }
+
+      // 4. Fallback de truncagem: se terminar antes do fechamento, tentar fechar
+      if (cleaned.startsWith('{') && !cleaned.endsWith('}')) {
+        let attempt = cleaned;
+        const openBraces = (attempt.match(/\{/g) || []).length;
+        const closeBraces = (attempt.match(/\}/g) || []).length;
+        const missing = openBraces - closeBraces;
+        if (missing > 0) {
+          // Fechar aspas pendentes, arrays pendentes, etc.
+          attempt = attempt.replace(/,\s*$/, '') + '}'.repeat(missing);
+          try { return JSON.parse(attempt); } catch (e3) { /* fall through */ }
+        }
+      }
+
+      throw new Error('Não foi possível fazer parse do JSON retornado: ' + e.message);
+    }
+  }
+
+  /**
+   * Chamada padrão à API Claude Sonnet 4.
+   * Usa padrão do BeeIT OS-RT v2 existente (header anthropic-dangerous-direct-browser-access).
+   */
+  async function callClaude(agent, userPrompt, options = {}) {
+    const key = window.ANTHROPIC_KEY || options.apiKey;
+    if (!key) throw new Error('ANTHROPIC_KEY não definida no escopo global');
+
+    const body = {
+      model: agent.modelo,
+      max_tokens: options.max_tokens || agent.max_tokens,
+      system: agent.system_prompt,
+      messages: [{ role: 'user', content: userPrompt }]
+    };
+    // ⚠️ NÃO passar temperature: 0 — causa HTTP 400 nesta versão da API
+
+    const resp = await fetch(ANTHROPIC_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!resp.ok) {
+      const err = await resp.text();
+      throw new Error(`Claude API error ${resp.status}: ${err.slice(0, 300)}`);
+    }
+
+    const data = await resp.json();
+    const text = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('');
+
+    if (!text) throw new Error('Resposta Claude sem conteúdo textual');
+
+    return {
+      rawText: text,
+      parsed: extractJSON(text),
+      usage: data.usage,
+      stop_reason: data.stop_reason
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // SUPABASE CRUD — assessments
+  // ──────────────────────────────────────────────────────────
+
+  function getSupabase() {
+    const sb = window.supabase || window.sbClient || window._supabaseClient;
+    if (!sb) throw new Error('Cliente Supabase não encontrado no escopo global');
+    return sb;
+  }
+
+  function getUserId() {
+    const session = window.beeitSession || window._beeitSession;
+    if (!session?.user?.id) throw new Error('Usuário não logado (beeitSession ausente)');
+    return session.user.id;
+  }
+
+  /**
+   * Cria um novo assessment (draft) no Supabase.
+   * @param {string} tipo - 'protheus' | 'rm' | 'hibrido'
+   * @param {object} contextoCliente - dados básicos do cliente
+   * @returns {object} registro criado com id
+   */
+  async function createAssessment(tipo, contextoCliente) {
+    const sb = getSupabase();
+    const userId = getUserId();
+
+    const { razao_social, cnpj, segmento } = contextoCliente || {};
+    const uf = (contextoCliente?.ufs_operacao || [])[0] || null;
+
+    const insertPayload = {
+      user_id: userId,
+      tipo,
+      status: 'draft',
+      cliente_nome: razao_social || 'Sem nome',
+      cliente_cnpj: cnpj || null,
+      cliente_segmento: segmento || null,
+      cliente_uf: uf,
+      dados: {
+        contexto_cliente: contextoCliente || {},
+        processos_analisados: [],
+        consolidacao: null,
+        metadados: { qdb_versao: '2026.04', agent_versao: 'v2.0' }
+      },
+      secao_atual: 'contexto',
+      percentual_completo: 10 // criou contexto = 10%
+    };
+
+    const { data, error } = await sb
+      .from('assessments')
+      .insert(insertPayload)
+      .select()
+      .single();
+
+    if (error) throw new Error('Erro ao criar assessment: ' + error.message);
+    return data;
+  }
+
+  /**
+   * Atualiza dados de um assessment (merge no JSONB).
+   */
+  async function saveAssessment(id, patch) {
+    const sb = getSupabase();
+
+    // Se o patch inclui chaves de topo (status/secao_atual/etc), atualiza direto.
+    // Se contém { dados: { ... } }, faz merge manual.
+    const updatePayload = { ...patch };
+
+    if (patch.dados) {
+      // Busca dados atuais para fazer merge
+      const { data: current } = await sb
+        .from('assessments')
+        .select('dados')
+        .eq('id', id)
+        .single();
+
+      updatePayload.dados = {
+        ...(current?.dados || {}),
+        ...patch.dados
+      };
+    }
+
+    const { data, error } = await sb
+      .from('assessments')
+      .update(updatePayload)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw new Error('Erro ao salvar assessment: ' + error.message);
+    return data;
+  }
+
+  /**
+   * Carrega um assessment por ID.
+   */
+  async function loadAssessment(id) {
+    const sb = getSupabase();
+    const { data, error } = await sb
+      .from('assessments')
+      .select('*')
+      .eq('id', id)
+      .is('deleted_at', null)
+      .single();
+
+    if (error) throw new Error('Erro ao carregar assessment: ' + error.message);
+    return data;
+  }
+
+  /**
+   * Lista assessments do usuário (com filtros opcionais).
+   */
+  async function listAssessments(filtros = {}) {
+    const sb = getSupabase();
+    let q = sb
+      .from('assessments')
+      .select('id,tipo,status,cliente_nome,cliente_cnpj,cliente_segmento,percentual_completo,created_at,updated_at,completed_at,pdf_url')
+      .is('deleted_at', null)
+      .order('updated_at', { ascending: false });
+
+    if (filtros.tipo) q = q.eq('tipo', filtros.tipo);
+    if (filtros.status) q = q.eq('status', filtros.status);
+    if (filtros.search) {
+      q = q.or(`cliente_nome.ilike.%${filtros.search}%,cliente_cnpj.ilike.%${filtros.search}%`);
+    }
+
+    const { data, error } = await q;
+    if (error) throw new Error('Erro ao listar assessments: ' + error.message);
+    return data || [];
+  }
+
+  /**
+   * Soft delete do assessment.
+   */
+  async function deleteAssessment(id) {
+    const sb = getSupabase();
+    const { error } = await sb
+      .from('assessments')
+      .update({ deleted_at: new Date().toISOString(), status: 'archived' })
+      .eq('id', id);
+    if (error) throw new Error('Erro ao arquivar assessment: ' + error.message);
+    return true;
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // AGENTES IA — wrappers que chamam Claude + salvam no Supabase
+  // ──────────────────────────────────────────────────────────
+
+  /**
+   * Analisa um processo individual (Protheus ou RM).
+   * Salva a análise no array processos_analisados do assessment.
+   */
+  async function analyzeProcess(assessmentId, dadosProcesso) {
+    const AGENTS = window.AGENTS;
+    if (!AGENTS) throw new Error('AGENTS não definido — agents.js não foi carregado');
+
+    // 1. Carregar assessment para saber o tipo e contexto
+    const assessment = await loadAssessment(assessmentId);
+    const agent = assessment.tipo === 'rm' ? AGENTS.rm : AGENTS.protheus;
+
+    // 2. Montar dados para o prompt
+    const dadosParaIA = {
+      ...dadosProcesso,
+      contexto_cliente: assessment.dados?.contexto_cliente || {}
+    };
+
+    // 3. Chamar Claude Sonnet 4
+    const userPrompt = agent.user_prompt_template(dadosParaIA);
+    const result = await callClaude(agent, userPrompt);
+
+    // 4. Montar objeto de processo com análise
+    const processoId = 'proc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    const processoRegistro = {
+      id: processoId,
+      modulo: dadosProcesso.modulo,
+      processo: dadosProcesso.processo,
+      descricao_as_is: dadosProcesso.descricao_as_is,
+      perguntas_inteligentes: dadosProcesso.perguntas_inteligentes || {},
+      observacoes: dadosProcesso.observacoes || '',
+      analise_ai: result.parsed,
+      analise_raw: result.rawText, // guardamos o raw para debug
+      analise_metadata: {
+        modelo: agent.modelo,
+        usage: result.usage,
+        stop_reason: result.stop_reason
+      },
+      status: 'analisado',
+      created_at: new Date().toISOString(),
+      analisado_em: new Date().toISOString()
+    };
+
+    // 5. Salvar no Supabase — append no array processos_analisados
+    const processosAtuais = assessment.dados?.processos_analisados || [];
+    const processosNovos = [...processosAtuais, processoRegistro];
+
+    await saveAssessment(assessmentId, {
+      status: 'in_progress',
+      dados: {
+        ...(assessment.dados || {}),
+        processos_analisados: processosNovos
+      },
+      percentual_completo: Math.min(95, 20 + processosNovos.length * 15)
+    });
+
+    return processoRegistro;
+  }
+
+  /**
+   * Re-analisa um processo já existente (edição/refinamento).
+   */
+  async function reanalyzeProcess(assessmentId, processoId, dadosProcessoAtualizado) {
+    const assessment = await loadAssessment(assessmentId);
+    const processos = assessment.dados?.processos_analisados || [];
+    const index = processos.findIndex(p => p.id === processoId);
+    if (index === -1) throw new Error('Processo não encontrado');
+
+    const AGENTS = window.AGENTS;
+    const agent = assessment.tipo === 'rm' ? AGENTS.rm : AGENTS.protheus;
+
+    const dadosParaIA = {
+      ...dadosProcessoAtualizado,
+      contexto_cliente: assessment.dados?.contexto_cliente || {}
+    };
+    const userPrompt = agent.user_prompt_template(dadosParaIA);
+    const result = await callClaude(agent, userPrompt);
+
+    processos[index] = {
+      ...processos[index],
+      ...dadosProcessoAtualizado,
+      analise_ai: result.parsed,
+      analise_raw: result.rawText,
+      analise_metadata: {
+        modelo: agent.modelo,
+        usage: result.usage,
+        stop_reason: result.stop_reason
+      },
+      reanalisado_em: new Date().toISOString()
+    };
+
+    await saveAssessment(assessmentId, {
+      dados: { ...(assessment.dados || {}), processos_analisados: processos }
+    });
+
+    return processos[index];
+  }
+
+  /**
+   * Remove um processo do assessment.
+   */
+  async function removeProcess(assessmentId, processoId) {
+    const assessment = await loadAssessment(assessmentId);
+    const processos = (assessment.dados?.processos_analisados || []).filter(p => p.id !== processoId);
+    await saveAssessment(assessmentId, {
+      dados: { ...(assessment.dados || {}), processos_analisados: processos }
+    });
+    return true;
+  }
+
+  /**
+   * Orquestrador — classifica cliente em Protheus/RM/Híbrido.
+   */
+  async function classifyClient(descricaoLivre, contextoRapido) {
+    const AGENTS = window.AGENTS;
+    if (!AGENTS?.orquestrador) throw new Error('AGENT_ORQUESTRADOR não disponível');
+
+    const userPrompt = AGENTS.orquestrador.user_prompt_template(descricaoLivre, contextoRapido);
+    const result = await callClaude(AGENTS.orquestrador, userPrompt);
+
+    return {
+      classificacao: result.parsed.classificacao,
+      confianca_percent: result.parsed.confianca_percent,
+      raciocinio: result.parsed.raciocinio,
+      sinais_detectados: result.parsed.sinais_detectados,
+      recomendacao_acao: result.parsed.recomendacao_acao,
+      processos_sugeridos: result.parsed.processos_sugeridos_para_analise || [],
+      perguntas_para_confirmar: result.parsed.perguntas_para_confirmar || [],
+      alerta_atencao: result.parsed.alerta_atencao,
+      raw: result.rawText
+    };
+  }
+
+  /**
+   * Consolidador — gera sumário executivo cruzando todas análises.
+   */
+  async function consolidateAssessment(assessmentId) {
+    const AGENTS = window.AGENTS;
+    if (!AGENTS?.consolidador) throw new Error('AGENT_CONSOLIDADOR não disponível');
+
+    const assessment = await loadAssessment(assessmentId);
+    const processos = assessment.dados?.processos_analisados || [];
+
+    if (processos.length === 0) {
+      throw new Error('Não há processos analisados para consolidar');
+    }
+
+    // Enviar apenas os campos relevantes das análises para não estourar tokens
+    const analisesSlim = processos.map(p => ({
+      id: p.id,
+      modulo: p.modulo,
+      processo: p.processo,
+      analise_ai: p.analise_ai
+    }));
+
+    const userPrompt = AGENTS.consolidador.user_prompt_template(
+      assessment.dados?.contexto_cliente || {},
+      analisesSlim
+    );
+
+    const result = await callClaude(AGENTS.consolidador, userPrompt);
+
+    // Salvar consolidação no assessment
+    await saveAssessment(assessmentId, {
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      percentual_completo: 100,
+      analise_ai: result.parsed, // análise consolidada na coluna própria
+      dados: {
+        ...(assessment.dados || {}),
+        consolidacao: {
+          analise_ai: result.parsed,
+          analise_raw: result.rawText,
+          consolidado_em: new Date().toISOString(),
+          usage: result.usage
+        }
+      }
+    });
+
+    return result.parsed;
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // STORAGE — upload/download PDF
+  // ──────────────────────────────────────────────────────────
+
+  /**
+   * Faz upload do PDF gerado para o bucket privado.
+   * Path: {userId}/{assessmentId}.pdf
+   */
+  async function uploadPDF(assessmentId, pdfBlob) {
+    const sb = getSupabase();
+    const userId = getUserId();
+    const path = `${userId}/${assessmentId}.pdf`;
+
+    const { error: upErr } = await sb.storage
+      .from('assessments-pdf')
+      .upload(path, pdfBlob, {
+        contentType: 'application/pdf',
+        upsert: true
+      });
+    if (upErr) throw new Error('Erro no upload do PDF: ' + upErr.message);
+
+    // Gerar signed URL com 1h
+    const { data: signed, error: signErr } = await sb.storage
+      .from('assessments-pdf')
+      .createSignedUrl(path, 3600);
+    if (signErr) throw new Error('Erro ao gerar signed URL: ' + signErr.message);
+
+    // Atualizar assessment com URL do PDF
+    await saveAssessment(assessmentId, {
+      pdf_url: signed.signedUrl,
+      pdf_gerado_em: new Date().toISOString()
+    });
+
+    return signed.signedUrl;
+  }
+
+  /**
+   * Gera nova signed URL para PDF já existente (expira em 1h).
+   */
+  async function getPDFSignedUrl(assessmentId) {
+    const sb = getSupabase();
+    const userId = getUserId();
+    const path = `${userId}/${assessmentId}.pdf`;
+    const { data, error } = await sb.storage
+      .from('assessments-pdf')
+      .createSignedUrl(path, 3600);
+    if (error) throw new Error('Erro ao gerar signed URL: ' + error.message);
+    return data.signedUrl;
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // EXPORT GLOBAL
+  // ──────────────────────────────────────────────────────────
+
+  window.BeeITAssessments = {
+    // CRUD
+    createAssessment,
+    saveAssessment,
+    loadAssessment,
+    listAssessments,
+    deleteAssessment,
+    // Agentes IA
+    analyzeProcess,
+    reanalyzeProcess,
+    removeProcess,
+    classifyClient,
+    consolidateAssessment,
+    // Storage
+    uploadPDF,
+    getPDFSignedUrl,
+    // Helpers (expostos para debug/teste)
+    _helpers: { extractJSON, callClaude }
+  };
+
+  console.log('[BeeIT] Módulo Assessments carregado:', Object.keys(window.BeeITAssessments));
+})();
+
+
+// ──────────────────────────────────────────────────
+// ══════ assessments-ui.html (script inline) ══════
+(function() {
+  'use strict';
+
+  const state = {
+    list: [],
+    filteredList: [],
+    currentAssessment: null,
+    currentTipo: null,
+    currentTab: 'contexto',
+    orquestradorResult: null
+  };
+
+  // ───────── Helpers ─────────
+  function $(sel, ctx) { return (ctx || document).querySelector(sel); }
+  function $$(sel, ctx) { return Array.from((ctx || document).querySelectorAll(sel)); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]); }
+
+  function toast(msg, kind = 'info', ms = 3500) {
+    const existing = $('.asm-toast'); if (existing) existing.remove();
+    const el = document.createElement('div');
+    el.className = 'asm-toast ' + kind;
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), ms);
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  function mascaraCNPJ(v) {
+    return String(v || '').replace(/\D/g,'').slice(0,14)
+      .replace(/^(\d{2})(\d)/, '$1.$2')
+      .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+      .replace(/\.(\d{3})(\d)/, '.$1/$2')
+      .replace(/(\d{4})(\d)/, '$1-$2');
+  }
+
+  // ───────── API ─────────
+  async function listAssessments() {
+    try {
+      state.list = await window.BeeITAssessments.listAssessments();
+      applyFilters();
+      renderList();
+    } catch (e) {
+      console.error(e); toast('Erro ao carregar assessments: ' + e.message, 'error');
+      $('#asm-list-container').innerHTML = `<div class="asm-empty"><h2>Erro</h2><p>${esc(e.message)}</p></div>`;
+    }
+  }
+
+  function applyFilters() {
+    const search = $('#asm-search').value.toLowerCase();
+    const tipo = $('#asm-filter-tipo').value;
+    const status = $('#asm-filter-status').value;
+    state.filteredList = state.list.filter(a => {
+      if (tipo && a.tipo !== tipo) return false;
+      if (status && a.status !== status) return false;
+      if (search && !(a.cliente_nome || '').toLowerCase().includes(search) && !(a.cliente_cnpj || '').includes(search)) return false;
+      return true;
+    });
+  }
+
+  // ───────── Render lista ─────────
+  function renderList() {
+    const container = $('#asm-list-container');
+    if (state.filteredList.length === 0) {
+      container.innerHTML = `
+        <div class="asm-empty">
+          <h2>Nenhum assessment ${state.list.length === 0 ? 'criado ainda' : 'encontrado'}</h2>
+          <p>Clique em <strong>+ Novo Assessment</strong> para começar</p>
+        </div>`;
+      return;
+    }
+    container.innerHTML = `<div class="asm-grid">${
+      state.filteredList.map(a => `
+        <div class="asm-card" onclick="BeeITAssessmentsUI.openAssessment('${a.id}')">
+          <div class="asm-card-top">
+            <span class="asm-badge ${esc(a.tipo)}">${esc(a.tipo.toUpperCase())}</span>
+            <span class="asm-status ${esc(a.status)}">${statusLabel(a.status)}</span>
+          </div>
+          <h3>${esc(a.cliente_nome || 'Sem nome')}</h3>
+          ${a.cliente_cnpj ? `<div class="cnpj">${esc(a.cliente_cnpj)}</div>` : ''}
+          ${a.cliente_segmento ? `<div class="segmento">📌 ${esc(a.cliente_segmento)}</div>` : ''}
+          <div class="asm-progress"><div class="asm-progress-bar" style="width:${a.percentual_completo || 0}%"></div></div>
+          <div class="asm-card-footer">
+            <span>${a.percentual_completo || 0}% completo</span>
+            <span>${formatDate(a.updated_at)}</span>
+          </div>
+        </div>`).join('')
+    }</div>`;
+  }
+
+  function statusLabel(s) {
+    return { draft:'Rascunho', in_progress:'Em andamento', completed:'Concluído', archived:'Arquivado' }[s] || s;
+  }
+
+  // ───────── Criação ─────────
+  function openCreateModal() { openModal('asm-modal-create'); }
+
+  function startNewAssessment(tipo) {
+    state.currentTipo = tipo;
+    closeModal('asm-modal-create');
+    $('#asm-ctx-tipo-label').textContent = tipo === 'rm' ? 'RM' : 'Protheus';
+    renderContextoForm(tipo);
+    openModal('asm-modal-contexto');
+  }
+
+  function renderContextoForm(tipo) {
+    const qdb = tipo === 'rm' ? window.QDB_RM_CONTEXTO : window.QDB_PROTHEUS_CONTEXTO;
+    const perguntas = qdb.contexto_cliente.perguntas;
+
+    const html = `<div class="asm-field-grid-2">` + perguntas.map(p => fieldHTML(p, `ctx-${p.id}`)).join('') + `</div>`;
+    $('#asm-ctx-form').innerHTML = html;
+
+    // Aplicar máscara CNPJ
+    const cnpjEl = $('#ctx-cnpj');
+    if (cnpjEl) cnpjEl.addEventListener('input', e => { e.target.value = mascaraCNPJ(e.target.value); });
+  }
+
+  function fieldHTML(p, id) {
+    const req = p.obrigatorio ? '<span class="required">*</span>' : '';
+    const label = `<label>${esc(p.label)} ${req}</label>`;
+    let input = '';
+    switch (p.tipo) {
+      case 'text':
+      case 'number':
+        input = `<input type="${p.tipo}" id="${id}" placeholder="${esc(p.placeholder || '')}">`;
+        break;
+      case 'select':
+        input = `<select id="${id}"><option value="">— Selecione —</option>${
+          p.opcoes.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('')
+        }</select>`;
+        break;
+      case 'multiselect':
+        input = `<div class="asm-multiselect" id="${id}">${
+          p.opcoes.map(o => `<label><input type="checkbox" value="${esc(o)}"> ${esc(o)}</label>`).join('')
+        }</div>`;
+        break;
+      case 'textarea':
+        input = `<textarea id="${id}" rows="${p.rows || 4}" placeholder="${esc(p.placeholder || '')}"></textarea>`;
+        break;
+      default:
+        input = `<input type="text" id="${id}" placeholder="${esc(p.placeholder || '')}">`;
+    }
+    return `<div class="asm-field" ${p.tipo === 'textarea' || p.tipo === 'multiselect' ? 'style="grid-column:1/-1;"' : ''}>${label}${input}</div>`;
+  }
+
+  function collectFormData(containerSelector, perguntas, prefix) {
+    const data = {};
+    perguntas.forEach(p => {
+      const el = $(`${containerSelector} #${prefix}${p.id}`);
+      if (!el) return;
+      if (p.tipo === 'multiselect') {
+        data[p.id] = $$(`#${prefix}${p.id} input[type="checkbox"]:checked`).map(cb => cb.value);
+      } else {
+        data[p.id] = el.value.trim();
+      }
+    });
+    return data;
+  }
+
+  async function saveContextoAndOpen() {
+    const qdb = state.currentTipo === 'rm' ? window.QDB_RM_CONTEXTO : window.QDB_PROTHEUS_CONTEXTO;
+    const dados = collectFormData('#asm-ctx-form', qdb.contexto_cliente.perguntas, 'ctx-');
+
+    // Validar obrigatórios
+    const faltando = qdb.contexto_cliente.perguntas.filter(p => p.obrigatorio && !dados[p.id]);
+    if (faltando.length) {
+      toast('Preencha os campos obrigatórios: ' + faltando.map(p => p.label).join(', '), 'error', 5000);
+      return;
+    }
+
+    try {
+      toast('Criando assessment...', 'info', 2000);
+      const created = await window.BeeITAssessments.createAssessment(state.currentTipo, dados);
+      closeModal('asm-modal-contexto');
+      toast('Assessment criado', 'success');
+      await listAssessments();
+      openAssessment(created.id);
+    } catch (e) {
+      toast('Erro: ' + e.message, 'error');
+    }
+  }
+
+  // ───────── Abrir assessment existente ─────────
+  async function openAssessment(id) {
+    try {
+      const a = await window.BeeITAssessments.loadAssessment(id);
+      state.currentAssessment = a;
+      state.currentTipo = a.tipo;
+      $('#asm-open-title').innerHTML = `${a.tipo.toUpperCase()} · ${esc(a.cliente_nome)}`;
+      switchTab('contexto');
+      openModal('asm-modal-open');
+    } catch (e) {
+      toast('Erro ao abrir: ' + e.message, 'error');
+    }
+  }
+
+  function switchTab(tab) {
+    state.currentTab = tab;
+    $$('#asm-modal-open .asm-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    const content = $('#asm-tab-content');
+    const a = state.currentAssessment;
+    if (!a) return;
+
+    if (tab === 'contexto') {
+      content.innerHTML = renderContextoReadonly(a);
+    } else if (tab === 'processos') {
+      content.innerHTML = renderProcessosTab(a);
+      $('#asm-tab-proc-count').textContent = (a.dados?.processos_analisados || []).length;
+    } else if (tab === 'consolidacao') {
+      content.innerHTML = renderConsolidacaoTab(a);
+    } else if (tab === 'pdf') {
+      content.innerHTML = renderPDFTab(a);
+    }
+  }
+
+  function renderContextoReadonly(a) {
+    const ctx = a.dados?.contexto_cliente || {};
+    const entries = Object.entries(ctx).filter(([k, v]) => v != null && v !== '' && !(Array.isArray(v) && v.length === 0));
+    return `
+      <div style="max-width:800px;">
+        <p style="color:var(--muted,#9ca3af); margin-bottom:16px;">Dados base do cliente — compartilhados com todas as análises de processo deste assessment.</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          ${entries.map(([k, v]) => `
+            <div style="padding:10px; background:var(--bg,#0a0e17); border-radius:8px;">
+              <div style="font-size:11px; color:var(--muted,#9ca3af); text-transform:uppercase; font-weight:700;">${esc(k)}</div>
+              <div style="margin-top:3px;">${esc(Array.isArray(v) ? v.join(', ') : v)}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="margin-top:20px; display:flex; gap:10px;">
+          <button class="asm-btn asm-btn-secondary" onclick="BeeITAssessmentsUI.editContexto()">✏️ Editar Contexto</button>
+          <button class="asm-btn asm-btn-danger" onclick="BeeITAssessmentsUI.archiveAssessment()">🗃️ Arquivar</button>
+        </div>
+      </div>`;
+  }
+
+  function renderProcessosTab(a) {
+    const processos = a.dados?.processos_analisados || [];
+    return `
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div>
+            <h3 style="margin:0 0 4px;">Processos analisados</h3>
+            <p style="margin:0; color:var(--muted,#9ca3af); font-size:13px;">Adicione N processos. A IA analisa cada um seguindo AS-IS / PADRÃO / GAP / RISCO / TO-BE / PLANO.</p>
+          </div>
+          <button class="asm-btn asm-btn-primary" onclick="BeeITAssessmentsUI.openProcessoModal()">+ Adicionar Processo</button>
+        </div>
+        ${processos.length === 0 ? `
+          <div class="asm-empty">
+            <h2>Nenhum processo analisado</h2>
+            <p>Clique em "+ Adicionar Processo" para começar.</p>
+          </div>
+        ` : `
+          <div class="asm-proc-list">
+            ${processos.map(p => renderProcessoCard(p)).join('')}
+          </div>
+        `}
+      </div>`;
+  }
+
+  function renderProcessoCard(p) {
+    const risco = p.analise_ai?.risco?.nivel || 'baixo';
+    return `
+      <div class="asm-proc-card" onclick="BeeITAssessmentsUI.viewProcesso('${p.id}')">
+        <div class="asm-proc-info">
+          <div class="modulo">${esc(p.modulo || '?')}</div>
+          <h4>${esc(p.processo || 'Sem nome')}</h4>
+          <div class="meta">Analisado em ${formatDate(p.analisado_em)}</div>
+        </div>
+        <span class="asm-risk-badge ${esc(risco)}">Risco: ${esc(risco)}</span>
+        <div class="asm-proc-actions" onclick="event.stopPropagation();">
+          <button class="asm-btn asm-btn-ghost" onclick="BeeITAssessmentsUI.removeProcesso('${p.id}')">🗑️</button>
+        </div>
+      </div>`;
+  }
+
+  function viewProcesso(procId) {
+    const p = (state.currentAssessment.dados?.processos_analisados || []).find(x => x.id === procId);
+    if (!p) return;
+    const a = p.analise_ai || {};
+    const riscoNivel = a.risco?.nivel || 'baixo';
+
+    const content = `
+      <div class="asm-analysis">
+        <section>
+          <h4>Contexto</h4>
+          <table>
+            <tr><td><strong>ERP</strong></td><td>${esc(a.contexto?.erp || '—')}</td></tr>
+            <tr><td><strong>Módulo</strong></td><td>${esc(a.contexto?.modulo || p.modulo)}</td></tr>
+            <tr><td><strong>Processo</strong></td><td>${esc(a.contexto?.processo || p.processo)}</td></tr>
+            ${a.contexto?.rotinas_envolvidas ? `<tr><td><strong>Rotinas</strong></td><td>${esc((a.contexto.rotinas_envolvidas || []).join(', '))}</td></tr>` : ''}
+            ${a.contexto?.tabelas_envolvidas ? `<tr><td><strong>Tabelas</strong></td><td>${esc((a.contexto.tabelas_envolvidas || []).join(', '))}</td></tr>` : ''}
+          </table>
+        </section>
+        <section>
+          <h4>AS-IS (Processo atual)</h4>
+          <p>${esc(a.as_is?.descricao || '—')}</p>
+          <ul>
+            ${a.as_is?.quem_executa ? `<li><strong>Quem executa:</strong> ${esc(a.as_is.quem_executa)}</li>` : ''}
+            ${a.as_is?.frequencia ? `<li><strong>Frequência:</strong> ${esc(a.as_is.frequencia)}</li>` : ''}
+            ${a.as_is?.volume ? `<li><strong>Volume:</strong> ${esc(a.as_is.volume)}</li>` : ''}
+            ${a.as_is?.ferramentas_atuais ? `<li><strong>Ferramentas:</strong> ${esc((a.as_is.ferramentas_atuais || []).join(', '))}</li>` : ''}
+          </ul>
+        </section>
+        <section>
+          <h4>Padrão ${a.contexto?.erp || 'TOTVS'}</h4>
+          <p>${esc((a.padrao_protheus || a.padrao_rm)?.descricao || '—')}</p>
+          ${renderList((a.padrao_protheus || a.padrao_rm)?.rotinas_corretas, 'Rotinas corretas')}
+          ${renderList((a.padrao_protheus || a.padrao_rm)?.funcionalidades_nativas, 'Funcionalidades nativas')}
+          ${renderList((a.padrao_protheus || a.padrao_rm)?.parametros_mv || (a.padrao_protheus || a.padrao_rm)?.parametrizacoes_chave, 'Parametrizações')}
+          ${renderList((a.padrao_protheus || a.padrao_rm)?.boas_praticas, 'Boas práticas')}
+        </section>
+        <section>
+          <h4>GAP</h4>
+          <p>${esc(a.gap?.descricao || '—')}</p>
+          ${a.gap?.itens?.length ? `<ul>${a.gap.itens.map(it => `<li><strong>[${esc(it.impacto)}]</strong> ${esc(it.item)}</li>`).join('')}</ul>` : ''}
+        </section>
+        <section>
+          <h4>Risco</h4>
+          <div class="risk-box ${esc(riscoNivel)}">
+            <strong style="text-transform:uppercase;">${esc(riscoNivel)}</strong> · ${esc(a.risco?.categoria || '')}
+            <p style="margin:8px 0 4px;">${esc(a.risco?.descricao || '')}</p>
+            <small><strong>Impacto:</strong> ${esc(a.risco?.impacto_potencial || '—')} · <strong>Probabilidade:</strong> ${esc(a.risco?.probabilidade || '—')}</small>
+          </div>
+        </section>
+        <section>
+          <h4>TO-BE (Processo ideal)</h4>
+          <p>${esc(a.to_be?.descricao || '—')}</p>
+          ${renderList(a.to_be?.beneficios, 'Benefícios')}
+          ${renderList(a.to_be?.pre_requisitos, 'Pré-requisitos')}
+        </section>
+        <section>
+          <h4>Plano de Ação</h4>
+          <table>
+            <thead><tr><th>Ação</th><th>Prioridade</th><th>Tipo</th><th>Horas</th></tr></thead>
+            <tbody>
+              ${(a.plano_acao || []).map(ac => `
+                <tr>
+                  <td>${esc(ac.acao)}</td>
+                  <td><strong>${esc(ac.prioridade)}</strong></td>
+                  <td>${esc(ac.tipo)}</td>
+                  <td>${esc(ac.esforco_estimado_horas || '—')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </section>
+        ${a.impacto_cruzado_modulos ? `
+          <section>
+            <h4>Impacto cruzado entre módulos</h4>
+            <p>${esc(a.impacto_cruzado_modulos.descricao)}</p>
+            ${renderList(a.impacto_cruzado_modulos.modulos_afetados, 'Módulos afetados')}
+          </section>
+        ` : ''}
+        <div style="margin-top:24px;">
+          <button class="asm-btn asm-btn-secondary" onclick="BeeITAssessmentsUI.switchTab('processos')">← Voltar</button>
+        </div>
+      </div>`;
+    $('#asm-tab-content').innerHTML = content;
+  }
+
+  function renderList(items, title) {
+    if (!items || items.length === 0) return '';
+    return `<div style="margin-top:10px;"><strong>${esc(title)}:</strong><ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`;
+  }
+
+  // ───────── Adicionar processo ─────────
+  function openProcessoModal() {
+    const qdb = state.currentTipo === 'rm' ? window.QDB_RM_CONTEXTO : window.QDB_PROTHEUS_CONTEXTO;
+    const perguntas = qdb.template_analise_processo.perguntas;
+    $('#asm-proc-title').textContent = `Novo Processo — ${state.currentTipo.toUpperCase()}`;
+    $('#asm-proc-form').innerHTML = perguntas.map(p => fieldHTML(p, 'proc-')).join('');
+    // Aplicar sugestões no campo processo_nome (datalist simples)
+    const moduloEl = $('#proc-modulo');
+    const nomeEl = $('#proc-processo_nome');
+    if (moduloEl && nomeEl) {
+      const updateSugestoes = () => {
+        const modulo = moduloEl.value;
+        const fonte = state.currentTipo === 'rm' ? window.PROCESSOS_PADRAO.rm : window.PROCESSOS_PADRAO.protheus;
+        const sugs = fonte[modulo] || [];
+        let dl = document.getElementById('proc-nome-datalist');
+        if (!dl) {
+          dl = document.createElement('datalist');
+          dl.id = 'proc-nome-datalist';
+          nomeEl.after(dl);
+          nomeEl.setAttribute('list', 'proc-nome-datalist');
+        }
+        dl.innerHTML = sugs.map(s => `<option value="${esc(s)}"></option>`).join('');
+      };
+      moduloEl.addEventListener('change', updateSugestoes);
+    }
+    openModal('asm-modal-proc');
+  }
+
+  async function analyzeProcessSubmit() {
+    const qdb = state.currentTipo === 'rm' ? window.QDB_RM_CONTEXTO : window.QDB_PROTHEUS_CONTEXTO;
+    const perguntas = qdb.template_analise_processo.perguntas;
+    const raw = collectFormData('#asm-proc-form', perguntas, 'proc-');
+
+    // Validar obrigatórios
+    const faltando = perguntas.filter(p => p.obrigatorio && !raw[p.id]);
+    if (faltando.length) {
+      toast('Preencha: ' + faltando.map(p => p.label).join(', '), 'error', 5000);
+      return;
+    }
+
+    // Separar perguntas inteligentes (prefix pi_)
+    const perguntas_inteligentes = {};
+    Object.keys(raw).filter(k => k.startsWith('pi_')).forEach(k => {
+      perguntas_inteligentes[k.replace('pi_', '')] = raw[k];
+    });
+
+    const dadosProcesso = {
+      modulo: raw.modulo,
+      processo: raw.processo_nome,
+      descricao_as_is: raw.descricao_as_is,
+      perguntas_inteligentes,
+      observacoes: raw.observacoes
+    };
+
+    // UI: loading
+    $('#asm-proc-form').innerHTML = `
+      <div class="asm-ai-loading">
+        <div class="asm-ai-spinner"></div>
+        <h3>🧠 Analisando com Claude Sonnet 4…</h3>
+        <p>Gerando AS-IS / PADRÃO / GAP / RISCO / TO-BE / PLANO</p>
+        <p style="font-size:12px; opacity:.6;">Pode levar 15–30 segundos.</p>
+      </div>`;
+    $('#asm-proc-submit').disabled = true;
+
+    try {
+      const processo = await window.BeeITAssessments.analyzeProcess(state.currentAssessment.id, dadosProcesso);
+      closeModal('asm-modal-proc');
+      toast('Processo analisado', 'success');
+      // Recarregar assessment e ir direto pra visualização
+      state.currentAssessment = await window.BeeITAssessments.loadAssessment(state.currentAssessment.id);
+      switchTab('processos');
+      setTimeout(() => viewProcesso(processo.id), 200);
+      await listAssessments(); // atualiza % na lista
+    } catch (e) {
+      console.error(e);
+      toast('Erro na análise: ' + e.message, 'error', 6000);
+      $('#asm-proc-submit').disabled = false;
+      openProcessoModal(); // reabre formulário
+    }
+  }
+
+  async function removeProcesso(procId) {
+    if (!confirm('Remover este processo da análise?')) return;
+    try {
+      await window.BeeITAssessments.removeProcess(state.currentAssessment.id, procId);
+      state.currentAssessment = await window.BeeITAssessments.loadAssessment(state.currentAssessment.id);
+      switchTab('processos');
+      toast('Processo removido', 'success');
+    } catch (e) { toast('Erro: ' + e.message, 'error'); }
+  }
+
+  // ───────── Consolidação ─────────
+  function renderConsolidacaoTab(a) {
+    const cons = a.dados?.consolidacao?.analise_ai || a.analise_ai;
+    const processos = a.dados?.processos_analisados || [];
+
+    if (!cons) {
+      return `
+        <div>
+          <h3>Sumário Executivo Consolidado</h3>
+          <p style="color:var(--muted,#9ca3af);">Após analisar múltiplos processos, o Consolidador gera uma visão executiva cruzando todos os insights — riscos priorizados, roadmap em fases, estimativa total de esforço.</p>
+          <div style="background:var(--bg,#0a0e17); border:1px solid var(--border,#2a3344); border-radius:10px; padding:20px; margin-top:16px;">
+            <p><strong>Processos analisados:</strong> ${processos.length}</p>
+            <p>Recomendado: analisar pelo menos 3 processos antes de consolidar.</p>
+            <button class="asm-btn asm-btn-primary" ${processos.length < 2 ? 'disabled' : ''} onclick="BeeITAssessmentsUI.runConsolidacao()">
+              🧠 Gerar Sumário Executivo
+            </button>
+            ${processos.length < 2 ? `<p style="margin-top:10px; font-size:12px; color:var(--muted,#9ca3af);">Adicione pelo menos 2 processos antes de consolidar.</p>` : ''}
+          </div>
+        </div>`;
+    }
+
+    return `
+      <div class="asm-analysis">
+        <section>
+          <h4>Sumário Executivo</h4>
+          <p style="font-size:14px; line-height:1.6;">${esc(cons.sumario_executivo || '')}</p>
+        </section>
+        <section>
+          <h4>Visão Consolidada</h4>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px;">
+            <div style="padding:12px; background:var(--bg2,#0f1421); border-radius:8px;">
+              <div style="font-size:24px; font-weight:700;">${esc(cons.visao_consolidada?.total_processos_analisados || 0)}</div>
+              <div style="font-size:11px; color:var(--muted,#9ca3af);">Processos</div>
+            </div>
+            <div style="padding:12px; background:rgba(127,29,29,.15); border-radius:8px;">
+              <div style="font-size:24px; font-weight:700; color:#fecaca;">${esc(cons.visao_consolidada?.gaps_criticos_count || 0)}</div>
+              <div style="font-size:11px; color:var(--muted,#9ca3af);">Críticos</div>
+            </div>
+            <div style="padding:12px; background:rgba(154,52,18,.15); border-radius:8px;">
+              <div style="font-size:24px; font-weight:700; color:#fed7aa;">${esc(cons.visao_consolidada?.gaps_altos_count || 0)}</div>
+              <div style="font-size:11px; color:var(--muted,#9ca3af);">Altos</div>
+            </div>
+            <div style="padding:12px; background:rgba(113,63,18,.15); border-radius:8px;">
+              <div style="font-size:24px; font-weight:700; color:#fef08a;">${esc(cons.visao_consolidada?.gaps_medios_count || 0)}</div>
+              <div style="font-size:11px; color:var(--muted,#9ca3af);">Médios</div>
+            </div>
+          </div>
+        </section>
+        <section>
+          <h4>Riscos Prioritários</h4>
+          ${(cons.riscos_prioritarios || []).map(r => `
+            <div class="risk-box ${esc(r.nivel)}" style="margin-bottom:10px;">
+              <strong style="text-transform:uppercase;">${esc(r.nivel)}</strong>
+              <p style="margin:6px 0;">${esc(r.descricao)}</p>
+              <small><strong>Ação imediata:</strong> ${esc(r.acao_imediata || '—')}</small>
+            </div>
+          `).join('')}
+        </section>
+        <section>
+          <h4>Insights cruzados</h4>
+          <ul>${(cons.insights_cruzados || []).map(i => `<li>${esc(i)}</li>`).join('')}</ul>
+        </section>
+        <section>
+          <h4>Roadmap Consolidado</h4>
+          ${(cons.roadmap_consolidado || []).map(f => `
+            <div style="padding:12px; background:var(--bg2,#0f1421); border-radius:8px; margin-bottom:8px;">
+              <strong>${esc(f.fase)}</strong> <small style="color:var(--muted,#9ca3af);">· ${esc(f.duracao_semanas)} semanas</small>
+              <p style="margin:4px 0; font-size:13px;">${esc(f.foco || '')}</p>
+              ${renderList(f.entregaveis, 'Entregáveis')}
+            </div>
+          `).join('')}
+        </section>
+        <section>
+          <h4>Estimativa de Esforço</h4>
+          <p><strong>${esc(cons.estimativa_esforco?.horas_totais_consultoria || '—')}h</strong> de consultoria · <strong>${esc(cons.estimativa_esforco?.dias_corridos_projeto || '—')}</strong> dias de projeto</p>
+          ${cons.estimativa_esforco?.equipe_sugerida ? `<small>Equipe: ${Object.entries(cons.estimativa_esforco.equipe_sugerida).map(([k,v]) => `${v} ${k.replace(/_/g,' ')}`).join(' · ')}</small>` : ''}
+        </section>
+        <section>
+          <h4>Recomendação Final BeeIT</h4>
+          <p>${esc(cons.recomendacao_final_beeit || '')}</p>
+        </section>
+        <button class="asm-btn asm-btn-secondary" onclick="BeeITAssessmentsUI.runConsolidacao()">🔁 Regenerar Sumário</button>
+      </div>`;
+  }
+
+  async function runConsolidacao() {
+    const btn = event?.target;
+    if (btn) btn.disabled = true;
+    $('#asm-tab-content').innerHTML = `
+      <div class="asm-ai-loading">
+        <div class="asm-ai-spinner"></div>
+        <h3>🧠 Consolidando análises…</h3>
+        <p>Cruzando todas análises individuais para gerar o Sumário Executivo.</p>
+      </div>`;
+    try {
+      await window.BeeITAssessments.consolidateAssessment(state.currentAssessment.id);
+      state.currentAssessment = await window.BeeITAssessments.loadAssessment(state.currentAssessment.id);
+      switchTab('consolidacao');
+      toast('Sumário gerado', 'success');
+      await listAssessments();
+    } catch (e) {
+      toast('Erro: ' + e.message, 'error', 6000);
+      switchTab('consolidacao');
+    }
+  }
+
+  // ───────── PDF (placeholder — wkhtmltopdf fica pra iteração Onda 3) ─────────
+  function renderPDFTab(a) {
+    return `
+      <div>
+        <h3>📄 PDF Final (MIT041-style)</h3>
+        <p style="color:var(--muted,#9ca3af);">A geração de PDF via wkhtmltopdf será ativada na próxima iteração. Por enquanto, você pode visualizar todas as análises nas abas Contexto, Processos e Consolidação.</p>
+        <div style="background:var(--bg,#0a0e17); border:1px dashed var(--border,#2a3344); border-radius:10px; padding:40px; text-align:center; margin-top:16px;">
+          <p style="font-size:48px; margin:0;">📄</p>
+          <p style="margin:12px 0 0; color:var(--muted,#9ca3af);">Em breve — geração de PDF MIT041 com capa, sumário, processos e roadmap.</p>
+          ${a.pdf_url ? `<a class="asm-btn asm-btn-primary" href="${esc(a.pdf_url)}" target="_blank" style="margin-top:16px; display:inline-block;">⬇️ Baixar PDF existente</a>` : ''}
+        </div>
+      </div>`;
+  }
+
+  // ───────── Orquestrador ─────────
+  function openOrquestrador() {
+    closeModal('asm-modal-create');
+    $('#asm-orq-descricao').value = '';
+    $('#asm-orq-result').innerHTML = '';
+    openModal('asm-modal-orquestrador');
+  }
+
+  async function runOrquestrador() {
+    const desc = $('#asm-orq-descricao').value.trim();
+    if (desc.length < 30) { toast('Descreva o cliente com mais detalhe (mínimo 30 caracteres)', 'error'); return; }
+
+    $('#asm-orq-submit').disabled = true;
+    $('#asm-orq-result').innerHTML = `
+      <div class="asm-ai-loading">
+        <div class="asm-ai-spinner"></div>
+        <p>🧠 Classificando cliente…</p>
+      </div>`;
+
+    try {
+      const r = await window.BeeITAssessments.classifyClient(desc, {});
+      state.orquestradorResult = r;
+      $('#asm-orq-result').innerHTML = `
+        <div style="margin-top:16px; padding:16px; background:var(--bg,#0a0e17); border-radius:10px; border-left:4px solid #3b82f6;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <strong style="font-size:16px; text-transform:uppercase;">${esc(r.classificacao)}</strong>
+            <span style="font-size:13px; color:var(--muted,#9ca3af);">Confiança: ${esc(r.confianca_percent)}%</span>
+          </div>
+          <p>${esc(r.raciocinio)}</p>
+          ${r.processos_sugeridos?.length ? `
+            <div style="margin-top:12px;">
+              <strong style="font-size:12px; text-transform:uppercase; color:var(--muted,#9ca3af);">Processos sugeridos para análise:</strong>
+              <ul>${r.processos_sugeridos.map(p => `<li><strong>${esc(p.modulo)}</strong> — ${esc(p.processo)} <em style="color:var(--muted,#9ca3af);">(${esc(p.justificativa || '')})</em></li>`).join('')}</ul>
+            </div>
+          ` : ''}
+          ${r.alerta_atencao ? `<p style="margin-top:12px; color:#fbbf24;">⚠️ ${esc(r.alerta_atencao)}</p>` : ''}
+          <div style="display:flex; gap:10px; margin-top:16px;">
+            ${r.classificacao !== 'hibrido' ? `<button class="asm-btn asm-btn-primary" onclick="BeeITAssessmentsUI.proceedFromOrquestrador('${r.classificacao}')">Iniciar Assessment ${r.classificacao.toUpperCase()}</button>` : `
+              <button class="asm-btn asm-btn-primary" onclick="BeeITAssessmentsUI.proceedFromOrquestrador('protheus')">Iniciar Protheus</button>
+              <button class="asm-btn asm-btn-primary" onclick="BeeITAssessmentsUI.proceedFromOrquestrador('rm')">Iniciar RM</button>
+            `}
+          </div>
+        </div>`;
+    } catch (e) {
+      toast('Erro: ' + e.message, 'error');
+      $('#asm-orq-result').innerHTML = '';
+    } finally {
+      $('#asm-orq-submit').disabled = false;
+    }
+  }
+
+  function proceedFromOrquestrador(tipo) {
+    closeModal('asm-modal-orquestrador');
+    startNewAssessment(tipo);
+  }
+
+  // ───────── Utilitários gerais ─────────
+  async function archiveAssessment() {
+    if (!confirm('Arquivar este assessment? Ele sai da lista principal.')) return;
+    try {
+      await window.BeeITAssessments.deleteAssessment(state.currentAssessment.id);
+      closeModal('asm-modal-open');
+      toast('Assessment arquivado', 'success');
+      await listAssessments();
+    } catch (e) { toast('Erro: ' + e.message, 'error'); }
+  }
+
+  function editContexto() {
+    toast('Edição de contexto — disponível em breve', 'info');
+    // TODO: reabrir modal-contexto com dados atuais preenchidos
+  }
+
+  function openModal(id) { $('#' + id).classList.add('active'); }
+  function closeModal(id) { $('#' + id).classList.remove('active'); }
+
+  function filterList() { applyFilters(); renderList(); }
+
+  // ───────── API pública ─────────
+  window.BeeITAssessmentsUI = {
+    init: listAssessments,
+    openCreateModal,
+    openOrquestrador,
+    runOrquestrador,
+    proceedFromOrquestrador,
+    startNewAssessment,
+    saveContextoAndOpen,
+    openAssessment,
+    switchTab,
+    openProcessoModal,
+    analyzeProcessSubmit,
+    viewProcesso,
+    removeProcesso,
+    runConsolidacao,
+    archiveAssessment,
+    editContexto,
+    filterList,
+    closeModal
+  };
+
+  console.log('[BeeIT] UI Assessments carregada');
+})();
+</script>
 
 </body>
 </htmlf

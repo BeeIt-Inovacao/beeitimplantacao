@@ -1,0 +1,964 @@
+<!--
+═══════════════════════════════════════════════════════════
+BeeIT OS-RT v2 — UI Módulo Assessments (auto-contido)
+
+Este arquivo contém 3 blocos colocáveis em sequência no HTML principal:
+  1) <style id="beeit-assessments-styles"> ... </style>
+  2) <div id="page-assessments"> ... </div>    (conteúdo da página)
+  3) <script id="beeit-assessments-ui"> ... </script>
+
+O Claude Code deve injetar estes blocos no HTML seguindo o padrão existente
+(ver beeit-os-rt-integration-prompt.md).
+═══════════════════════════════════════════════════════════
+-->
+
+<!-- ═══════ 1) ESTILOS ═══════ -->
+<style id="beeit-assessments-styles">
+  /* ──── Lista de Assessments ──── */
+  .asm-toolbar { display:flex; gap:12px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+  .asm-toolbar .search { flex:1; min-width:240px; padding:10px 12px; border-radius:8px; border:1px solid var(--border,#2a3344); background:var(--bg2,#0f1421); color:var(--text,#e6edf3); }
+  .asm-toolbar select { padding:10px 12px; border-radius:8px; border:1px solid var(--border,#2a3344); background:var(--bg2,#0f1421); color:var(--text,#e6edf3); }
+  .asm-btn { padding:10px 16px; border-radius:8px; border:1px solid transparent; cursor:pointer; font-weight:600; transition:all .15s; }
+  .asm-btn-primary { background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; }
+  .asm-btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(59,130,246,.35); }
+  .asm-btn-secondary { background:var(--bg2,#0f1421); color:var(--text,#e6edf3); border-color:var(--border,#2a3344); }
+  .asm-btn-danger { background:#7f1d1d; color:#fecaca; }
+  .asm-btn-ghost { background:transparent; color:var(--muted,#9ca3af); }
+  .asm-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+  .asm-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:16px; }
+  .asm-card { background:var(--bg2,#0f1421); border:1px solid var(--border,#2a3344); border-radius:12px; padding:16px; cursor:pointer; transition:all .15s; position:relative; }
+  .asm-card:hover { transform:translateY(-2px); border-color:#3b82f6; box-shadow:0 8px 24px rgba(0,0,0,.3); }
+  .asm-card-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+  .asm-badge { padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:.5px; }
+  .asm-badge.protheus { background:#E84A27; color:#fff; }
+  .asm-badge.rm { background:#00A859; color:#fff; }
+  .asm-badge.hibrido { background:#a855f7; color:#fff; }
+  .asm-status { padding:2px 8px; border-radius:6px; font-size:10px; font-weight:600; text-transform:uppercase; }
+  .asm-status.draft { background:#374151; color:#9ca3af; }
+  .asm-status.in_progress { background:#1e40af; color:#bfdbfe; }
+  .asm-status.completed { background:#065f46; color:#a7f3d0; }
+  .asm-card h3 { margin:6px 0 4px; font-size:16px; }
+  .asm-card .cnpj { font-size:12px; color:var(--muted,#9ca3af); font-family:monospace; }
+  .asm-card .segmento { font-size:12px; color:var(--muted,#9ca3af); margin-top:4px; }
+  .asm-progress { margin-top:12px; height:6px; background:var(--bg,#0a0e17); border-radius:3px; overflow:hidden; }
+  .asm-progress-bar { height:100%; background:linear-gradient(90deg,#3b82f6,#06b6d4); transition:width .4s; }
+  .asm-card-footer { display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:11px; color:var(--muted,#9ca3af); }
+
+  .asm-empty { text-align:center; padding:60px 20px; color:var(--muted,#9ca3af); }
+  .asm-empty h2 { font-size:20px; margin-bottom:8px; }
+
+  /* ──── Modal ──── */
+  .asm-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:9998; display:none; align-items:center; justify-content:center; padding:20px; }
+  .asm-modal-overlay.active { display:flex; }
+  .asm-modal { background:var(--bg2,#0f1421); border:1px solid var(--border,#2a3344); border-radius:16px; max-width:720px; width:100%; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; }
+  .asm-modal-wide { max-width:960px; }
+  .asm-modal-header { padding:20px 24px; border-bottom:1px solid var(--border,#2a3344); display:flex; justify-content:space-between; align-items:center; }
+  .asm-modal-header h2 { margin:0; font-size:18px; }
+  .asm-modal-close { background:transparent; border:none; color:var(--muted,#9ca3af); cursor:pointer; font-size:22px; padding:4px 10px; }
+  .asm-modal-body { padding:24px; overflow-y:auto; flex:1; }
+  .asm-modal-footer { padding:16px 24px; border-top:1px solid var(--border,#2a3344); display:flex; justify-content:flex-end; gap:10px; }
+
+  /* ──── Wizard / Form ──── */
+  .asm-field { margin-bottom:16px; }
+  .asm-field label { display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:var(--text,#e6edf3); }
+  .asm-field label .required { color:#ef4444; }
+  .asm-field input[type="text"], .asm-field input[type="number"], .asm-field select, .asm-field textarea {
+    width:100%; padding:10px 12px; border-radius:8px;
+    border:1px solid var(--border,#2a3344); background:var(--bg,#0a0e17);
+    color:var(--text,#e6edf3); font-size:14px; font-family:inherit;
+  }
+  .asm-field textarea { resize:vertical; min-height:80px; }
+  .asm-field input:focus, .asm-field select:focus, .asm-field textarea:focus {
+    outline:none; border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.2);
+  }
+  .asm-field-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .asm-multiselect { max-height:140px; overflow-y:auto; background:var(--bg,#0a0e17); border:1px solid var(--border,#2a3344); border-radius:8px; padding:8px; }
+  .asm-multiselect label { display:flex; align-items:center; gap:8px; font-weight:400; padding:4px 6px; margin:0; cursor:pointer; }
+  .asm-multiselect label:hover { background:var(--bg2,#0f1421); border-radius:4px; }
+  .asm-hint { font-size:11px; color:var(--muted,#9ca3af); margin-top:4px; }
+
+  /* ──── Tipo Assessment (escolha inicial) ──── */
+  .asm-type-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; }
+  .asm-type-card { padding:20px; border:2px solid var(--border,#2a3344); border-radius:12px; cursor:pointer; text-align:center; transition:all .15s; }
+  .asm-type-card:hover { border-color:#3b82f6; transform:translateY(-2px); }
+  .asm-type-card.selected { border-color:#3b82f6; background:rgba(59,130,246,.1); }
+  .asm-type-card .icon { font-size:32px; margin-bottom:8px; display:block; }
+  .asm-type-card h3 { margin:0 0 4px; font-size:15px; }
+  .asm-type-card p { margin:0; font-size:12px; color:var(--muted,#9ca3af); }
+
+  /* ──── Tabs dentro do assessment ──── */
+  .asm-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border,#2a3344); margin-bottom:20px; overflow-x:auto; }
+  .asm-tab { padding:10px 16px; cursor:pointer; border:none; background:transparent; color:var(--muted,#9ca3af); font-weight:600; border-bottom:2px solid transparent; white-space:nowrap; }
+  .asm-tab.active { color:#3b82f6; border-bottom-color:#3b82f6; }
+  .asm-tab:disabled { opacity:.4; cursor:not-allowed; }
+  .asm-tab-badge { display:inline-block; margin-left:6px; background:#3b82f6; color:#fff; border-radius:10px; padding:1px 7px; font-size:10px; }
+
+  /* ──── Processos cards ──── */
+  .asm-proc-list { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+  .asm-proc-card { background:var(--bg,#0a0e17); border:1px solid var(--border,#2a3344); border-radius:10px; padding:14px; display:flex; justify-content:space-between; align-items:center; gap:12px; cursor:pointer; transition:all .15s; }
+  .asm-proc-card:hover { border-color:#3b82f6; }
+  .asm-proc-info { flex:1; min-width:0; }
+  .asm-proc-info .modulo { font-size:11px; font-weight:700; letter-spacing:.5px; color:#3b82f6; }
+  .asm-proc-info h4 { margin:2px 0 4px; font-size:14px; }
+  .asm-proc-info .meta { font-size:11px; color:var(--muted,#9ca3af); }
+  .asm-risk-badge { padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; text-transform:uppercase; flex-shrink:0; }
+  .asm-risk-badge.critico { background:#7f1d1d; color:#fecaca; }
+  .asm-risk-badge.alto { background:#9a3412; color:#fed7aa; }
+  .asm-risk-badge.medio { background:#713f12; color:#fef08a; }
+  .asm-risk-badge.baixo { background:#14532d; color:#bbf7d0; }
+  .asm-proc-actions { display:flex; gap:6px; }
+  .asm-proc-actions button { padding:6px 10px; font-size:12px; }
+
+  /* ──── Análise visualizada ──── */
+  .asm-analysis { background:var(--bg,#0a0e17); border:1px solid var(--border,#2a3344); border-radius:10px; padding:20px; }
+  .asm-analysis section { margin-bottom:20px; }
+  .asm-analysis h4 { font-size:13px; font-weight:700; letter-spacing:.5px; color:#3b82f6; text-transform:uppercase; margin:0 0 8px; }
+  .asm-analysis .risk-box { padding:12px; border-radius:8px; border-left:4px solid currentColor; }
+  .asm-analysis .risk-box.critico { background:rgba(127,29,29,.2); color:#fecaca; }
+  .asm-analysis .risk-box.alto { background:rgba(154,52,18,.2); color:#fed7aa; }
+  .asm-analysis .risk-box.medio { background:rgba(113,63,18,.2); color:#fef08a; }
+  .asm-analysis .risk-box.baixo { background:rgba(20,83,45,.2); color:#bbf7d0; }
+  .asm-analysis ul { margin:4px 0; padding-left:20px; }
+  .asm-analysis li { margin-bottom:4px; font-size:13px; line-height:1.5; }
+  .asm-analysis table { width:100%; border-collapse:collapse; font-size:13px; margin-top:8px; }
+  .asm-analysis th, .asm-analysis td { padding:8px; text-align:left; border-bottom:1px solid var(--border,#2a3344); }
+  .asm-analysis th { background:var(--bg2,#0f1421); font-weight:700; font-size:11px; text-transform:uppercase; color:var(--muted,#9ca3af); }
+
+  /* ──── Loading IA ──── */
+  .asm-ai-loading { padding:40px 20px; text-align:center; color:var(--muted,#9ca3af); }
+  .asm-ai-spinner { display:inline-block; width:40px; height:40px; border:3px solid var(--border,#2a3344); border-top-color:#3b82f6; border-radius:50%; animation:asm-spin 1s linear infinite; margin-bottom:16px; }
+  @keyframes asm-spin { to { transform:rotate(360deg); } }
+
+  /* ──── Toast ──── */
+  .asm-toast { position:fixed; bottom:24px; right:24px; padding:14px 18px; border-radius:10px; z-index:10000; font-size:14px; max-width:380px; box-shadow:0 8px 24px rgba(0,0,0,.4); animation:asm-toast-in .3s; }
+  .asm-toast.success { background:#065f46; color:#a7f3d0; border-left:4px solid #10b981; }
+  .asm-toast.error { background:#7f1d1d; color:#fecaca; border-left:4px solid #ef4444; }
+  .asm-toast.info { background:#1e40af; color:#bfdbfe; border-left:4px solid #3b82f6; }
+  @keyframes asm-toast-in { from { transform:translateX(100%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+</style>
+
+
+<!-- ═══════ 2) PÁGINA ═══════ -->
+<div id="page-assessments" style="display:none;">
+  <div style="margin-bottom:20px;">
+    <h1 style="font-size:24px; margin:0 0 6px;">🎯 Assessments</h1>
+    <p style="color:var(--muted,#9ca3af); margin:0;">Diagnóstico estruturado AS-IS → PADRÃO → GAP → RISCO → TO-BE → PLANO DE AÇÃO</p>
+  </div>
+
+  <div class="asm-toolbar">
+    <input type="text" class="search" id="asm-search" placeholder="🔍 Buscar por cliente ou CNPJ..." oninput="BeeITAssessmentsUI.filterList()">
+    <select id="asm-filter-tipo" onchange="BeeITAssessmentsUI.filterList()">
+      <option value="">Todos os tipos</option>
+      <option value="protheus">Protheus</option>
+      <option value="rm">RM</option>
+      <option value="hibrido">Híbrido</option>
+    </select>
+    <select id="asm-filter-status" onchange="BeeITAssessmentsUI.filterList()">
+      <option value="">Todos status</option>
+      <option value="draft">Rascunho</option>
+      <option value="in_progress">Em andamento</option>
+      <option value="completed">Concluído</option>
+    </select>
+    <button class="asm-btn asm-btn-primary" onclick="BeeITAssessmentsUI.openCreateModal()">➕ Novo Assessment</button>
+  </div>
+
+  <div id="asm-list-container">
+    <div class="asm-empty">
+      <h2>Carregando…</h2>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: escolher tipo de assessment -->
+<div class="asm-modal-overlay" id="asm-modal-create">
+  <div class="asm-modal">
+    <div class="asm-modal-header">
+      <h2>Novo Assessment</h2>
+      <button class="asm-modal-close" onclick="BeeITAssessmentsUI.closeModal('asm-modal-create')">×</button>
+    </div>
+    <div class="asm-modal-body">
+      <p style="color:var(--muted,#9ca3af); margin-bottom:16px;">Qual tipo de ERP vamos analisar?</p>
+      <div class="asm-type-grid">
+        <div class="asm-type-card" onclick="BeeITAssessmentsUI.startNewAssessment('protheus')">
+          <span class="icon">🟦</span>
+          <h3>Protheus</h3>
+          <p>Fiscal, Faturamento, Financeiro, Estoque, Compras</p>
+        </div>
+        <div class="asm-type-card" onclick="BeeITAssessmentsUI.startNewAssessment('rm')">
+          <span class="icon">🟩</span>
+          <h3>RM</h3>
+          <p>Fluxus, Labore, Chronus, Nucleus, Educacional</p>
+        </div>
+        <div class="asm-type-card" onclick="BeeITAssessmentsUI.openOrquestrador()">
+          <span class="icon">🟡</span>
+          <h3>Não sei</h3>
+          <p>Orquestrador me ajuda a decidir</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Orquestrador -->
+<div class="asm-modal-overlay" id="asm-modal-orquestrador">
+  <div class="asm-modal">
+    <div class="asm-modal-header">
+      <h2>🧠 Orquestrador — Qual ERP analisar?</h2>
+      <button class="asm-modal-close" onclick="BeeITAssessmentsUI.closeModal('asm-modal-orquestrador')">×</button>
+    </div>
+    <div class="asm-modal-body">
+      <div class="asm-field">
+        <label>Descreva o cliente em texto livre <span class="required">*</span></label>
+        <textarea id="asm-orq-descricao" rows="6" placeholder="Ex: Faculdade particular com 3 mil alunos em SP, usa TOTVS há 8 anos, ciclo anual de matrícula, folha de 450 CLTs, quer digitalizar portal do aluno..."></textarea>
+      </div>
+      <div id="asm-orq-result"></div>
+    </div>
+    <div class="asm-modal-footer">
+      <button class="asm-btn asm-btn-secondary" onclick="BeeITAssessmentsUI.closeModal('asm-modal-orquestrador')">Cancelar</button>
+      <button class="asm-btn asm-btn-primary" id="asm-orq-submit" onclick="BeeITAssessmentsUI.runOrquestrador()">🧠 Analisar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Contexto do Cliente (novo assessment) -->
+<div class="asm-modal-overlay" id="asm-modal-contexto">
+  <div class="asm-modal asm-modal-wide">
+    <div class="asm-modal-header">
+      <h2>Contexto do Cliente — <span id="asm-ctx-tipo-label">Protheus</span></h2>
+      <button class="asm-modal-close" onclick="BeeITAssessmentsUI.closeModal('asm-modal-contexto')">×</button>
+    </div>
+    <div class="asm-modal-body" id="asm-ctx-form">
+      <!-- Preenchido dinamicamente por renderContextoForm() -->
+    </div>
+    <div class="asm-modal-footer">
+      <button class="asm-btn asm-btn-secondary" onclick="BeeITAssessmentsUI.closeModal('asm-modal-contexto')">Cancelar</button>
+      <button class="asm-btn asm-btn-primary" onclick="BeeITAssessmentsUI.saveContextoAndOpen()">Continuar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Assessment aberto (tabs) -->
+<div class="asm-modal-overlay" id="asm-modal-open">
+  <div class="asm-modal asm-modal-wide" style="max-width:1200px; height:90vh;">
+    <div class="asm-modal-header">
+      <h2 id="asm-open-title">Assessment</h2>
+      <button class="asm-modal-close" onclick="BeeITAssessmentsUI.closeModal('asm-modal-open')">×</button>
+    </div>
+    <div class="asm-modal-body" style="padding:0; display:flex; flex-direction:column;">
+      <div class="asm-tabs" style="padding:0 24px;">
+        <button class="asm-tab active" data-tab="contexto" onclick="BeeITAssessmentsUI.switchTab('contexto')">📋 Contexto</button>
+        <button class="asm-tab" data-tab="processos" onclick="BeeITAssessmentsUI.switchTab('processos')">⚙️ Processos <span class="asm-tab-badge" id="asm-tab-proc-count">0</span></button>
+        <button class="asm-tab" data-tab="consolidacao" onclick="BeeITAssessmentsUI.switchTab('consolidacao')">📊 Consolidação</button>
+        <button class="asm-tab" data-tab="pdf" onclick="BeeITAssessmentsUI.switchTab('pdf')">📄 PDF</button>
+      </div>
+      <div id="asm-tab-content" style="padding:24px; overflow-y:auto; flex:1;">
+        <!-- Preenchido por switchTab() -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Adicionar/Editar Processo -->
+<div class="asm-modal-overlay" id="asm-modal-proc">
+  <div class="asm-modal asm-modal-wide">
+    <div class="asm-modal-header">
+      <h2 id="asm-proc-title">Novo Processo</h2>
+      <button class="asm-modal-close" onclick="BeeITAssessmentsUI.closeModal('asm-modal-proc')">×</button>
+    </div>
+    <div class="asm-modal-body" id="asm-proc-form">
+      <!-- Preenchido por renderProcessoForm() -->
+    </div>
+    <div class="asm-modal-footer">
+      <button class="asm-btn asm-btn-secondary" onclick="BeeITAssessmentsUI.closeModal('asm-modal-proc')">Cancelar</button>
+      <button class="asm-btn asm-btn-primary" id="asm-proc-submit" onclick="BeeITAssessmentsUI.analyzeProcessSubmit()">🧠 Analisar com IA</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════ 3) JAVASCRIPT DA UI ═══════ -->
+<script id="beeit-assessments-ui">
+(function() {
+  'use strict';
+
+  const state = {
+    list: [],
+    filteredList: [],
+    currentAssessment: null,
+    currentTipo: null,
+    currentTab: 'contexto',
+    orquestradorResult: null
+  };
+
+  // ───────── Helpers ─────────
+  function $(sel, ctx) { return (ctx || document).querySelector(sel); }
+  function $$(sel, ctx) { return Array.from((ctx || document).querySelectorAll(sel)); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]); }
+
+  function toast(msg, kind = 'info', ms = 3500) {
+    const existing = $('.asm-toast'); if (existing) existing.remove();
+    const el = document.createElement('div');
+    el.className = 'asm-toast ' + kind;
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), ms);
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  function mascaraCNPJ(v) {
+    return String(v || '').replace(/\D/g,'').slice(0,14)
+      .replace(/^(\d{2})(\d)/, '$1.$2')
+      .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+      .replace(/\.(\d{3})(\d)/, '.$1/$2')
+      .replace(/(\d{4})(\d)/, '$1-$2');
+  }
+
+  // ───────── API ─────────
+  async function listAssessments() {
+    try {
+      state.list = await window.BeeITAssessments.listAssessments();
+      applyFilters();
+      renderList();
+    } catch (e) {
+      console.error(e); toast('Erro ao carregar assessments: ' + e.message, 'error');
+      $('#asm-list-container').innerHTML = `<div class="asm-empty"><h2>Erro</h2><p>${esc(e.message)}</p></div>`;
+    }
+  }
+
+  function applyFilters() {
+    const search = $('#asm-search').value.toLowerCase();
+    const tipo = $('#asm-filter-tipo').value;
+    const status = $('#asm-filter-status').value;
+    state.filteredList = state.list.filter(a => {
+      if (tipo && a.tipo !== tipo) return false;
+      if (status && a.status !== status) return false;
+      if (search && !(a.cliente_nome || '').toLowerCase().includes(search) && !(a.cliente_cnpj || '').includes(search)) return false;
+      return true;
+    });
+  }
+
+  // ───────── Render lista ─────────
+  function renderList() {
+    const container = $('#asm-list-container');
+    if (state.filteredList.length === 0) {
+      container.innerHTML = `
+        <div class="asm-empty">
+          <h2>Nenhum assessment ${state.list.length === 0 ? 'criado ainda' : 'encontrado'}</h2>
+          <p>Clique em <strong>+ Novo Assessment</strong> para começar</p>
+        </div>`;
+      return;
+    }
+    container.innerHTML = `<div class="asm-grid">${
+      state.filteredList.map(a => `
+        <div class="asm-card" onclick="BeeITAssessmentsUI.openAssessment('${a.id}')">
+          <div class="asm-card-top">
+            <span class="asm-badge ${esc(a.tipo)}">${esc(a.tipo.toUpperCase())}</span>
+            <span class="asm-status ${esc(a.status)}">${statusLabel(a.status)}</span>
+          </div>
+          <h3>${esc(a.cliente_nome || 'Sem nome')}</h3>
+          ${a.cliente_cnpj ? `<div class="cnpj">${esc(a.cliente_cnpj)}</div>` : ''}
+          ${a.cliente_segmento ? `<div class="segmento">📌 ${esc(a.cliente_segmento)}</div>` : ''}
+          <div class="asm-progress"><div class="asm-progress-bar" style="width:${a.percentual_completo || 0}%"></div></div>
+          <div class="asm-card-footer">
+            <span>${a.percentual_completo || 0}% completo</span>
+            <span>${formatDate(a.updated_at)}</span>
+          </div>
+        </div>`).join('')
+    }</div>`;
+  }
+
+  function statusLabel(s) {
+    return { draft:'Rascunho', in_progress:'Em andamento', completed:'Concluído', archived:'Arquivado' }[s] || s;
+  }
+
+  // ───────── Criação ─────────
+  function openCreateModal() { openModal('asm-modal-create'); }
+
+  function startNewAssessment(tipo) {
+    state.currentTipo = tipo;
+    closeModal('asm-modal-create');
+    $('#asm-ctx-tipo-label').textContent = tipo === 'rm' ? 'RM' : 'Protheus';
+    renderContextoForm(tipo);
+    openModal('asm-modal-contexto');
+  }
+
+  function renderContextoForm(tipo) {
+    const qdb = tipo === 'rm' ? window.QDB_RM_CONTEXTO : window.QDB_PROTHEUS_CONTEXTO;
+    const perguntas = qdb.contexto_cliente.perguntas;
+
+    const html = `<div class="asm-field-grid-2">` + perguntas.map(p => fieldHTML(p, `ctx-${p.id}`)).join('') + `</div>`;
+    $('#asm-ctx-form').innerHTML = html;
+
+    // Aplicar máscara CNPJ
+    const cnpjEl = $('#ctx-cnpj');
+    if (cnpjEl) cnpjEl.addEventListener('input', e => { e.target.value = mascaraCNPJ(e.target.value); });
+  }
+
+  function fieldHTML(p, id) {
+    const req = p.obrigatorio ? '<span class="required">*</span>' : '';
+    const label = `<label>${esc(p.label)} ${req}</label>`;
+    let input = '';
+    switch (p.tipo) {
+      case 'text':
+      case 'number':
+        input = `<input type="${p.tipo}" id="${id}" placeholder="${esc(p.placeholder || '')}">`;
+        break;
+      case 'select':
+        input = `<select id="${id}"><option value="">— Selecione —</option>${
+          p.opcoes.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('')
+        }</select>`;
+        break;
+      case 'multiselect':
+        input = `<div class="asm-multiselect" id="${id}">${
+          p.opcoes.map(o => `<label><input type="checkbox" value="${esc(o)}"> ${esc(o)}</label>`).join('')
+        }</div>`;
+        break;
+      case 'textarea':
+        input = `<textarea id="${id}" rows="${p.rows || 4}" placeholder="${esc(p.placeholder || '')}"></textarea>`;
+        break;
+      default:
+        input = `<input type="text" id="${id}" placeholder="${esc(p.placeholder || '')}">`;
+    }
+    return `<div class="asm-field" ${p.tipo === 'textarea' || p.tipo === 'multiselect' ? 'style="grid-column:1/-1;"' : ''}>${label}${input}</div>`;
+  }
+
+  function collectFormData(containerSelector, perguntas, prefix) {
+    const data = {};
+    perguntas.forEach(p => {
+      const el = $(`${containerSelector} #${prefix}${p.id}`);
+      if (!el) return;
+      if (p.tipo === 'multiselect') {
+        data[p.id] = $$(`#${prefix}${p.id} input[type="checkbox"]:checked`).map(cb => cb.value);
+      } else {
+        data[p.id] = el.value.trim();
+      }
+    });
+    return data;
+  }
+
+  async function saveContextoAndOpen() {
+    const qdb = state.currentTipo === 'rm' ? window.QDB_RM_CONTEXTO : window.QDB_PROTHEUS_CONTEXTO;
+    const dados = collectFormData('#asm-ctx-form', qdb.contexto_cliente.perguntas, 'ctx-');
+
+    // Validar obrigatórios
+    const faltando = qdb.contexto_cliente.perguntas.filter(p => p.obrigatorio && !dados[p.id]);
+    if (faltando.length) {
+      toast('Preencha os campos obrigatórios: ' + faltando.map(p => p.label).join(', '), 'error', 5000);
+      return;
+    }
+
+    try {
+      toast('Criando assessment...', 'info', 2000);
+      const created = await window.BeeITAssessments.createAssessment(state.currentTipo, dados);
+      closeModal('asm-modal-contexto');
+      toast('Assessment criado', 'success');
+      await listAssessments();
+      openAssessment(created.id);
+    } catch (e) {
+      toast('Erro: ' + e.message, 'error');
+    }
+  }
+
+  // ───────── Abrir assessment existente ─────────
+  async function openAssessment(id) {
+    try {
+      const a = await window.BeeITAssessments.loadAssessment(id);
+      state.currentAssessment = a;
+      state.currentTipo = a.tipo;
+      $('#asm-open-title').innerHTML = `${a.tipo.toUpperCase()} · ${esc(a.cliente_nome)}`;
+      switchTab('contexto');
+      openModal('asm-modal-open');
+    } catch (e) {
+      toast('Erro ao abrir: ' + e.message, 'error');
+    }
+  }
+
+  function switchTab(tab) {
+    state.currentTab = tab;
+    $$('#asm-modal-open .asm-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    const content = $('#asm-tab-content');
+    const a = state.currentAssessment;
+    if (!a) return;
+
+    if (tab === 'contexto') {
+      content.innerHTML = renderContextoReadonly(a);
+    } else if (tab === 'processos') {
+      content.innerHTML = renderProcessosTab(a);
+      $('#asm-tab-proc-count').textContent = (a.dados?.processos_analisados || []).length;
+    } else if (tab === 'consolidacao') {
+      content.innerHTML = renderConsolidacaoTab(a);
+    } else if (tab === 'pdf') {
+      content.innerHTML = renderPDFTab(a);
+    }
+  }
+
+  function renderContextoReadonly(a) {
+    const ctx = a.dados?.contexto_cliente || {};
+    const entries = Object.entries(ctx).filter(([k, v]) => v != null && v !== '' && !(Array.isArray(v) && v.length === 0));
+    return `
+      <div style="max-width:800px;">
+        <p style="color:var(--muted,#9ca3af); margin-bottom:16px;">Dados base do cliente — compartilhados com todas as análises de processo deste assessment.</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          ${entries.map(([k, v]) => `
+            <div style="padding:10px; background:var(--bg,#0a0e17); border-radius:8px;">
+              <div style="font-size:11px; color:var(--muted,#9ca3af); text-transform:uppercase; font-weight:700;">${esc(k)}</div>
+              <div style="margin-top:3px;">${esc(Array.isArray(v) ? v.join(', ') : v)}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="margin-top:20px; display:flex; gap:10px;">
+          <button class="asm-btn asm-btn-secondary" onclick="BeeITAssessmentsUI.editContexto()">✏️ Editar Contexto</button>
+          <button class="asm-btn asm-btn-danger" onclick="BeeITAssessmentsUI.archiveAssessment()">🗃️ Arquivar</button>
+        </div>
+      </div>`;
+  }
+
+  function renderProcessosTab(a) {
+    const processos = a.dados?.processos_analisados || [];
+    return `
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div>
+            <h3 style="margin:0 0 4px;">Processos analisados</h3>
+            <p style="margin:0; color:var(--muted,#9ca3af); font-size:13px;">Adicione N processos. A IA analisa cada um seguindo AS-IS / PADRÃO / GAP / RISCO / TO-BE / PLANO.</p>
+          </div>
+          <button class="asm-btn asm-btn-primary" onclick="BeeITAssessmentsUI.openProcessoModal()">+ Adicionar Processo</button>
+        </div>
+        ${processos.length === 0 ? `
+          <div class="asm-empty">
+            <h2>Nenhum processo analisado</h2>
+            <p>Clique em "+ Adicionar Processo" para começar.</p>
+          </div>
+        ` : `
+          <div class="asm-proc-list">
+            ${processos.map(p => renderProcessoCard(p)).join('')}
+          </div>
+        `}
+      </div>`;
+  }
+
+  function renderProcessoCard(p) {
+    const risco = p.analise_ai?.risco?.nivel || 'baixo';
+    return `
+      <div class="asm-proc-card" onclick="BeeITAssessmentsUI.viewProcesso('${p.id}')">
+        <div class="asm-proc-info">
+          <div class="modulo">${esc(p.modulo || '?')}</div>
+          <h4>${esc(p.processo || 'Sem nome')}</h4>
+          <div class="meta">Analisado em ${formatDate(p.analisado_em)}</div>
+        </div>
+        <span class="asm-risk-badge ${esc(risco)}">Risco: ${esc(risco)}</span>
+        <div class="asm-proc-actions" onclick="event.stopPropagation();">
+          <button class="asm-btn asm-btn-ghost" onclick="BeeITAssessmentsUI.removeProcesso('${p.id}')">🗑️</button>
+        </div>
+      </div>`;
+  }
+
+  function viewProcesso(procId) {
+    const p = (state.currentAssessment.dados?.processos_analisados || []).find(x => x.id === procId);
+    if (!p) return;
+    const a = p.analise_ai || {};
+    const riscoNivel = a.risco?.nivel || 'baixo';
+
+    const content = `
+      <div class="asm-analysis">
+        <section>
+          <h4>Contexto</h4>
+          <table>
+            <tr><td><strong>ERP</strong></td><td>${esc(a.contexto?.erp || '—')}</td></tr>
+            <tr><td><strong>Módulo</strong></td><td>${esc(a.contexto?.modulo || p.modulo)}</td></tr>
+            <tr><td><strong>Processo</strong></td><td>${esc(a.contexto?.processo || p.processo)}</td></tr>
+            ${a.contexto?.rotinas_envolvidas ? `<tr><td><strong>Rotinas</strong></td><td>${esc((a.contexto.rotinas_envolvidas || []).join(', '))}</td></tr>` : ''}
+            ${a.contexto?.tabelas_envolvidas ? `<tr><td><strong>Tabelas</strong></td><td>${esc((a.contexto.tabelas_envolvidas || []).join(', '))}</td></tr>` : ''}
+          </table>
+        </section>
+        <section>
+          <h4>AS-IS (Processo atual)</h4>
+          <p>${esc(a.as_is?.descricao || '—')}</p>
+          <ul>
+            ${a.as_is?.quem_executa ? `<li><strong>Quem executa:</strong> ${esc(a.as_is.quem_executa)}</li>` : ''}
+            ${a.as_is?.frequencia ? `<li><strong>Frequência:</strong> ${esc(a.as_is.frequencia)}</li>` : ''}
+            ${a.as_is?.volume ? `<li><strong>Volume:</strong> ${esc(a.as_is.volume)}</li>` : ''}
+            ${a.as_is?.ferramentas_atuais ? `<li><strong>Ferramentas:</strong> ${esc((a.as_is.ferramentas_atuais || []).join(', '))}</li>` : ''}
+          </ul>
+        </section>
+        <section>
+          <h4>Padrão ${a.contexto?.erp || 'TOTVS'}</h4>
+          <p>${esc((a.padrao_protheus || a.padrao_rm)?.descricao || '—')}</p>
+          ${renderList((a.padrao_protheus || a.padrao_rm)?.rotinas_corretas, 'Rotinas corretas')}
+          ${renderList((a.padrao_protheus || a.padrao_rm)?.funcionalidades_nativas, 'Funcionalidades nativas')}
+          ${renderList((a.padrao_protheus || a.padrao_rm)?.parametros_mv || (a.padrao_protheus || a.padrao_rm)?.parametrizacoes_chave, 'Parametrizações')}
+          ${renderList((a.padrao_protheus || a.padrao_rm)?.boas_praticas, 'Boas práticas')}
+        </section>
+        <section>
+          <h4>GAP</h4>
+          <p>${esc(a.gap?.descricao || '—')}</p>
+          ${a.gap?.itens?.length ? `<ul>${a.gap.itens.map(it => `<li><strong>[${esc(it.impacto)}]</strong> ${esc(it.item)}</li>`).join('')}</ul>` : ''}
+        </section>
+        <section>
+          <h4>Risco</h4>
+          <div class="risk-box ${esc(riscoNivel)}">
+            <strong style="text-transform:uppercase;">${esc(riscoNivel)}</strong> · ${esc(a.risco?.categoria || '')}
+            <p style="margin:8px 0 4px;">${esc(a.risco?.descricao || '')}</p>
+            <small><strong>Impacto:</strong> ${esc(a.risco?.impacto_potencial || '—')} · <strong>Probabilidade:</strong> ${esc(a.risco?.probabilidade || '—')}</small>
+          </div>
+        </section>
+        <section>
+          <h4>TO-BE (Processo ideal)</h4>
+          <p>${esc(a.to_be?.descricao || '—')}</p>
+          ${renderList(a.to_be?.beneficios, 'Benefícios')}
+          ${renderList(a.to_be?.pre_requisitos, 'Pré-requisitos')}
+        </section>
+        <section>
+          <h4>Plano de Ação</h4>
+          <table>
+            <thead><tr><th>Ação</th><th>Prioridade</th><th>Tipo</th><th>Horas</th></tr></thead>
+            <tbody>
+              ${(a.plano_acao || []).map(ac => `
+                <tr>
+                  <td>${esc(ac.acao)}</td>
+                  <td><strong>${esc(ac.prioridade)}</strong></td>
+                  <td>${esc(ac.tipo)}</td>
+                  <td>${esc(ac.esforco_estimado_horas || '—')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </section>
+        ${a.impacto_cruzado_modulos ? `
+          <section>
+            <h4>Impacto cruzado entre módulos</h4>
+            <p>${esc(a.impacto_cruzado_modulos.descricao)}</p>
+            ${renderList(a.impacto_cruzado_modulos.modulos_afetados, 'Módulos afetados')}
+          </section>
+        ` : ''}
+        <div style="margin-top:24px;">
+          <button class="asm-btn asm-btn-secondary" onclick="BeeITAssessmentsUI.switchTab('processos')">← Voltar</button>
+        </div>
+      </div>`;
+    $('#asm-tab-content').innerHTML = content;
+  }
+
+  function renderList(items, title) {
+    if (!items || items.length === 0) return '';
+    return `<div style="margin-top:10px;"><strong>${esc(title)}:</strong><ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`;
+  }
+
+  // ───────── Adicionar processo ─────────
+  function openProcessoModal() {
+    const qdb = state.currentTipo === 'rm' ? window.QDB_RM_CONTEXTO : window.QDB_PROTHEUS_CONTEXTO;
+    const perguntas = qdb.template_analise_processo.perguntas;
+    $('#asm-proc-title').textContent = `Novo Processo — ${state.currentTipo.toUpperCase()}`;
+    $('#asm-proc-form').innerHTML = perguntas.map(p => fieldHTML(p, 'proc-')).join('');
+    // Aplicar sugestões no campo processo_nome (datalist simples)
+    const moduloEl = $('#proc-modulo');
+    const nomeEl = $('#proc-processo_nome');
+    if (moduloEl && nomeEl) {
+      const updateSugestoes = () => {
+        const modulo = moduloEl.value;
+        const fonte = state.currentTipo === 'rm' ? window.PROCESSOS_PADRAO.rm : window.PROCESSOS_PADRAO.protheus;
+        const sugs = fonte[modulo] || [];
+        let dl = document.getElementById('proc-nome-datalist');
+        if (!dl) {
+          dl = document.createElement('datalist');
+          dl.id = 'proc-nome-datalist';
+          nomeEl.after(dl);
+          nomeEl.setAttribute('list', 'proc-nome-datalist');
+        }
+        dl.innerHTML = sugs.map(s => `<option value="${esc(s)}"></option>`).join('');
+      };
+      moduloEl.addEventListener('change', updateSugestoes);
+    }
+    openModal('asm-modal-proc');
+  }
+
+  async function analyzeProcessSubmit() {
+    const qdb = state.currentTipo === 'rm' ? window.QDB_RM_CONTEXTO : window.QDB_PROTHEUS_CONTEXTO;
+    const perguntas = qdb.template_analise_processo.perguntas;
+    const raw = collectFormData('#asm-proc-form', perguntas, 'proc-');
+
+    // Validar obrigatórios
+    const faltando = perguntas.filter(p => p.obrigatorio && !raw[p.id]);
+    if (faltando.length) {
+      toast('Preencha: ' + faltando.map(p => p.label).join(', '), 'error', 5000);
+      return;
+    }
+
+    // Separar perguntas inteligentes (prefix pi_)
+    const perguntas_inteligentes = {};
+    Object.keys(raw).filter(k => k.startsWith('pi_')).forEach(k => {
+      perguntas_inteligentes[k.replace('pi_', '')] = raw[k];
+    });
+
+    const dadosProcesso = {
+      modulo: raw.modulo,
+      processo: raw.processo_nome,
+      descricao_as_is: raw.descricao_as_is,
+      perguntas_inteligentes,
+      observacoes: raw.observacoes
+    };
+
+    // UI: loading
+    $('#asm-proc-form').innerHTML = `
+      <div class="asm-ai-loading">
+        <div class="asm-ai-spinner"></div>
+        <h3>🧠 Analisando com Claude Sonnet 4…</h3>
+        <p>Gerando AS-IS / PADRÃO / GAP / RISCO / TO-BE / PLANO</p>
+        <p style="font-size:12px; opacity:.6;">Pode levar 15–30 segundos.</p>
+      </div>`;
+    $('#asm-proc-submit').disabled = true;
+
+    try {
+      const processo = await window.BeeITAssessments.analyzeProcess(state.currentAssessment.id, dadosProcesso);
+      closeModal('asm-modal-proc');
+      toast('Processo analisado', 'success');
+      // Recarregar assessment e ir direto pra visualização
+      state.currentAssessment = await window.BeeITAssessments.loadAssessment(state.currentAssessment.id);
+      switchTab('processos');
+      setTimeout(() => viewProcesso(processo.id), 200);
+      await listAssessments(); // atualiza % na lista
+    } catch (e) {
+      console.error(e);
+      toast('Erro na análise: ' + e.message, 'error', 6000);
+      $('#asm-proc-submit').disabled = false;
+      openProcessoModal(); // reabre formulário
+    }
+  }
+
+  async function removeProcesso(procId) {
+    if (!confirm('Remover este processo da análise?')) return;
+    try {
+      await window.BeeITAssessments.removeProcess(state.currentAssessment.id, procId);
+      state.currentAssessment = await window.BeeITAssessments.loadAssessment(state.currentAssessment.id);
+      switchTab('processos');
+      toast('Processo removido', 'success');
+    } catch (e) { toast('Erro: ' + e.message, 'error'); }
+  }
+
+  // ───────── Consolidação ─────────
+  function renderConsolidacaoTab(a) {
+    const cons = a.dados?.consolidacao?.analise_ai || a.analise_ai;
+    const processos = a.dados?.processos_analisados || [];
+
+    if (!cons) {
+      return `
+        <div>
+          <h3>Sumário Executivo Consolidado</h3>
+          <p style="color:var(--muted,#9ca3af);">Após analisar múltiplos processos, o Consolidador gera uma visão executiva cruzando todos os insights — riscos priorizados, roadmap em fases, estimativa total de esforço.</p>
+          <div style="background:var(--bg,#0a0e17); border:1px solid var(--border,#2a3344); border-radius:10px; padding:20px; margin-top:16px;">
+            <p><strong>Processos analisados:</strong> ${processos.length}</p>
+            <p>Recomendado: analisar pelo menos 3 processos antes de consolidar.</p>
+            <button class="asm-btn asm-btn-primary" ${processos.length < 2 ? 'disabled' : ''} onclick="BeeITAssessmentsUI.runConsolidacao()">
+              🧠 Gerar Sumário Executivo
+            </button>
+            ${processos.length < 2 ? `<p style="margin-top:10px; font-size:12px; color:var(--muted,#9ca3af);">Adicione pelo menos 2 processos antes de consolidar.</p>` : ''}
+          </div>
+        </div>`;
+    }
+
+    return `
+      <div class="asm-analysis">
+        <section>
+          <h4>Sumário Executivo</h4>
+          <p style="font-size:14px; line-height:1.6;">${esc(cons.sumario_executivo || '')}</p>
+        </section>
+        <section>
+          <h4>Visão Consolidada</h4>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px;">
+            <div style="padding:12px; background:var(--bg2,#0f1421); border-radius:8px;">
+              <div style="font-size:24px; font-weight:700;">${esc(cons.visao_consolidada?.total_processos_analisados || 0)}</div>
+              <div style="font-size:11px; color:var(--muted,#9ca3af);">Processos</div>
+            </div>
+            <div style="padding:12px; background:rgba(127,29,29,.15); border-radius:8px;">
+              <div style="font-size:24px; font-weight:700; color:#fecaca;">${esc(cons.visao_consolidada?.gaps_criticos_count || 0)}</div>
+              <div style="font-size:11px; color:var(--muted,#9ca3af);">Críticos</div>
+            </div>
+            <div style="padding:12px; background:rgba(154,52,18,.15); border-radius:8px;">
+              <div style="font-size:24px; font-weight:700; color:#fed7aa;">${esc(cons.visao_consolidada?.gaps_altos_count || 0)}</div>
+              <div style="font-size:11px; color:var(--muted,#9ca3af);">Altos</div>
+            </div>
+            <div style="padding:12px; background:rgba(113,63,18,.15); border-radius:8px;">
+              <div style="font-size:24px; font-weight:700; color:#fef08a;">${esc(cons.visao_consolidada?.gaps_medios_count || 0)}</div>
+              <div style="font-size:11px; color:var(--muted,#9ca3af);">Médios</div>
+            </div>
+          </div>
+        </section>
+        <section>
+          <h4>Riscos Prioritários</h4>
+          ${(cons.riscos_prioritarios || []).map(r => `
+            <div class="risk-box ${esc(r.nivel)}" style="margin-bottom:10px;">
+              <strong style="text-transform:uppercase;">${esc(r.nivel)}</strong>
+              <p style="margin:6px 0;">${esc(r.descricao)}</p>
+              <small><strong>Ação imediata:</strong> ${esc(r.acao_imediata || '—')}</small>
+            </div>
+          `).join('')}
+        </section>
+        <section>
+          <h4>Insights cruzados</h4>
+          <ul>${(cons.insights_cruzados || []).map(i => `<li>${esc(i)}</li>`).join('')}</ul>
+        </section>
+        <section>
+          <h4>Roadmap Consolidado</h4>
+          ${(cons.roadmap_consolidado || []).map(f => `
+            <div style="padding:12px; background:var(--bg2,#0f1421); border-radius:8px; margin-bottom:8px;">
+              <strong>${esc(f.fase)}</strong> <small style="color:var(--muted,#9ca3af);">· ${esc(f.duracao_semanas)} semanas</small>
+              <p style="margin:4px 0; font-size:13px;">${esc(f.foco || '')}</p>
+              ${renderList(f.entregaveis, 'Entregáveis')}
+            </div>
+          `).join('')}
+        </section>
+        <section>
+          <h4>Estimativa de Esforço</h4>
+          <p><strong>${esc(cons.estimativa_esforco?.horas_totais_consultoria || '—')}h</strong> de consultoria · <strong>${esc(cons.estimativa_esforco?.dias_corridos_projeto || '—')}</strong> dias de projeto</p>
+          ${cons.estimativa_esforco?.equipe_sugerida ? `<small>Equipe: ${Object.entries(cons.estimativa_esforco.equipe_sugerida).map(([k,v]) => `${v} ${k.replace(/_/g,' ')}`).join(' · ')}</small>` : ''}
+        </section>
+        <section>
+          <h4>Recomendação Final BeeIT</h4>
+          <p>${esc(cons.recomendacao_final_beeit || '')}</p>
+        </section>
+        <button class="asm-btn asm-btn-secondary" onclick="BeeITAssessmentsUI.runConsolidacao()">🔁 Regenerar Sumário</button>
+      </div>`;
+  }
+
+  async function runConsolidacao() {
+    const btn = event?.target;
+    if (btn) btn.disabled = true;
+    $('#asm-tab-content').innerHTML = `
+      <div class="asm-ai-loading">
+        <div class="asm-ai-spinner"></div>
+        <h3>🧠 Consolidando análises…</h3>
+        <p>Cruzando todas análises individuais para gerar o Sumário Executivo.</p>
+      </div>`;
+    try {
+      await window.BeeITAssessments.consolidateAssessment(state.currentAssessment.id);
+      state.currentAssessment = await window.BeeITAssessments.loadAssessment(state.currentAssessment.id);
+      switchTab('consolidacao');
+      toast('Sumário gerado', 'success');
+      await listAssessments();
+    } catch (e) {
+      toast('Erro: ' + e.message, 'error', 6000);
+      switchTab('consolidacao');
+    }
+  }
+
+  // ───────── PDF (placeholder — wkhtmltopdf fica pra iteração Onda 3) ─────────
+  function renderPDFTab(a) {
+    return `
+      <div>
+        <h3>📄 PDF Final (MIT041-style)</h3>
+        <p style="color:var(--muted,#9ca3af);">A geração de PDF via wkhtmltopdf será ativada na próxima iteração. Por enquanto, você pode visualizar todas as análises nas abas Contexto, Processos e Consolidação.</p>
+        <div style="background:var(--bg,#0a0e17); border:1px dashed var(--border,#2a3344); border-radius:10px; padding:40px; text-align:center; margin-top:16px;">
+          <p style="font-size:48px; margin:0;">📄</p>
+          <p style="margin:12px 0 0; color:var(--muted,#9ca3af);">Em breve — geração de PDF MIT041 com capa, sumário, processos e roadmap.</p>
+          ${a.pdf_url ? `<a class="asm-btn asm-btn-primary" href="${esc(a.pdf_url)}" target="_blank" style="margin-top:16px; display:inline-block;">⬇️ Baixar PDF existente</a>` : ''}
+        </div>
+      </div>`;
+  }
+
+  // ───────── Orquestrador ─────────
+  function openOrquestrador() {
+    closeModal('asm-modal-create');
+    $('#asm-orq-descricao').value = '';
+    $('#asm-orq-result').innerHTML = '';
+    openModal('asm-modal-orquestrador');
+  }
+
+  async function runOrquestrador() {
+    const desc = $('#asm-orq-descricao').value.trim();
+    if (desc.length < 30) { toast('Descreva o cliente com mais detalhe (mínimo 30 caracteres)', 'error'); return; }
+
+    $('#asm-orq-submit').disabled = true;
+    $('#asm-orq-result').innerHTML = `
+      <div class="asm-ai-loading">
+        <div class="asm-ai-spinner"></div>
+        <p>🧠 Classificando cliente…</p>
+      </div>`;
+
+    try {
+      const r = await window.BeeITAssessments.classifyClient(desc, {});
+      state.orquestradorResult = r;
+      $('#asm-orq-result').innerHTML = `
+        <div style="margin-top:16px; padding:16px; background:var(--bg,#0a0e17); border-radius:10px; border-left:4px solid #3b82f6;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <strong style="font-size:16px; text-transform:uppercase;">${esc(r.classificacao)}</strong>
+            <span style="font-size:13px; color:var(--muted,#9ca3af);">Confiança: ${esc(r.confianca_percent)}%</span>
+          </div>
+          <p>${esc(r.raciocinio)}</p>
+          ${r.processos_sugeridos?.length ? `
+            <div style="margin-top:12px;">
+              <strong style="font-size:12px; text-transform:uppercase; color:var(--muted,#9ca3af);">Processos sugeridos para análise:</strong>
+              <ul>${r.processos_sugeridos.map(p => `<li><strong>${esc(p.modulo)}</strong> — ${esc(p.processo)} <em style="color:var(--muted,#9ca3af);">(${esc(p.justificativa || '')})</em></li>`).join('')}</ul>
+            </div>
+          ` : ''}
+          ${r.alerta_atencao ? `<p style="margin-top:12px; color:#fbbf24;">⚠️ ${esc(r.alerta_atencao)}</p>` : ''}
+          <div style="display:flex; gap:10px; margin-top:16px;">
+            ${r.classificacao !== 'hibrido' ? `<button class="asm-btn asm-btn-primary" onclick="BeeITAssessmentsUI.proceedFromOrquestrador('${r.classificacao}')">Iniciar Assessment ${r.classificacao.toUpperCase()}</button>` : `
+              <button class="asm-btn asm-btn-primary" onclick="BeeITAssessmentsUI.proceedFromOrquestrador('protheus')">Iniciar Protheus</button>
+              <button class="asm-btn asm-btn-primary" onclick="BeeITAssessmentsUI.proceedFromOrquestrador('rm')">Iniciar RM</button>
+            `}
+          </div>
+        </div>`;
+    } catch (e) {
+      toast('Erro: ' + e.message, 'error');
+      $('#asm-orq-result').innerHTML = '';
+    } finally {
+      $('#asm-orq-submit').disabled = false;
+    }
+  }
+
+  function proceedFromOrquestrador(tipo) {
+    closeModal('asm-modal-orquestrador');
+    startNewAssessment(tipo);
+  }
+
+  // ───────── Utilitários gerais ─────────
+  async function archiveAssessment() {
+    if (!confirm('Arquivar este assessment? Ele sai da lista principal.')) return;
+    try {
+      await window.BeeITAssessments.deleteAssessment(state.currentAssessment.id);
+      closeModal('asm-modal-open');
+      toast('Assessment arquivado', 'success');
+      await listAssessments();
+    } catch (e) { toast('Erro: ' + e.message, 'error'); }
+  }
+
+  function editContexto() {
+    toast('Edição de contexto — disponível em breve', 'info');
+    // TODO: reabrir modal-contexto com dados atuais preenchidos
+  }
+
+  function openModal(id) { $('#' + id).classList.add('active'); }
+  function closeModal(id) { $('#' + id).classList.remove('active'); }
+
+  function filterList() { applyFilters(); renderList(); }
+
+  // ───────── API pública ─────────
+  window.BeeITAssessmentsUI = {
+    init: listAssessments,
+    openCreateModal,
+    openOrquestrador,
+    runOrquestrador,
+    proceedFromOrquestrador,
+    startNewAssessment,
+    saveContextoAndOpen,
+    openAssessment,
+    switchTab,
+    openProcessoModal,
+    analyzeProcessSubmit,
+    viewProcesso,
+    removeProcesso,
+    runConsolidacao,
+    archiveAssessment,
+    editContexto,
+    filterList,
+    closeModal
+  };
+
+  console.log('[BeeIT] UI Assessments carregada');
+})();
+</script>
