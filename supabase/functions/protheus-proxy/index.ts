@@ -4,13 +4,17 @@
 //   /ibge/*          → https://servicodados.ibge.gov.br/api/v1/localidades/*
 //   /viacep/:cep     → https://viacep.com.br/ws/:cep/json/
 //   /brasilapi/*     → https://brasilapi.com.br/api/*
+//   /clicksign/*     → https://app.clicksign.com/*  (contorna CORS da API ClickSign)
+//   /clicksign-sandbox/* → https://sandbox.clicksign.com/*
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-const PROTHEUS_BASE  = Deno.env.get('PROTHEUS_BASE_URL') || 'http://beeit207327.protheus.cloudtotvs.com.br:10607';
-const IBGE_BASE      = 'https://servicodados.ibge.gov.br/api/v1/localidades';
-const VIACEP_BASE    = 'https://viacep.com.br/ws';
-const BRASILAPI_BASE = 'https://brasilapi.com.br/api';
+const PROTHEUS_BASE   = Deno.env.get('PROTHEUS_BASE_URL') || 'http://beeit207327.protheus.cloudtotvs.com.br:10607';
+const IBGE_BASE       = 'https://servicodados.ibge.gov.br/api/v1/localidades';
+const VIACEP_BASE     = 'https://viacep.com.br/ws';
+const BRASILAPI_BASE  = 'https://brasilapi.com.br/api';
+const CLICKSIGN_BASE  = 'https://app.clicksign.com';
+const CLICKSIGN_SBOX  = 'https://sandbox.clicksign.com';
 
 const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -86,18 +90,33 @@ Deno.serve(async (req) => {
       return await proxyRequest(target, req);
     }
 
+    // ───── ClickSign (produção) — contorna CORS ─────
+    // Uso: /clicksign/api/v1/documents?access_token=XXX  →  https://app.clicksign.com/api/v1/documents?access_token=XXX
+    if (path.startsWith('/clicksign/')) {
+      const rest = path.substring('/clicksign'.length);
+      const target = `${CLICKSIGN_BASE}${rest}${search}`;
+      return await proxyRequest(target, req);
+    }
+
+    // ───── ClickSign (sandbox) ─────
+    if (path.startsWith('/clicksign-sandbox/')) {
+      const rest = path.substring('/clicksign-sandbox'.length);
+      const target = `${CLICKSIGN_SBOX}${rest}${search}`;
+      return await proxyRequest(target, req);
+    }
+
     // ───── Health check ─────
     if (path === '/' || path === '/health' || path === '') {
       return new Response(JSON.stringify({
         service: 'BeeIT OS-RT Proxy',
-        version: '2.0',
+        version: '2.1',
         status: 'ok',
-        routes: ['/protheus/*', '/ibge/*', '/viacep/:cep', '/brasilapi/*'],
+        routes: ['/protheus/*', '/ibge/*', '/viacep/:cep', '/brasilapi/*', '/clicksign/*', '/clicksign-sandbox/*'],
         timestamp: new Date().toISOString(),
       }), { headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 
-    return jsonErr(`Rota não encontrada: ${path}`, 404, { hint: 'Use /protheus/*, /ibge/*, /viacep/:cep ou /brasilapi/*' });
+    return jsonErr(`Rota não encontrada: ${path}`, 404, { hint: 'Use /protheus/*, /ibge/*, /viacep/:cep, /brasilapi/*, /clicksign/* ou /clicksign-sandbox/*' });
 
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
