@@ -23,13 +23,13 @@ Referência completa: *Laudo de Estratégia Técnica v2* (arquivo externo).
 | **S0.2** | Governança `.claude/rules` + `.claude/skills` | ✅ feito | 🟢 |
 | **S1** | Tag rollback + branch `feat/modularization-security-v1` + scaffold de pastas | ✅ feito | 🟢 |
 | **S2** | Migrations Supabase (snapshot, history, tenant_config, user_tenant) com RLS | 🟡 em andamento | 🟢 |
-| **S3** | Hardening Edge `protheus-proxy` — CORS allow-list, JWT verify, path allow-list, rate-limit | ⏳ pendente | 🟠 |
-| **S4** | Multi-tenant: remover `x-protheus-auth` do browser; credenciais resolvidas server-side via `tenant_protheus_config.basic_auth_ref` | ⏳ pendente | 🔴 |
-| **S5** | Módulo prova `src/modules/dict-viewer` consumindo BdaDictApi com diff UI | ⏳ pendente | 🟠 |
-| **S6** | `scripts/build-modules.js` + ajuste `deploy.yml` (inject de módulos no HTML + FTP sync de órfãos) | ⏳ pendente | 🟠 |
-| **S7** | Extração de MATA410 (pedidos) do monólito para `src/modules/mata410-pedidos/` | ⏳ pendente | 🔴 |
-| **S8** | Extração MATA415 (orçamentos) + MATA460 (faturamento) | ⏳ pendente | 🟠 |
-| **S9** | Remoção das 7 URLs Protheus residuais no monólito (bypass do Edge) | ⏳ paralelo | 🟠 |
+| **S3** | Hardening Edge `protheus-proxy` — CORS allow-list, JWT verify, path allow-list, audit | ✅ feito (commit `d4b257c`, **não deployada**) | 🟠 |
+| **S4** | Auth Hook (`custom_access_token_hook`) + RPC `provision_tenant_protheus` + `scripts/setup-tenant.js` + plano Sprint 5 | ✅ feito | 🟢 |
+| **S5** | Adaptação do monólito **sem reescrita** — fetch interceptor em `src/core/`, build injector, legacy-aliases allow-list na Edge. Plano completo em [SPRINT-5-PLAN.md](SPRINT-5-PLAN.md) | ⏳ pendente | 🔴 |
+| **S6** | Migrar paths legacy (`/SA1/`, `/CT1/` etc) do monólito para `/api/v1/bda/dynamic` + remover aliases da allow-list legacy | ⏳ pendente | 🟠 |
+| **S7** | Hardening de rede no Protheus — firewall libera apenas IP do Supabase | ⏳ pendente | 🟠 |
+| **S8** | Módulo prova `src/modules/dict-viewer` + extração MATA410/415/460 | ⏳ pendente | 🔴 |
+| **S9** | Eliminar monólito, promover shell HTML puro com módulos externos | ⏳ paralelo | 🟠 |
 
 ## Descobertas (auditoria real do repo)
 
@@ -77,9 +77,19 @@ Claim `tenant_id` no JWT Supabase (via Auth Hook). Edge Function resolve credenc
 ### ADR-005 — `src/assessments/` e `src/rm-agents/` são read-only na branch de modularização
 Produção estável. Alterações exigem branch própria + aprovação explícita. Documentado em [.claude/skills/deploy/deploy-config.md](../.claude/skills/deploy/deploy-config.md).
 
+### ADR-006 — Fontes AdvPL em repo dedicado
+Escolhida Opção B (ver laudo Sprint 3). Criado [BeeIt-Inovacao/beeit-protheus-advpl](https://github.com/BeeIt-Inovacao/beeit-protheus-advpl) (privado) com os 3 fontes + README de compilação/contrato. Versionamento independente via tags `advpl-vX.Y.Z`.
+
+### ADR-007 — Auth Hook injeta `tenant_id` no JWT
+Função `custom_access_token_hook` grava `tenant_id` tanto no claim top-level quanto em `app_metadata.tenant_id`. Hook padrão escolhe **vínculo mais antigo** do usuário em `user_tenant`. Troca de tenant em runtime exige `supabase.auth.refreshSession()` (aceitável para o uso atual).
+
+### ADR-008 — Adaptação por interceptor, não reescrita
+Sprint 5 injeta `src/core/fetch-interceptor.js` no topo do HTML via build-time. Zero edição nas 46.786 linhas do monólito. Rollback = `git revert` do commit da Sprint 5. Decisão motivada por: (a) risco de regressão em código com declarações duplicadas intencionais, (b) velocidade de entrega, (c) preservação de assessments/rm-agents em produção.
+
 ## Decisões pendentes
 
-- [ ] **Fontes Protheus (AdvPL/TLPP):** mesmo repo (`backend/protheus/src`), repo dedicado ou Git submodule? (análise em andamento — aguardando decisão do usuário)
+- [x] ~~Fontes Protheus (AdvPL/TLPP)~~ — Opção B executada (ver ADR-006)
+- [x] ~~Rotação da senha admin no Supabase~~ — feito manualmente pelo usuário
 - [ ] **HTTP/2 no Hostinger:** confirmado? Determina se o build final vira multi-file com hash ou mantém single-file injetado.
-- [ ] **Rotação da senha admin no Supabase:** ação manual do usuário.
 - [ ] **Cadastro inicial de tenants:** 1 tenant (BeeIt) ou multi desde o dia 1?
+- [ ] **Ativação do Auth Hook** (após deploy da migration): Dashboard → Authentication → Hooks → Customize Access Token → `public.custom_access_token_hook`.
