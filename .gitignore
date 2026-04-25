@@ -10,6 +10,7 @@ yarn-error.log*
 # ───────── Editores ─────────
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 .DS_Store

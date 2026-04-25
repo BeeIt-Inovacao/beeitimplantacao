@@ -36378,19 +36378,72 @@ async function _beeitLoadHtml2Pdf() {
   return _beeitHtml2PdfLoading;
 }
 async function _beeitHtmlToPdfBase64(htmlString, filename) {
-  await _beeitLoadHtml2Pdf();
-  const wrap = document.createElement('div');
-  wrap.innerHTML = htmlString;
-  wrap.style.cssText = 'position:absolute;top:-99999px;left:0;width:190mm;background:#fff;color:#000;';
-  document.body.appendChild(wrap);
+  // Tenta PDFShift primeiro (Chrome headless real → renderiza master layout perfeito)
   try {
+    const PROXY = 'https://dbaqvoatopfquaqgdptk.supabase.co/functions/v1/pdf-renderer';
+    const res = await fetch(PROXY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ html: htmlString, format: 'A4', margin: '10mm' })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (res.ok && json.ok && json.pdf_b64) {
+      console.log('[BeeIT PDF] PDFShift renderizou', json.size, 'bytes');
+      return json.pdf_b64;
+    }
+    throw new Error(json.error || `HTTP ${res.status}`);
+  } catch (pdfshiftErr) {
+    console.warn('[BeeIT PDF] PDFShift indisponível, usando fallback html2pdf:', pdfshiftErr.message);
+  }
+  // Fallback: html2pdf.js client-side (visual inferior em CSS complexo, mas garante saída)
+  await _beeitLoadHtml2Pdf();
+  // Renderiza o HTML num iframe isolado — evita conflito de CSS variables com a página principal
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;left:-99999px;top:0;width:794px;height:1123px;border:none;visibility:hidden;';
+  document.body.appendChild(iframe);
+  try {
+    const idoc = iframe.contentDocument || iframe.contentWindow.document;
+    idoc.open();
+    idoc.write(htmlString);
+    idoc.close();
+
+    // Aguarda iframe carregar
+    await new Promise(r => {
+      if (idoc.readyState === 'complete') r();
+      else iframe.addEventListener('load', r, { once: true });
+    });
+    if (idoc.fonts && idoc.fonts.ready) {
+      try { await idoc.fonts.ready; } catch(_) {}
+    }
+    const imgs = idoc.querySelectorAll('img');
+    await Promise.all(Array.from(imgs).map(img =>
+      img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })
+    ));
+    await new Promise(r => setTimeout(r, 600));
+
+    const target = idoc.body;
+    const w = Math.max(target.scrollWidth, 794);
+    const h = Math.max(target.scrollHeight, 1123);
+    console.log('[BeeIT PDF] rendering iframe body', w, 'x', h, 'imgs:', imgs.length);
+
     const pdfBlob = await window.html2pdf().set({
-      margin: [12, 12, 12, 12],
+      margin: [10, 10, 10, 10],
       filename: filename || 'documento.pdf',
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 1.4, letterRendering: true, useCORS: true, allowTaint: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
-    }).from(wrap).outputPdf('blob');
+      image: { type: 'jpeg', quality: 0.92 },
+      html2canvas: {
+        scale: 1.3, letterRendering: true, useCORS: true, allowTaint: true,
+        backgroundColor: '#ffffff', logging: false,
+        windowWidth: w, windowHeight: h
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      pagebreak: { mode: ['css', 'legacy'] }
+    }).from(target).outputPdf('blob');
+
+    console.log('[BeeIT PDF] blob size:', pdfBlob.size, 'bytes');
+    if (pdfBlob.size < 5000) {
+      console.warn('[BeeIT PDF] PDF muito pequeno — provavelmente em branco');
+    }
+
     const buf = await pdfBlob.arrayBuffer();
     const u8 = new Uint8Array(buf);
     let binary = '';
@@ -36400,9 +36453,37 @@ async function _beeitHtmlToPdfBase64(htmlString, filename) {
     }
     return btoa(binary);
   } finally {
-    wrap.remove();
+    iframe.remove();
   }
 }
+
+// Captura o HTML master do _m41ExportPDF (que é desenhado via window.open → document.write),
+// sem abrir janela visível. Intercepta window.open temporariamente.
+function _m41CaptureMasterHtml() {
+  let captured = '';
+  const originalOpen = window.open;
+  const fakeWin = {
+    document: {
+      write(s) { captured += s; },
+      close() {},
+    },
+    focus() {}, print() {}, close() {}, closed: false,
+  };
+  window.open = function() { return fakeWin; };
+  try {
+    _m41ExportPDF();
+  } finally {
+    window.open = originalOpen;
+  }
+  // Remove UI chrome do template de impressão antes de mandar pro PDFShift:
+  //   - <div class="no-print">…</div> (botões "Salvar PDF" / "Fechar")
+  //   - <script>…window.print()…</script> (auto-print da janela popup)
+  captured = captured
+    .replace(/<div\s+class=["']no-print["'][\s\S]*?<\/div>/gi, '')
+    .replace(/<script>[\s\S]*?window\.print\(\)[\s\S]*?<\/script>/gi, '');
+  return captured;
+}
+window._m41CaptureMasterHtml = _m41CaptureMasterHtml;
 window._beeitHtmlToPdfBase64 = _beeitHtmlToPdfBase64;
 
 function _m41ClickSign(){
@@ -36509,26 +36590,21 @@ async function _m41DoClickSign(){
   if(status)status.innerHTML='<span style="color:var(--or);">⏳ Fazendo upload do documento para o ClickSign...</span>';
 
   const c=_m41.client; const m=_m41.mod;
-  const fname=`MIT041-${m?.sub||'DOC'}-${(c.nome||'Cliente').replace(/\s+/g,'_')}.html`;
-  const docHtml=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${fname}</title>
-    <style>body{font-family:Arial,sans-serif;font-size:10.5pt;color:#1a1a1a;line-height:1.55;max-width:190mm;margin:auto;padding:15mm;}
-    h1{font-size:16pt;color:#042D4C;margin:14pt 0 5pt;}h2{font-size:13pt;color:#f97316;border-bottom:1.5pt solid #f97316;padding-bottom:3pt;margin:18pt 0 7pt;}
-    h3{font-size:11pt;color:#042D4C;margin:12pt 0 4pt;}h4{font-size:10pt;margin:9pt 0 3pt;}p{margin:4pt 0;}
-    table{width:100%;border-collapse:collapse;margin:7pt 0 13pt;font-size:9.5pt;}
-    th{background:#f97316;color:#fff;padding:6pt 9pt;text-align:left;border:0.5pt solid #d97706;}
-    td{padding:5pt 9pt;border:0.5pt solid #d1d5db;}tr:nth-child(even)td{background:#fafafa;}
-    ul{margin:4pt 0 9pt 18pt;}li{margin:2pt 0;}</style></head>
-    <body>${_m41MDtoPrint(_m41.doc)}</body></html>`;
+  const fname=`MIT041-${m?.sub||'DOC'}-${(c.nome||'Cliente').replace(/\s+/g,'_')}.pdf`;
   if (!_m41.doc || _m41.doc.trim().length < 50) {
     if(status)status.innerHTML='<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:6px;padding:10px;"><div style="color:var(--red);font-weight:700;">❌ Documento vazio</div><div style="font-size:10px;color:var(--txt2);">Gere o MIT041 primeiro (botão "🤖 Gerar Documento MIT041") antes de enviar ao ClickSign.</div></div>';
     return;
   }
-  // ClickSign só aceita PDF/DOC/DOCX/PNG/JPEG/TXT — converter HTML → PDF no browser via html2pdf
-  if(status)status.innerHTML='<span style="color:var(--or);">⏳ Convertendo documento para PDF... (primeira vez pode demorar ~10s carregando a biblioteca)</span>';
-  const pdfFname = fname.replace(/\.html?$/i, '.pdf');
+  // Usa o MESMO HTML master do botão "Exportar PDF" — captura via interceptação de window.open
+  if(status)status.innerHTML='<span style="color:var(--or);">⏳ Convertendo documento para PDF com layout master... (primeira vez pode demorar ~15s carregando a biblioteca)</span>';
+  const pdfFname = fname;
   let b64, b64DataURI;
   try {
-    b64 = await _beeitHtmlToPdfBase64(docHtml, pdfFname);
+    const masterHtml = (typeof _m41CaptureMasterHtml === 'function') ? _m41CaptureMasterHtml() : '';
+    if (!masterHtml || masterHtml.length < 2000) {
+      throw new Error('Falha ao capturar HTML master do MIT041 (conteúdo insuficiente)');
+    }
+    b64 = await _beeitHtmlToPdfBase64(masterHtml, pdfFname);
     b64DataURI = 'data:application/pdf;base64,' + b64;
   } catch (pdfErr) {
     console.warn('[ClickSign] html2pdf falhou, enviando como TXT:', pdfErr.message);
@@ -36553,23 +36629,45 @@ async function _m41DoClickSign(){
     if(!docKey) throw new Error('Chave do documento não retornada pelo ClickSign');
     if(status)status.innerHTML=`<span style="color:var(--or);">⏳ Documento enviado. Adicionando ${signers.length} signatário(s)...</span>`;
 
-    // 2. Criar signatários e adicionar à lista
+    // 2. Criar signatários, vincular ao documento e disparar notificação
+    // group=1 pra todos = assinatura em paralelo (todos recebem e-mail ao mesmo tempo)
+    const _csGroup = 1;
     for(const sg of signers){
+      // 2a. Criar signatário
       const sigR=await fetch(`${base}/signers?access_token=${token}`,{
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({signer:{email:sg.email,name:sg.name,has_documentation:false,delivery:'email',auths:['email']}})
       });
       const sigData=await sigR.json().catch(()=>({}));
+      if(!sigR.ok){
+        const m=(sigData?.errors&&(Array.isArray(sigData.errors)?sigData.errors.join(', '):JSON.stringify(sigData.errors)))||`HTTP ${sigR.status}`;
+        throw new Error(`Falha ao criar signatário ${sg.email}: ${m}`);
+      }
       const sigKey=sigData.signer?.key;
-      if(sigKey){
-        await fetch(`${base}/lists?access_token=${token}`,{
-          method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({list:{document_key:docKey,signer_key:sigKey,sign_as:'sign',message:msg||'Por gentileza, assine o documento.'}})
-        });
-        await fetch(`${base}/notifications?access_token=${token}`,{
-          method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({message:{document_key:docKey,from_name:'Acelerador Protheus',to:[{email:sg.email,name:sg.name}],message:msg||'Por gentileza, assine o documento MIT041.'}})
-        });
+      if(!sigKey) throw new Error(`ClickSign não retornou a chave do signatário ${sg.email}`);
+
+      // 2b. Vincular signatário ao documento (group obrigatório com sequence_enabled)
+      const listR=await fetch(`${base}/lists?access_token=${token}`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({list:{document_key:docKey,signer_key:sigKey,sign_as:'sign',group:_csGroup,message:msg||'Por gentileza, assine o documento.'}})
+      });
+      const listData=await listR.json().catch(()=>({}));
+      if(!listR.ok){
+        const m=(listData?.errors&&(Array.isArray(listData.errors)?listData.errors.join(', '):JSON.stringify(listData.errors)))||`HTTP ${listR.status}`;
+        throw new Error(`Falha ao vincular ${sg.email} ao documento: ${m}`);
+      }
+      const reqSigKey=listData.list?.request_signature_key||listData.list?.key;
+      if(!reqSigKey) throw new Error(`ClickSign não retornou request_signature_key para ${sg.email}`);
+
+      // 2c. Disparar notificação por e-mail (shape correto da API v1)
+      const notR=await fetch(`${base}/notifications?access_token=${token}`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({request_signature_key:reqSigKey,message:msg||'Por gentileza, assine o documento MIT041.'})
+      });
+      if(!notR.ok){
+        const nd=await notR.json().catch(()=>({}));
+        const m=(nd?.errors&&(Array.isArray(nd.errors)?nd.errors.join(', '):JSON.stringify(nd.errors)))||`HTTP ${notR.status}`;
+        throw new Error(`Falha ao disparar e-mail para ${sg.email}: ${m}`);
       }
     }
 
