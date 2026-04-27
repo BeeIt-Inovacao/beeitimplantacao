@@ -1,0 +1,29 @@
+# .cursorrules — BeeIT OS-RT v2 / BdaPowered HUD
+
+## WORKFLOW CRÍTICO DE ATUALIZAÇÃO (HUD + Tokens)
+
+O arquivo `Governanca/bdapowered.html` contém o histórico completo e o planejamento do
+projeto na variável `DEFAULT_CARDS`.
+
+Ao trabalhar em novas implementações, processe no máximo 2 ou 3 tarefas por sessão.
+Ao concluir essas tarefas, você é OBRIGADO a atualizar o `docs/ROADMAP.md` E a variável
+`DEFAULT_CARDS` dentro do `Governanca/bdapowered.html` refletindo o novo status.
+Feito isso, faça o commit (somente ROADMAP.md — o HUD é .gitignored), PARE a execução
+imediatamente e sugira a próxima tarefa em uma nova sessão para economizar tokens.
+
+## Princípios de trabalho
+
+- Código cirúrgico: analise a causa real antes de aplicar qualquer fix.
+- Mudanças minimalistas: mexa só no necessário.
+- Declarações duplicadas no monólito HTML são intencionais (last-declaration-wins).
+- Nunca modifique CSS/tokens visuais sem pedido explícito do usuário.
+- Módulos em `src/assessments/` e `src/rm-agents/` são read-only.
+
+## Variáveis globais críticas (não remover/renomear)
+
+`_pflt`, `_pq`, `_pLocked`, `PARTS`, `PARTS_MAP`, `EP`, `beeitSession`, `supabase`, `ANTHROPIC_KEY`
+
+## Commits
+
+Formato Conventional Commits em português.
+Tipos: feat, fix, chore, refactor, docs, test, security.
