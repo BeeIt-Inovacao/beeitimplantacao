@@ -34,10 +34,10 @@ Referência completa: *Laudo de Estratégia Técnica v2* (arquivo externo).
 | **S0.2** | Governança `.claude/rules` + `.claude/skills` | ✅ feito | 🟢 |
 | **S1** | Tag rollback + branch `feat/modularization-security-v1` + scaffold de pastas | ✅ feito | 🟢 |
 | **S2** | Migrations Supabase (snapshot, history, tenant_config, user_tenant) com RLS | ✅ deploy remoto concluído (2026-04-27) | 🟢 |
-| **S3** | Hardening Edge `protheus-proxy` — CORS allow-list, JWT verify, path allow-list, audit | ✅ feito (commit `d4b257c`, **não deployada**) | 🟠 |
+| **S3** | Hardening Edge `protheus-proxy` — CORS allow-list, JWT verify, path allow-list, audit | ✅ **deployada (2026-04-27)** — v3.1 online, health OK | 🟢 |
 | **S4** | Auth Hook (`custom_access_token_hook`) + RPC `provision_tenant_protheus` + `scripts/setup-tenant.js` + plano Sprint 5 | ✅ feito | 🟢 |
 | **S5** | Adaptação do monólito **sem reescrita** — fetch interceptor em `src/core/`, build injector, legacy-aliases allow-list na Edge. Plano completo em [SPRINT-5-PLAN.md](SPRINT-5-PLAN.md) | 🟡 em andamento — 5.2 ✅ 5.3 ✅ 5.4 ✅ 5.5 ✅ · pendente: 5.6 dev test | 🔴 |
-| **S6** | Infraestrutura de Tenant e Auth Hook — trigger `set_tenant_vault_alias`, Auth Hook v2 (`vault_alias` no JWT), bifurcação SaaS via Strangler Pattern | ✅ db push + Auth Hook ativado (2026-04-27) · 🟡 **pendentes: deploy Edge (`SUPABASE_ACCESS_TOKEN` necessário) + provisionar tenant (credenciais Protheus REST necessárias)** | 🟠 |
+| **S6** | Infraestrutura de Tenant e Auth Hook — trigger `set_tenant_vault_alias`, Auth Hook v2 (`vault_alias` no JWT), Edge v3.1 deployada, bifurcação SaaS Strangler Pattern | ✅ **CONCLUÍDA** (2026-04-27) · db push ✅ Auth Hook ✅ Edge v3.1 online ✅ · 🟡 provisionamento do tenant pendente (aguardando credenciais Protheus REST) | 🟢 |
 | **S-local** | Supabase Local — ambiente de desenvolvimento isolado com `supabase start` (OrbStack) | ✅ rodando (2026-04-27) · Studio: `127.0.0.1:54323` · DB: `127.0.0.1:54322` · API: `127.0.0.1:54321` | 🟢 |
 | **S7** | Migrar paths legacy (`/SA1/`, `/CT1/` etc) do monólito para `/api/v1/bda/dynamic` + remover aliases da allow-list legacy | ⏳ pendente | 🟠 |
 | **S8** | Hardening de rede no Protheus — firewall libera apenas IP do Supabase | ⏳ pendente | 🟠 |
