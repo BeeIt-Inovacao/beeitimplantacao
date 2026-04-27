@@ -52,3 +52,7 @@ clientes/
 .Trash-*
 .directory
 .nfs*
+
+# ───────── HUD local privado ─────────
+Governanca/bdapowered.html
+bdapowered.html
