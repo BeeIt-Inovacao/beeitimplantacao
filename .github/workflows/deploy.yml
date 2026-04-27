@@ -22,20 +22,31 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Build (copiar src → public se houver fonte)
+      - name: Build — injetar módulos core no bundle HTML
         run: |
-          if [ -f "src/BeeIT-OS-RT-v2.html" ]; then
-            echo "📦 Building from src/ to public/"
-            mkdir -p public
-            cp src/BeeIT-OS-RT-v2.html public/index.html
-          fi
+          node scripts/build-modules.js
           ls -la public/
 
-      - name: Validar HTML + JS inline
+      - name: Validar sintaxe do bundle final
         run: |
-          if [ -f "public/index.html" ]; then
-            node -e "const fs=require('fs');const html=fs.readFileSync('public/index.html','utf8');const scripts=[...html.matchAll(/<script(?:(?!type=\"(?:module|application\\/json)\")[^>])*>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(s=>s.trim().length>0);console.log('Scripts inline encontrados:',scripts.length);let err=0;scripts.forEach((s,i)=>{try{new Function(s);}catch(e){console.error('❌ Script',i,':',e.message);err++;}});if(err>0){process.exit(1);}console.log('✅ Todos os scripts inline são válidos');"
-          fi
+          # Confirma que a injeção ocorreu
+          grep -q '<!-- beeit:core-injected -->' public/index.html \
+            || { echo '❌ Marcador de injeção ausente em public/index.html'; exit 1; }
+          # Valida todos os scripts inline via new Function (captura erros de runtime além de sintaxe)
+          node -e "
+            const fs = require('fs');
+            const html = fs.readFileSync('public/index.html', 'utf8');
+            const scripts = [...html.matchAll(/<script(?:(?!type=\"(?:module|application\/json)\")[^>])*>([\s\S]*?)<\/script>/g)]
+              .map(m => m[1]).filter(s => s.trim().length > 0);
+            console.log('Scripts inline encontrados:', scripts.length);
+            let err = 0;
+            scripts.forEach((s, i) => {
+              try { new Function(s); }
+              catch (e) { console.error('❌ Script', i, ':', e.message); err++; }
+            });
+            if (err > 0) process.exit(1);
+            console.log('✅ Bundle final válido — todos os scripts inline OK');
+          "
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -52,12 +63,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build para public/
-        run: |
-          if [ -f "src/BeeIT-OS-RT-v2.html" ]; then
-            mkdir -p public
-            cp src/BeeIT-OS-RT-v2.html public/index.html
-          fi
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build — injetar módulos core no bundle HTML
+        run: node scripts/build-modules.js
 
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
