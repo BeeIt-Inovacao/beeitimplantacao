@@ -13,7 +13,7 @@
   if (window.__beeitFetchInterceptorInstalled) return;
   window.__beeitFetchInterceptorInstalled = true;
 
-  var EDGE_BASE = 'https://dbaqvoatopfquaqgdptk.supabase.co/functions/v1/protheus-proxy';
+  var EDGE_BASE = window.BEEIT_EDGE_URL || 'https://dbaqvoatopfquaqgdptk.supabase.co/functions/v1/protheus-proxy';
   var PROTHEUS_DIRECT_RE = /^https?:\/\/beeit207327\.protheus\.cloudtotvs\.com\.br(?::\d+)?/i;
 
   var origFetch = window.fetch.bind(window);
