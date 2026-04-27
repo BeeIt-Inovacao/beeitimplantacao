@@ -73,8 +73,8 @@ const PROTHEUS_PATH_ALLOW_LEGACY = new RegExp(
     "/(?:rest/)?(SA1|SA2|SA6|SB1|CT1|CTT|CTD|SE4|SED|SEE|SF4|SN1|SX3|SX6|COMPANIES)" +
     "(/[A-Za-z0-9_~%.+-]*)*/?" +
     "|" +
-    // Framework endpoints mínimos
-    "/api/framework/v1/(health|company|user)" +
+    // Framework endpoints — base + company/{emp}/{fil}/{alias} (usado por syncTabela)
+    "/api/framework/v1/(health|company|user)(/[A-Za-z0-9_~%.+-]*)*" +
   ")$",
   "i"
 );

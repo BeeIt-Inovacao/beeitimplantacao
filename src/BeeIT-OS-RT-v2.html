@@ -12966,7 +12966,9 @@ function rndSync(){
     <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
       <button onclick="syncAllExcelBatch()" style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.4);color:#34d399;border-radius:6px;padding:7px 14px;font-size:10px;font-weight:700;cursor:pointer;">📊 Excel — Todas</button>
       <button onclick="syncAllJsonBatch()" style="background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.3);color:#60a5fa;border-radius:6px;padding:7px 14px;font-size:10px;font-weight:700;cursor:pointer;">📄 JSON — Todas</button>
+      <button onclick="fetchDictBlueprintSA1SB1()" style="background:rgba(56,212,245,.12);border:1px solid rgba(56,212,245,.35);color:#38D4F5;border-radius:6px;padding:7px 14px;font-size:10px;font-weight:700;cursor:pointer;">📋 Dicionário SA1/SB1</button>
       <button onclick="syncAllREST()" style="background:linear-gradient(135deg,#0A3070,#001E62);border:none;color:#fff;border-radius:6px;padding:7px 14px;font-size:10px;font-weight:800;cursor:pointer;">🚀 Sincronizar TUDO</button>
+      <span id="sync-blueprint-status" style="font-size:9px;color:var(--txt3);"></span>
     </div>
   </div>`;
 
@@ -13257,6 +13259,35 @@ function syncAllJsonBatch(){
 
 // syncAll legado (compatibilidade)
 function syncAll(){syncAllJsonBatch();}
+
+// ── Sprint 7 — Extração de dicionário SA1/SB1 via Edge Function ──────────
+async function fetchDictBlueprintSA1SB1(){
+  const EDGE=window.BEEIT_EDGE_URL||'https://dbaqvoatopfquaqgdptk.supabase.co/functions/v1/protheus-proxy';
+  const el=document.getElementById('sync-blueprint-status');
+  if(el) el.innerHTML='<span style="color:#60a5fa;">\u{1F504} Buscando dicionário SA1/SB1...</span>';
+  try{
+    const r=await fetch(EDGE+'/protheus/api/v1/bda/dictionary/blueprint',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        aliases:['SA1','SB1'],
+        options:{scope:'MANDATORY_AND_KEYS',include_custom:true,include_f3_combo:true,include_mock:true}
+      }),
+      signal:AbortSignal.timeout(15000)
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    window._protheusBlueprintSA1SB1=data;
+    if(el) el.innerHTML='<span style="color:#34d399;">\u2705 Blueprint SA1/SB1 recebido</span>';
+    if(typeof toast==='function') toast('\u2705 Dicionário SA1/SB1 carregado via Edge Function');
+    return data;
+  }catch(e){
+    if(el) el.innerHTML=`<span style="color:#f87171;">\u274C ${e.message}</span>`;
+    if(typeof toast==='function') toast('\u274C Blueprint SA1/SB1: '+e.message.slice(0,60));
+    return null;
+  }
+}
+
 
 
 
@@ -19152,16 +19183,17 @@ async function cfgTestProtheus(){
   if(st) st.innerHTML='<span style="color:#60a5fa;">🔄 Diagnosticando conexão...</span>';
   if(detail) detail.innerHTML='';
 
-  // ═══ FASE 1: Detectar proxy local BeeIT ════════════════════
+  // ═══ FASE 1: Detectar Edge Function BeeIT ════════════════════
   const PROXY_URL='https://dbaqvoatopfquaqgdptk.supabase.co/functions/v1/protheus-proxy';
   let usandoProxy=false;
-  // Se URL já aponta para localhost = já é o proxy, não precisa detectar
-  if(/localhost:\d+/.test(baseUrl)){
+  // Se URL já aponta para a Edge Function ou localhost = proxy já configurado
+  const isEdgeProxy=baseUrl.indexOf('supabase.co/functions/v1/protheus-proxy')!==-1;
+  if(/localhost:\d+/.test(baseUrl)||isEdgeProxy){
     usandoProxy=true;
-    window._proxyAtivo=true; // sinaliza para queryBrasilAPICNPJ usar o proxy
+    window._proxyAtivo=true;
   } else {
     try{
-      const hp=await fetch(PROXY_URL+'/beeit/health',{signal:AbortSignal.timeout(2000)});
+      const hp=await fetch(PROXY_URL+'/health',{signal:AbortSignal.timeout(2000)});
       if(hp.ok){ usandoProxy=true; window._proxyAtivo=true; }
     }catch(e){}
   }
@@ -19188,7 +19220,7 @@ async function cfgTestProtheus(){
   const testUrl = isLocalProxy
     ? (restBase+'/COMPANIES/?pageSize=1')          // já é localhost:3030/api
     : usandoProxy
-      ? (PROXY_URL+'/api/COMPANIES/?pageSize=1')   // proxy detectado, usar /api
+      ? (PROXY_URL+'/protheus/COMPANIES/?pageSize=1')   // Edge Function: /protheus/<legacy-alias>
       : (restBase+'/COMPANIES/?pageSize=1');        // URL direta Protheus
   let conectado=false; let httpStatus=0; let errorMsg='';
   try{
@@ -19232,12 +19264,12 @@ async function cfgTestProtheus(){
   const corsOk=conectado||usandoProxy;
   html+=`<span style="color:var(--txt3);margin-top:4px;">CORS</span>
     <span style="background:${corsOk?'#34d399':servidorAcessivel?'#fbbf24':'#f87171'}22;color:${corsOk?'#34d399':servidorAcessivel?'#fbbf24':'#f87171'};border-radius:3px;padding:1px 7px;font-size:9px;font-weight:700;margin-top:4px;">${corsOk?'✅ OK':servidorAcessivel?'⚠️ BLOQUEADO':'❌ N/A'}</span>
-    <span style="color:var(--txt3);font-size:9px;margin-top:4px;">${usandoProxy?'Proxy local resolvendo CORS':corsOk?'Headers CORS recebidos corretamente':servidorAcessivel?'Gateway TOTVS Cloud bloqueando headers':'—'}</span>`;
+    <span style="color:var(--txt3);font-size:9px;margin-top:4px;">${usandoProxy?'Edge Function BeeIT resolvendo CORS':corsOk?'Headers CORS recebidos corretamente':servidorAcessivel?'Gateway TOTVS Cloud bloqueando headers':'—'}</span>`;
 
-  // Linha 3: Proxy local
-  html+=`<span style="color:var(--txt3);margin-top:4px;">Proxy REST local</span>
-    <span style="background:${usandoProxy?'#34d399':'#94a3b8'}22;color:${usandoProxy?'#34d399':'#94a3b8'};border-radius:3px;padding:1px 7px;font-size:9px;font-weight:700;margin-top:4px;">${usandoProxy?'✅ ATIVO':'— INATIVO'}</span>
-    <span style="color:var(--txt3);font-size:9px;margin-top:4px;">${usandoProxy?'localhost:3030 detectado e respondendo':'Não detectado em localhost:3030'}</span>`;
+  // Linha 3: Edge Function
+  html+=`<span style="color:var(--txt3);margin-top:4px;">Edge Function BeeIT</span>
+    <span style="background:${usandoProxy?'#34d399':'#94a3b8'}22;color:${usandoProxy?'#34d399':'#94a3b8'};border-radius:3px;padding:1px 7px;font-size:9px;font-weight:700;margin-top:4px;">${usandoProxy?'✅ ATIVA':'— INATIVA'}</span>
+    <span style="color:var(--txt3);font-size:9px;margin-top:4px;">${usandoProxy?'Edge Function BeeIT ativa e respondendo':'Edge Function não acessível'}</span>`;
 
   // Linha 4: Ambiente
   if(isCloud){
