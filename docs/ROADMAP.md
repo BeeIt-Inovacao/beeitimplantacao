@@ -37,7 +37,8 @@ Referência completa: *Laudo de Estratégia Técnica v2* (arquivo externo).
 | **S3** | Hardening Edge `protheus-proxy` — CORS allow-list, JWT verify, path allow-list, audit | ✅ feito (commit `d4b257c`, **não deployada**) | 🟠 |
 | **S4** | Auth Hook (`custom_access_token_hook`) + RPC `provision_tenant_protheus` + `scripts/setup-tenant.js` + plano Sprint 5 | ✅ feito | 🟢 |
 | **S5** | Adaptação do monólito **sem reescrita** — fetch interceptor em `src/core/`, build injector, legacy-aliases allow-list na Edge. Plano completo em [SPRINT-5-PLAN.md](SPRINT-5-PLAN.md) | 🟡 em andamento — 5.2 ✅ 5.3 ✅ 5.4 ✅ 5.5 ✅ · pendente: 5.6 dev test | 🔴 |
-| **S6** | Infraestrutura de Tenant e Auth Hook — trigger `set_tenant_vault_alias` (auto-preenche `basic_auth_ref` no INSERT), Auth Hook v2 injeta `vault_alias` no JWT, deploy plan em [`docs/SUPABASE-DEPLOY-PLAN.md`](SUPABASE-DEPLOY-PLAN.md) | ✅ db push concluído (2026-04-27) · 🟡 **aguardando ativação do Auth Hook no Dashboard** + deploy Edge + setup-tenant.js | 🟠 |
+| **S6** | Infraestrutura de Tenant e Auth Hook — trigger `set_tenant_vault_alias`, Auth Hook v2 (`vault_alias` no JWT), bifurcação SaaS via Strangler Pattern | ✅ db push + Auth Hook ativado (2026-04-27) · 🟡 **pendentes: deploy Edge (`SUPABASE_ACCESS_TOKEN` necessário) + provisionar tenant (credenciais Protheus REST necessárias)** | 🟠 |
+| **S-local** | Supabase Local — ambiente de desenvolvimento isolado com `supabase start` (OrbStack) | 🟡 iniciando containers (2026-04-27) | 🟢 |
 | **S7** | Migrar paths legacy (`/SA1/`, `/CT1/` etc) do monólito para `/api/v1/bda/dynamic` + remover aliases da allow-list legacy | ⏳ pendente | 🟠 |
 | **S8** | Hardening de rede no Protheus — firewall libera apenas IP do Supabase | ⏳ pendente | 🟠 |
 | **S9** | Módulo prova `src/modules/dict-viewer` + extração MATA410/415/460 | ⏳ pendente | 🔴 |
