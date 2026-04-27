@@ -86,10 +86,36 @@ Função `custom_access_token_hook` grava `tenant_id` tanto no claim top-level q
 ### ADR-008 — Adaptação por interceptor, não reescrita
 Sprint 5 injeta `src/core/fetch-interceptor.js` no topo do HTML via build-time. Zero edição nas 46.786 linhas do monólito. Rollback = `git revert` do commit da Sprint 5. Decisão motivada por: (a) risco de regressão em código com declarações duplicadas intencionais, (b) velocidade de entrega, (c) preservação de assessments/rm-agents em produção.
 
+### ADR-009 — Git Flow com `develop` como branch de integração
+Adotado em 2026-04-27 para proteger `main` de commits diretos e isolar sprints de segurança do trabalho simultâneo de outros desenvolvedores.
+
+**Topologia:**
+```
+main        ← produção estável (bloqueada para commits diretos)
+develop     ← integração e staging (merge target de todas as feature branches)
+feat/*      ← features e sprints (abertos de develop ou main conforme contexto)
+fix/*       ← hotfixes (abertos de main, mergeados em main + develop)
+```
+
+**Regras:**
+- `main` só recebe merges via PR revisado, nunca `git push` direto.
+- `develop` é a branch oficial de staging — CI pode fazer deploy automático para ambiente de homologação.
+- Feature branches são mergeadas em `develop` (não em `main`) e deletadas após o merge.
+- Hotfixes em produção: abertos de `main`, mergeados em `main` **e** `develop` antes de fechar.
+
+**Situação atual do conflito de merge (2026-04-27):**
+O merge de `feat/modularization-security-v1` em `develop` foi abortado por conflito estrutural em `supabase/functions/protheus-proxy/index.ts`:
+- `main`/`develop`: versão v2.1 (proxy simples, CORS `*`, sem JWT) + rotas ClickSign adicionadas pelo outro desenvolvedor.
+- `feat`: versão v3.1 (rewrite completo — JWT obrigatório, CORS allow-list, Vault, audit log, legacy alias allow-list).
+
+**Resolução necessária (aguardando instrução do usuário):** cherry-pick das rotas ClickSign (`/clicksign/` e `/clicksign-sandbox/`) da v2.1 para dentro da v3.1 na branch `feat`, antes de reattempt do merge em `develop`.
+
 ## Decisões pendentes
 
 - [x] ~~Fontes Protheus (AdvPL/TLPP)~~ — Opção B executada (ver ADR-006)
 - [x] ~~Rotação da senha admin no Supabase~~ — feito manualmente pelo usuário
+- [x] ~~Git Flow~~ — ADR-009 adotado; `develop` criada e publicada em `origin/develop`
+- [ ] **Conflito Edge Function:** integrar rotas ClickSign da v2.1 na v3.1 antes do merge em `develop` (ver ADR-009).
 - [ ] **HTTP/2 no Hostinger:** confirmado? Determina se o build final vira multi-file com hash ou mantém single-file injetado.
 - [ ] **Cadastro inicial de tenants:** 1 tenant (BeeIt) ou multi desde o dia 1?
 - [ ] **Ativação do Auth Hook** (após deploy da migration): Dashboard → Authentication → Hooks → Customize Access Token → `public.custom_access_token_hook`.
