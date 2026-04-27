@@ -36,11 +36,12 @@ Referência completa: *Laudo de Estratégia Técnica v2* (arquivo externo).
 | **S2** | Migrations Supabase (snapshot, history, tenant_config, user_tenant) com RLS | 🟡 em andamento | 🟢 |
 | **S3** | Hardening Edge `protheus-proxy` — CORS allow-list, JWT verify, path allow-list, audit | ✅ feito (commit `d4b257c`, **não deployada**) | 🟠 |
 | **S4** | Auth Hook (`custom_access_token_hook`) + RPC `provision_tenant_protheus` + `scripts/setup-tenant.js` + plano Sprint 5 | ✅ feito | 🟢 |
-| **S5** | Adaptação do monólito **sem reescrita** — fetch interceptor em `src/core/`, build injector, legacy-aliases allow-list na Edge. Plano completo em [SPRINT-5-PLAN.md](SPRINT-5-PLAN.md) | 🟡 em andamento — 5.2 ✅ 5.3 ✅ · pendente: 5.4 build-modules, 5.5 deploy.yml, 5.6 dev test | 🔴 |
-| **S6** | Migrar paths legacy (`/SA1/`, `/CT1/` etc) do monólito para `/api/v1/bda/dynamic` + remover aliases da allow-list legacy | ⏳ pendente | 🟠 |
-| **S7** | Hardening de rede no Protheus — firewall libera apenas IP do Supabase | ⏳ pendente | 🟠 |
-| **S8** | Módulo prova `src/modules/dict-viewer` + extração MATA410/415/460 | ⏳ pendente | 🔴 |
-| **S9** | Eliminar monólito, promover shell HTML puro com módulos externos | ⏳ paralelo | 🟠 |
+| **S5** | Adaptação do monólito **sem reescrita** — fetch interceptor em `src/core/`, build injector, legacy-aliases allow-list na Edge. Plano completo em [SPRINT-5-PLAN.md](SPRINT-5-PLAN.md) | 🟡 em andamento — 5.2 ✅ 5.3 ✅ 5.4 ✅ 5.5 ✅ · pendente: 5.6 dev test | 🔴 |
+| **S6** | Infraestrutura de Tenant e Auth Hook — trigger `set_tenant_vault_alias` (auto-preenche `basic_auth_ref` no INSERT), Auth Hook v2 injeta `vault_alias` no JWT, deploy plan em [`docs/SUPABASE-DEPLOY-PLAN.md`](SUPABASE-DEPLOY-PLAN.md) | ✅ feito — **deploy remoto pendente** (ver checklist em SUPABASE-DEPLOY-PLAN.md) | 🟠 |
+| **S7** | Migrar paths legacy (`/SA1/`, `/CT1/` etc) do monólito para `/api/v1/bda/dynamic` + remover aliases da allow-list legacy | ⏳ pendente | 🟠 |
+| **S8** | Hardening de rede no Protheus — firewall libera apenas IP do Supabase | ⏳ pendente | 🟠 |
+| **S9** | Módulo prova `src/modules/dict-viewer` + extração MATA410/415/460 | ⏳ pendente | 🔴 |
+| **S10** | Eliminar monólito, promover shell HTML puro com módulos externos | ⏳ paralelo | 🟠 |
 
 ## Descobertas (auditoria real do repo)
 
@@ -97,6 +98,19 @@ Função `custom_access_token_hook` grava `tenant_id` tanto no claim top-level q
 ### ADR-008 — Adaptação por interceptor, não reescrita
 Sprint 5 injeta `src/core/fetch-interceptor.js` no topo do HTML via build-time. Zero edição nas 46.786 linhas do monólito. Rollback = `git revert` do commit da Sprint 5. Decisão motivada por: (a) risco de regressão em código com declarações duplicadas intencionais, (b) velocidade de entrega, (c) preservação de assessments/rm-agents em produção.
 
+### ADR-010 — Trigger BEFORE INSERT para derivar vault alias do tenant_id
+
+Decidido em Sprint 6 criar `set_tenant_vault_alias` como trigger BEFORE INSERT em
+`tenant_protheus_config` em vez de depender exclusivamente do RPC `provision_tenant_protheus`.
+
+Motivação: o RPC usava uma sequência INSERT('pending') → vault.create_secret → UPDATE(alias),
+expondo uma janela onde `basic_auth_ref = 'pending'` era visível. O trigger elimina a
+inconsistência transitória e garante que qualquer inserção — via RPC, SQL direto ou futura
+UI de administração — respeite o padrão de nomeação sem código adicional.
+
+Formato do alias: `tenant_<uuid_sem_hifens>_protheus_basicauth` (convenção já estabelecida).
+O trigger é retrocompatível: o RPC continua funcionando sem modificação (o UPDATE vira no-op).
+
 ### ADR-009 — Git Flow com `develop` como branch de integração
 Adotado em 2026-04-27 para proteger `main` de commits diretos e isolar sprints de segurança do trabalho simultâneo de outros desenvolvedores.
 
@@ -128,4 +142,4 @@ Merge revertido. Duas frentes de trabalho paralelas e isoladas:
 - [ ] **Merge final:** `feature/os-rt-modularization` + `feature/clicksign-daniel` → `develop` → `main` (coordenar com Daniel; resolver Edge v2.1 vs v3.1 neste ponto)
 - [ ] **HTTP/2 no Hostinger:** confirmado? Determina se o build final vira multi-file com hash ou mantém single-file injetado.
 - [ ] **Cadastro inicial de tenants:** 1 tenant (BeeIt) ou multi desde o dia 1?
-- [ ] **Ativação do Auth Hook** (após deploy da migration): Dashboard → Authentication → Hooks → Customize Access Token → `public.custom_access_token_hook`.
+- [x] ~~**Ativação do Auth Hook**~~ — passo-a-passo documentado em [SUPABASE-DEPLOY-PLAN.md](SUPABASE-DEPLOY-PLAN.md) (Passo 5). Ação manual no Dashboard após `supabase db push`.
