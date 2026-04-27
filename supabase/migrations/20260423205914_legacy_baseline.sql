@@ -1,0 +1,5 @@
+-- BASELINE LEGADO — NÃO MODIFICAR
+-- Migration original do projeto monólito (feature/clicksign-daniel).
+-- Aplicada no banco remoto antes da bifurcação SaaS (Strangler Pattern).
+-- Este arquivo existe apenas para que o histórico local esteja em sincronia
+-- com supabase_migrations.schema_migrations. NÃO reexecutar.

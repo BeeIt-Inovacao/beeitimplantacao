@@ -5,6 +5,10 @@
 -- Extrai tenant_id do JWT claim e valida pertencimento do usuário ao tenant.
 -- ============================================================================
 
+-- Desabilita validação de corpos de funções SQL nesta sessão para permitir
+-- forward-reference a user_tenant (criada na migration seguinte).
+SET check_function_bodies = off;
+
 -- Retorna o tenant_id do claim JWT corrente. NULL se ausente ou inválido.
 create or replace function public.auth_tenant_id()
 returns uuid

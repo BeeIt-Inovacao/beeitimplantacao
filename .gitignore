@@ -34,6 +34,10 @@ temp/
 *.html.backup
 BeeIT-OS-RT-*.html.bak
 
+# Backups de schema remoto (dados sensíveis — nunca versionar)
+supabase/backup_schema_prod_legacy.sql
+supabase/backup_*.sql
+
 # Versões de trabalho locais (só a produção vai pro repo)
 src/BeeIT-OS-RT-v2_[0-9]*.html
 !src/BeeIT-OS-RT-v2.html

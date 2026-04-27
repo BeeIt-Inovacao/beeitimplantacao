@@ -33,11 +33,11 @@ Referência completa: *Laudo de Estratégia Técnica v2* (arquivo externo).
 | **S0.1** | Identidade Git isolada (SSH alias `github.com-beeit`) | ✅ feito | 🟢 |
 | **S0.2** | Governança `.claude/rules` + `.claude/skills` | ✅ feito | 🟢 |
 | **S1** | Tag rollback + branch `feat/modularization-security-v1` + scaffold de pastas | ✅ feito | 🟢 |
-| **S2** | Migrations Supabase (snapshot, history, tenant_config, user_tenant) com RLS | 🟡 em andamento | 🟢 |
+| **S2** | Migrations Supabase (snapshot, history, tenant_config, user_tenant) com RLS | ✅ deploy remoto concluído (2026-04-27) | 🟢 |
 | **S3** | Hardening Edge `protheus-proxy` — CORS allow-list, JWT verify, path allow-list, audit | ✅ feito (commit `d4b257c`, **não deployada**) | 🟠 |
 | **S4** | Auth Hook (`custom_access_token_hook`) + RPC `provision_tenant_protheus` + `scripts/setup-tenant.js` + plano Sprint 5 | ✅ feito | 🟢 |
 | **S5** | Adaptação do monólito **sem reescrita** — fetch interceptor em `src/core/`, build injector, legacy-aliases allow-list na Edge. Plano completo em [SPRINT-5-PLAN.md](SPRINT-5-PLAN.md) | 🟡 em andamento — 5.2 ✅ 5.3 ✅ 5.4 ✅ 5.5 ✅ · pendente: 5.6 dev test | 🔴 |
-| **S6** | Infraestrutura de Tenant e Auth Hook — trigger `set_tenant_vault_alias` (auto-preenche `basic_auth_ref` no INSERT), Auth Hook v2 injeta `vault_alias` no JWT, deploy plan em [`docs/SUPABASE-DEPLOY-PLAN.md`](SUPABASE-DEPLOY-PLAN.md) | ✅ feito — **deploy remoto pendente** (ver checklist em SUPABASE-DEPLOY-PLAN.md) | 🟠 |
+| **S6** | Infraestrutura de Tenant e Auth Hook — trigger `set_tenant_vault_alias` (auto-preenche `basic_auth_ref` no INSERT), Auth Hook v2 injeta `vault_alias` no JWT, deploy plan em [`docs/SUPABASE-DEPLOY-PLAN.md`](SUPABASE-DEPLOY-PLAN.md) | ✅ db push concluído (2026-04-27) · 🟡 **aguardando ativação do Auth Hook no Dashboard** + deploy Edge + setup-tenant.js | 🟠 |
 | **S7** | Migrar paths legacy (`/SA1/`, `/CT1/` etc) do monólito para `/api/v1/bda/dynamic` + remover aliases da allow-list legacy | ⏳ pendente | 🟠 |
 | **S8** | Hardening de rede no Protheus — firewall libera apenas IP do Supabase | ⏳ pendente | 🟠 |
 | **S9** | Módulo prova `src/modules/dict-viewer` + extração MATA410/415/460 | ⏳ pendente | 🔴 |
