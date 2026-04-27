@@ -2,16 +2,16 @@
 
 > Planejamento vivo. Atualize ao final de cada sprint.
 
-## Topologia Git (2026-04-27)
+## Topologia Git (2026-04-27 — sincronizada)
 
 ```
 main                 b67829e  ← produção estável (Daniel's ClickSign)
-  └── develop        b67829e  ← integração (= main; merge Sprint 1-5 revertido)
-        ├── feature/os-rt-modularization  419529d  ← Bruno: Sprint 1-5 (segurança)
-        └── feature/clicksign-daniel      b67829e  ← Daniel: monólito + ClickSign
+  └── develop        3f95fae  ← integração (main + git-flow rules)
+        ├── feature/os-rt-modularization  bb9bcfd  ← Bruno: Sprint 1-5 + ClickSign sincronizado
+        └── feature/clicksign-daniel      3f95fae  ← Daniel: monólito atual
 ```
 
-**Frentes isoladas:** ambas as branches partem do mesmo `develop` mas evoluem de forma independente até o merge final validado. Ver regras detalhadas em [`.claude/rules/git-flow.md`](../.claude/rules/git-flow.md).
+**Base sincronizada:** `feature/os-rt-modularization` incorporou `develop` via merge `bb9bcfd`. Edge v3.1 agora inclui rotas ClickSign (`/clicksign/*`, `/clicksign-sandbox/*`) com JWT obrigatório — upgrade de segurança sobre a v2.1 do Daniel. Ver regras detalhadas em [`.claude/rules/git-flow.md`](../.claude/rules/git-flow.md).
 
 ## Contexto
 
