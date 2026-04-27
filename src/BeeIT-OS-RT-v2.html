@@ -791,6 +791,17 @@ function beeitShowApp() {
     headers: { 'Prefer': 'return=minimal' },
     body: JSON.stringify({ user_id: beeitSession.user.id, acao: 'login', detalhe: navigator.userAgent.substring(0,100) })
   }).catch(()=>{});
+
+  // Buscar URL gerenciada e snapshots de dicionário em paralelo
+  (async () => {
+    try {
+      const rows = await beeitSbFetch('/rest/v1/tenant_protheus_config?select=protheus_url&limit=1');
+      if (rows?.length && rows[0].protheus_url) {
+        window._beeitManagedProtheusUrl = rows[0].protheus_url;
+      }
+    } catch (e) {}
+    checkDictSnapshots().catch(() => {});
+  })();
 }
 
 function beeitShowError(msg) {
@@ -12966,8 +12977,6 @@ function rndSync(){
     <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
       <button onclick="syncAllExcelBatch()" style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.4);color:#34d399;border-radius:6px;padding:7px 14px;font-size:10px;font-weight:700;cursor:pointer;">📊 Excel — Todas</button>
       <button onclick="syncAllJsonBatch()" style="background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.3);color:#60a5fa;border-radius:6px;padding:7px 14px;font-size:10px;font-weight:700;cursor:pointer;">📄 JSON — Todas</button>
-      <button onclick="fetchDictBlueprintSA1SB1()" style="background:rgba(56,212,245,.12);border:1px solid rgba(56,212,245,.35);color:#38D4F5;border-radius:6px;padding:7px 14px;font-size:10px;font-weight:700;cursor:pointer;">📋 Dicionário SA1/SB1</button>
-      <button onclick="syncAllREST()" style="background:linear-gradient(135deg,#0A3070,#001E62);border:none;color:#fff;border-radius:6px;padding:7px 14px;font-size:10px;font-weight:800;cursor:pointer;">🚀 Sincronizar TUDO</button>
       <span id="sync-blueprint-status" style="font-size:9px;color:var(--txt3);"></span>
     </div>
   </div>`;
@@ -12985,10 +12994,16 @@ function rndSync(){
         <div style="font-size:11px;font-weight:800;color:${grupo.cor};">${grupo.titulo}</div>
         <div style="font-size:9px;color:var(--txt3);">${comDados}/${grupo.tabelas.length} com dados · ${grpTotal.toLocaleString('pt-BR')} registros</div>
         <div style="flex:1;height:1px;background:linear-gradient(to right,${grupo.cor}33,transparent);"></div>
-        <button onclick="syncGrupo(${JSON.stringify(grupo.tabelas.map(t=>t.alias))})"
-          style="background:${grupo.cor}12;border:1px solid ${grupo.cor}33;color:${grupo.cor};border-radius:5px;padding:4px 12px;font-size:9px;font-weight:700;cursor:pointer;white-space:nowrap;">
-          🚀 Sync grupo
-        </button>
+        ${grupo.titulo.includes('Cadastros')
+          ? `<button onclick="fetchDictBlueprint(['SA1','SA2','SB1'])"
+              style="background:${grupo.cor}12;border:1px solid ${grupo.cor}33;color:${grupo.cor};border-radius:5px;padding:4px 12px;font-size:9px;font-weight:700;cursor:pointer;white-space:nowrap;">
+              🔄 Sincronizar Cadastros
+            </button>`
+          : `<button onclick="syncGrupo(${JSON.stringify(grupo.tabelas.map(t=>t.alias))})"
+              style="background:${grupo.cor}12;border:1px solid ${grupo.cor}33;color:${grupo.cor};border-radius:5px;padding:4px 12px;font-size:9px;font-weight:700;cursor:pointer;white-space:nowrap;">
+              🚀 Sync grupo
+            </button>`
+        }
       </div>
       <!-- Cards das tabelas -->
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;">`;
@@ -13023,6 +13038,7 @@ function rndSync(){
             <div style="font-size:11px;font-weight:800;color:${ok?cor:'#4b5563'};">${t.alias}</div>
             <div style="font-size:9px;color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.label.replace(t.alias+' — ','')}</div>
             <div style="font-size:8px;color:#4b5563;margin-top:1px;">📍 ${t.rotina} · ${t.fonte}</div>
+            ${['SA1','SA2','SB1'].includes(t.alias)?`<div id="dict-snap-badge-${t.alias}" style="margin-top:4px;"></div>`:''}
           </div>
           <div style="text-align:right;flex-shrink:0;">
             <div style="font-size:24px;font-weight:900;color:${ok?cor:'#374151'};line-height:1;">${total}</div>
@@ -13036,6 +13052,9 @@ function rndSync(){
         </div>
         <!-- Ações -->
         ${_syncCardAcoes(t,ok,cor,sedTemTemplate)}
+        ${['SA1','SA2','SB1'].includes(t.alias)?`<div style="padding:0 14px 8px;display:flex;gap:6px;align-items:center;">
+          <button onclick="openDictDrawer('${t.alias}')" style="background:rgba(56,212,245,.1);border:1px solid rgba(56,212,245,.3);color:#38D4F5;border-radius:5px;padding:4px 10px;font-size:9px;font-weight:700;cursor:pointer;">📖 Ver Dicionário</button>
+        </div>`:''}
         <!-- Progress bar -->
         <div id="sync-pb-${t.alias}" style="display:none;height:3px;background:var(--bdr);">
           <div id="sync-pf-${t.alias}" style="height:3px;background:${cor};width:0%;transition:width .3s;"></div>
@@ -13047,6 +13066,8 @@ function rndSync(){
   });
 
   el.innerHTML=h;
+  // Preencher badges de snapshot de dicionário após render
+  setTimeout(_refreshDictBadges, 50);
 }
 
 // ── Sincronizar SED usando o template base (fallback com aviso) ───────────
@@ -13289,6 +13310,121 @@ async function fetchDictBlueprintSA1SB1(){
 }
 
 
+
+
+// ── Sprint R1 — fetchDictBlueprint generalizado (array de aliases) ───────
+// Extrai blueprint via Edge Function, persiste em protheus_dict_snapshot
+async function fetchDictBlueprint(aliases){
+  const EDGE=window.BEEIT_EDGE_URL||'https://dbaqvoatopfquaqgdptk.supabase.co/functions/v1/protheus-proxy';
+  const el=document.getElementById('sync-blueprint-status');
+  if(el) el.innerHTML='<span style="color:#60a5fa;">\u{1F504} Buscando dicionário '+aliases.join('/')+'...</span>';
+  try{
+    const r=await fetch(EDGE+'/protheus/api/v1/bda/dictionary/blueprint',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+(beeitSession?.access_token||''),
+        'apikey':BEEIT_SB_KEY
+      },
+      body:JSON.stringify({
+        aliases,
+        options:{scope:'MANDATORY_AND_KEYS',include_custom:true,include_f3_combo:true,include_mock:true}
+      }),
+      signal:AbortSignal.timeout(20000)
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    // Persistir cada alias em protheus_dict_snapshot
+    const tenantId=_beeitTenantIdFromJWT();
+    const userId=beeitSession?.user?.id;
+    if(tenantId&&userId&&data?.blueprint){
+      const upserts=[];
+      for(const alias of aliases){
+        const bp=data.blueprint[alias];
+        if(!bp?.campos?.length) continue;
+        const canonStr=JSON.stringify(bp.campos.map(c=>
+          Object.fromEntries(Object.entries(c).sort(([a],[b])=>a.localeCompare(b)))
+        ));
+        const hash=await _sha256hex(canonStr);
+        upserts.push({
+          tenant_id:tenantId,user_id:userId,
+          sx2_alias:alias.toUpperCase().slice(0,3),
+          rotina_padrao:bp.rotina_padrao||null,
+          arquitetura:bp.arquitetura||null,
+          chave_unica:bp.chave_unica||null,
+          scope:'MANDATORY_AND_KEYS',
+          campos:bp.campos,
+          campos_hash:hash
+        });
+      }
+      if(upserts.length){
+        await beeitSbFetch('/rest/v1/protheus_dict_snapshot',{
+          method:'POST',
+          headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},
+          body:JSON.stringify(upserts)
+        });
+        // Atualizar cache de status e badges
+        await checkDictSnapshots();
+        _refreshDictBadges();
+      }
+    }
+    window._protheusBlueprintSA1SB1=data; // compat legado
+    if(el) el.innerHTML='<span style="color:#34d399;">✅ Dicionário '+aliases.join('/')+' sincronizado</span>';
+    if(typeof toast==='function') toast('✅ Dicionário '+aliases.join('+')+' salvo no banco');
+    return data;
+  }catch(e){
+    if(el) el.innerHTML=`<span style="color:#f87171;">❌ ${e.message}</span>`;
+    if(typeof toast==='function') toast('❌ Blueprint: '+e.message.slice(0,60));
+    return null;
+  }
+}
+
+// Decodifica tenant_id do JWT (injetado pelo auth hook)
+function _beeitTenantIdFromJWT(){
+  try{
+    const payload=JSON.parse(atob(
+      (beeitSession?.access_token||'').split('.')[1].replace(/-/g,'+').replace(/_/g,'/')
+    ));
+    return payload.tenant_id||null;
+  }catch{return null;}
+}
+
+// Calcula SHA-256 hex de uma string
+async function _sha256hex(str){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// Verifica snapshots existentes para SA1/SA2/SB1 e cacheia em window._dictSnapshotStatus
+async function checkDictSnapshots(){
+  try{
+    const rows=await beeitSbFetch(
+      '/rest/v1/protheus_dict_snapshot?select=sx2_alias,campos,updated_at&sx2_alias=in.(SA1,SA2,SB1)'
+    );
+    window._dictSnapshotStatus={};
+    if(Array.isArray(rows)){
+      rows.forEach(r=>{
+        window._dictSnapshotStatus[r.sx2_alias]={
+          hasData:Array.isArray(r.campos)&&r.campos.length>0,
+          updatedAt:r.updated_at,
+          campos:r.campos
+        };
+      });
+    }
+  }catch(e){ window._dictSnapshotStatus=window._dictSnapshotStatus||{}; }
+}
+
+// Atualiza os badges de dicionário nos cards já renderizados
+function _refreshDictBadges(){
+  ['SA1','SA2','SB1'].forEach(alias=>{
+    const el=document.getElementById('dict-snap-badge-'+alias);
+    if(!el) return;
+    const s=window._dictSnapshotStatus?.[alias];
+    el.innerHTML=s?.hasData
+      ? '<span style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.35);color:#34d399;border-radius:10px;padding:2px 7px;font-size:8px;font-weight:700;">🟢 Atualizado</span>'
+      : '<span style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:#fbbf24;border-radius:10px;padding:2px 7px;font-size:8px;font-weight:700;">🟡 Sem dados</span>';
+  });
+}
 
 
 // ════════════════════════════════════════════════════════════════════════
@@ -18864,7 +19000,8 @@ function rndConfig(){
   if(!el) return;
 
   const apiKey=cfgGet('api_key','');
-  const protheusUrl=cfgGet('protheus_url','');
+  const managedUrl=window._beeitManagedProtheusUrl||'';
+  const protheusUrl=managedUrl||cfgGet('protheus_url','');
   const protheusEmp=cfgGet('protheus_emp','T1');
   const protheusFil=cfgGet('protheus_fil','01');
   const protheusUser=cfgGet('protheus_user','');
@@ -18947,7 +19084,7 @@ function rndConfig(){
       <div>
         <label style="font-size:9px;color:var(--txt3);display:block;margin-bottom:4px;">URL Base API REST</label>
         <input id="cfg-ptheus-url" value="${esc(protheusUrl)}" placeholder="https://protheus.empresa.com.br/api/framework/v1"
-          style="width:100%;background:var(--bg3);border:1px solid var(--bdr);border-radius:6px;padding:7px 10px;color:var(--txt);font-size:11px;font-family:monospace;">
+          ${managedUrl?'readonly':''} style="width:100%;background:${managedUrl?'rgba(52,211,153,.06)':'var(--bg3)'};border:1px solid ${managedUrl?'rgba(52,211,153,.4)':'var(--bdr)'};border-radius:6px;padding:7px 10px;color:${managedUrl?'#34d399':'var(--txt)'};font-size:11px;font-family:monospace;${managedUrl?'cursor:default;':''}">
       </div>
       <div>
         <label style="font-size:9px;color:var(--txt3);display:block;margin-bottom:4px;">Empresa</label>
@@ -18967,8 +19104,9 @@ function rndConfig(){
       </div>
     </div>
     <div style="padding:0 16px 14px;">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
         <button onclick="cfgTestProtheus()" style="background:#1a7a4a;border:none;color:#fff;border-radius:6px;padding:7px 16px;font-size:11px;font-weight:700;cursor:pointer;">🔌 Testar Conexão</button>
+        ${managedUrl?`<span style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.4);color:#34d399;border-radius:20px;padding:4px 12px;font-size:10px;font-weight:700;white-space:nowrap;">🔗 Conexão Gerenciada pela BeeIT</span>`:''}
         <button onclick="cfgPingEndpoints()" style="background:rgba(96,165,250,.15);border:1px solid rgba(96,165,250,.4);color:#60a5fa;border-radius:6px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;">📡 Testar Todos Endpoints (28)</button>
         <span id="cfg-ptheus-status" style="font-size:10px;color:var(--txt3);"></span>
       </div>
@@ -19124,6 +19262,9 @@ function rndConfig(){
 
   h+=`</div>`; // grid
   el.innerHTML=h;
+  // Ocultar "Salvar Configurações" quando URL é gerenciada pela BeeIT
+  const btnSaveConfig = document.querySelector('#pg-config .ph-acts button');
+  if (btnSaveConfig) btnSaveConfig.style.display = managedUrl ? 'none' : '';
   // Inicializar campos FTP com valores salvos após render
   setTimeout(ftpLoadConfig, 80);
 }
@@ -46947,6 +47088,152 @@ Se retornar ex. "sb, beeitClient", me envie o resultado.
 // Wrapper global rndAssessments — padrão BeeIT (onclick sidebar → setTimeout(rndAssessments,60))
 function rndAssessments(){ window.BeeITAssessmentsUI?.init(); }
 window.rndAssessments = rndAssessments;
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     Drawer Lateral — Visualizador de Dicionário Protheus (SA1 / SA2 / SB1)
+     ═══════════════════════════════════════════════════════════════════════ -->
+<div id="dict-drawer-overlay"
+  onclick="closeDictDrawer()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1200;backdrop-filter:blur(2px);"></div>
+
+<div id="dict-drawer"
+  style="display:none;position:fixed;top:0;right:0;height:100vh;width:min(520px,95vw);
+         background:var(--bg2,#111827);border-left:1px solid rgba(255,255,255,.1);
+         z-index:1201;display:flex;flex-direction:column;transform:translateX(100%);
+         transition:transform .28s cubic-bezier(.4,0,.2,1);">
+  <!-- Header -->
+  <div id="dict-drawer-header"
+    style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.08);
+           display:flex;align-items:center;gap:12px;flex-shrink:0;">
+    <span id="dict-drawer-icon" style="font-size:22px;">📖</span>
+    <div style="flex:1;min-width:0;">
+      <div id="dict-drawer-title" style="font-size:13px;font-weight:800;color:#38D4F5;">Dicionário</div>
+      <div id="dict-drawer-sub"   style="font-size:10px;color:var(--txt3,#6b7280);margin-top:2px;"></div>
+    </div>
+    <button onclick="closeDictDrawer()"
+      style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+             color:#9ca3af;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;">✕</button>
+  </div>
+  <!-- Toolbar -->
+  <div id="dict-drawer-toolbar"
+    style="padding:8px 16px;border-bottom:1px solid rgba(255,255,255,.05);
+           display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;">
+    <input id="dict-drawer-search" oninput="_dictDrawerFilter(this.value)"
+      placeholder="🔍 Filtrar campos..."
+      style="flex:1;min-width:140px;background:var(--bg3,#1f2937);border:1px solid rgba(255,255,255,.1);
+             border-radius:6px;padding:5px 10px;color:var(--txt,#f9fafb);font-size:11px;outline:none;">
+    <button id="dict-drawer-btn-json" onclick="_dictDrawerCopyJson()"
+      style="background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.3);color:#60a5fa;
+             border-radius:6px;padding:5px 12px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">
+      📋 Copiar JSON
+    </button>
+  </div>
+  <!-- Body -->
+  <div id="dict-drawer-body"
+    style="flex:1;overflow-y:auto;padding:12px 16px;font-size:11px;"></div>
+</div>
+
+<script>
+(function(){
+  var _ddAlias='', _ddCampos=[];
+
+  window.openDictDrawer = function(alias){
+    _ddAlias = alias;
+    const snap = window._dictSnapshotStatus?.[alias];
+    const drawer  = document.getElementById('dict-drawer');
+    const overlay = document.getElementById('dict-drawer-overlay');
+    const title   = document.getElementById('dict-drawer-title');
+    const sub     = document.getElementById('dict-drawer-sub');
+    const icon    = document.getElementById('dict-drawer-icon');
+    const body    = document.getElementById('dict-drawer-body');
+    const search  = document.getElementById('dict-drawer-search');
+    if(!drawer) return;
+
+    const icons = {SA1:'👥',SA2:'🏭',SB1:'📦'};
+    icon.textContent = icons[alias]||'📖';
+    title.textContent = alias+' — Dicionário Protheus';
+
+    if(!snap?.hasData){
+      sub.textContent = 'Sem snapshot salvo';
+      body.innerHTML = '<div style="color:#fbbf24;padding:20px 0;font-size:11px;">🟡 Nenhum snapshot encontrado para '+alias+'.<br><br>Clique em <strong>🔄 Sincronizar Cadastros</strong> para buscar o dicionário do Protheus.</div>';
+      _ddCampos = [];
+    } else {
+      _ddCampos = snap.campos||[];
+      const dt = new Date(snap.updatedAt);
+      sub.textContent = _ddCampos.length+' campos · atualizado '+dt.toLocaleString('pt-BR');
+      _renderDrawerCampos(_ddCampos);
+    }
+
+    if(search) search.value='';
+    overlay.style.display = 'block';
+    drawer.style.display   = 'flex';
+    requestAnimationFrame(()=>{ drawer.style.transform='translateX(0)'; });
+  };
+
+  window.closeDictDrawer = function(){
+    const drawer  = document.getElementById('dict-drawer');
+    const overlay = document.getElementById('dict-drawer-overlay');
+    if(!drawer) return;
+    drawer.style.transform = 'translateX(100%)';
+    setTimeout(()=>{
+      drawer.style.display   = 'none';
+      overlay.style.display  = 'none';
+    }, 290);
+  };
+
+  window._dictDrawerFilter = function(q){
+    if(!_ddCampos.length) return;
+    const filtered = q
+      ? _ddCampos.filter(c=>{
+          const s=(c.campo||'')+(c.titulo||'')+(c.tipo||'');
+          return s.toLowerCase().includes(q.toLowerCase());
+        })
+      : _ddCampos;
+    _renderDrawerCampos(filtered);
+  };
+
+  window._dictDrawerCopyJson = function(){
+    try{
+      navigator.clipboard.writeText(JSON.stringify(_ddCampos,null,2));
+      if(typeof toast==='function') toast('📋 JSON copiado — '+_ddCampos.length+' campos');
+    }catch(e){}
+  };
+
+  function _renderDrawerCampos(campos){
+    const body = document.getElementById('dict-drawer-body');
+    if(!body) return;
+    if(!campos.length){
+      body.innerHTML='<div style="color:#6b7280;padding:16px 0;">Nenhum campo encontrado.</div>';
+      return;
+    }
+    const rows = campos.map(c=>{
+      const tipo   = c.tipo||'C';
+      const tam    = c.tamanho!=null?c.tamanho:'—';
+      const dec    = c.decimal!=null&&c.decimal>0?'.'+c.decimal:'';
+      const obrig  = c.obrigat?'<span style="color:#f87171;font-size:8px;font-weight:700;">OBR</span>':'';
+      const isKey  = c.is_key?'<span style="color:#fbbf24;font-size:8px;font-weight:700;">KEY</span>':'';
+      const custom = c.is_custom?'<span style="color:#a78bfa;font-size:8px;font-weight:700;">USR</span>':'';
+      const tipoColor = {C:'#38D4F5',N:'#34d399',D:'#fbbf24',L:'#f472b6',M:'#60a5fa'}[tipo]||'#9ca3af';
+      return `<div style="display:grid;grid-template-columns:120px 32px 56px 1fr;gap:6px;align-items:center;
+                padding:5px 8px;border-radius:5px;border-bottom:1px solid rgba(255,255,255,.04);">
+        <code style="font-size:10px;color:#f9fafb;font-weight:700;">${c.campo||''}</code>
+        <span style="font-size:10px;color:${tipoColor};font-weight:700;text-align:center;">${tipo}</span>
+        <span style="font-size:9px;color:#6b7280;text-align:right;">${tam}${dec}</span>
+        <div style="display:flex;align-items:center;gap:4px;min-width:0;">
+          <span style="font-size:9px;color:#d1d5db;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.titulo||''}</span>
+          ${obrig}${isKey}${custom}
+        </div>
+      </div>`;
+    }).join('');
+
+    body.innerHTML = `<div style="font-size:9px;color:#6b7280;padding:4px 8px 8px;display:grid;
+        grid-template-columns:120px 32px 56px 1fr;gap:6px;">
+      <span>CAMPO</span><span style="text-align:center;">TIPO</span>
+      <span style="text-align:right;">TAM</span><span>TÍTULO</span>
+    </div>${rows}`;
+  }
+})();
 </script>
 
 </body>
