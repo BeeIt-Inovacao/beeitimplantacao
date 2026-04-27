@@ -2,6 +2,17 @@
 
 > Planejamento vivo. Atualize ao final de cada sprint.
 
+## Topologia Git (2026-04-27)
+
+```
+main                 b67829e  ← produção estável (Daniel's ClickSign)
+  └── develop        b67829e  ← integração (= main; merge Sprint 1-5 revertido)
+        ├── feature/os-rt-modularization  419529d  ← Bruno: Sprint 1-5 (segurança)
+        └── feature/clicksign-daniel      b67829e  ← Daniel: monólito + ClickSign
+```
+
+**Frentes isoladas:** ambas as branches partem do mesmo `develop` mas evoluem de forma independente até o merge final validado. Ver regras detalhadas em [`.claude/rules/git-flow.md`](../.claude/rules/git-flow.md).
+
 ## Contexto
 
 Transformar o monólito `src/BeeIT-OS-RT-v2.html` (46.786 linhas, 3,4 MB) em uma arquitetura "estilo Lego" com:
@@ -103,19 +114,18 @@ fix/*       ← hotfixes (abertos de main, mergeados em main + develop)
 - Feature branches são mergeadas em `develop` (não em `main`) e deletadas após o merge.
 - Hotfixes em produção: abertos de `main`, mergeados em `main` **e** `develop` antes de fechar.
 
-**Situação atual do conflito de merge (2026-04-27):**
-O merge de `feat/modularization-security-v1` em `develop` foi abortado por conflito estrutural em `supabase/functions/protheus-proxy/index.ts`:
-- `main`/`develop`: versão v2.1 (proxy simples, CORS `*`, sem JWT) + rotas ClickSign adicionadas pelo outro desenvolvedor.
-- `feat`: versão v3.1 (rewrite completo — JWT obrigatório, CORS allow-list, Vault, audit log, legacy alias allow-list).
-
-**Resolução necessária (aguardando instrução do usuário):** cherry-pick das rotas ClickSign (`/clicksign/` e `/clicksign-sandbox/`) da v2.1 para dentro da v3.1 na branch `feat`, antes de reattempt do merge em `develop`.
+**Situação atual (2026-04-27 — revisão):**
+Merge revertido. Duas frentes de trabalho paralelas e isoladas:
+- `feature/os-rt-modularization` (`419529d`) — Bruno: Sprint 1-5, Edge v3.1, sem monólito.
+- `feature/clicksign-daniel` (`b67829e`) — Daniel: monólito atual com ClickSign funcionando.
+- Merge final planejado para quando ambas as frentes estiverem validadas em staging.
 
 ## Decisões pendentes
 
 - [x] ~~Fontes Protheus (AdvPL/TLPP)~~ — Opção B executada (ver ADR-006)
 - [x] ~~Rotação da senha admin no Supabase~~ — feito manualmente pelo usuário
-- [x] ~~Git Flow~~ — ADR-009 adotado; `develop` criada e publicada em `origin/develop`
-- [ ] **Conflito Edge Function:** integrar rotas ClickSign da v2.1 na v3.1 antes do merge em `develop` (ver ADR-009).
+- [x] ~~Git Flow~~ — ADR-009 adotado; frentes paralelas isoladas (ver topologia acima)
+- [ ] **Merge final:** `feature/os-rt-modularization` + `feature/clicksign-daniel` → `develop` → `main` (coordenar com Daniel; resolver Edge v2.1 vs v3.1 neste ponto)
 - [ ] **HTTP/2 no Hostinger:** confirmado? Determina se o build final vira multi-file com hash ou mantém single-file injetado.
 - [ ] **Cadastro inicial de tenants:** 1 tenant (BeeIt) ou multi desde o dia 1?
 - [ ] **Ativação do Auth Hook** (após deploy da migration): Dashboard → Authentication → Hooks → Customize Access Token → `public.custom_access_token_hook`.
