@@ -39,6 +39,7 @@ Referência completa: *Laudo de Estratégia Técnica v2* (arquivo externo).
 | **S5** | Adaptação do monólito **sem reescrita** — fetch interceptor em `src/core/`, build injector, legacy-aliases allow-list na Edge. Plano completo em [SPRINT-5-PLAN.md](SPRINT-5-PLAN.md) | 🟡 em andamento — 5.2 ✅ 5.3 ✅ 5.4 ✅ 5.5 ✅ · pendente: 5.6 dev test | 🔴 |
 | **S6** | Infraestrutura de Tenant e Auth Hook — trigger `set_tenant_vault_alias`, Auth Hook v2 (`vault_alias` no JWT), Edge v3.1 deployada, bifurcação SaaS Strangler Pattern | ✅ **CONCLUÍDA** (2026-04-27) · db push ✅ Auth Hook ✅ Edge v3.1 online ✅ · 🟡 provisionamento do tenant pendente (aguardando credenciais Protheus REST) | 🟢 |
 | **S-local** | Supabase Local — ambiente de desenvolvimento isolado com `supabase start` (OrbStack) | ✅ rodando (2026-04-27) · Studio: `127.0.0.1:54323` · DB: `127.0.0.1:54322` · API: `127.0.0.1:54321` | 🟢 |
+| **P0** | Hotfix segurança — `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` nas 4 tabelas legadas (`profiles`, `clientes`, `documentos`, `access_log`). Auth Hook suspenso manualmente no Dashboard durante homologação. | ✅ **deployado (2026-04-27)** via migration `20260427120000_enable_rls_legacy_tables.sql` | 🔴→🟢 |
 | **S7** | Migrar paths legacy (`/SA1/`, `/CT1/` etc) do monólito para `/api/v1/bda/dynamic` + remover aliases da allow-list legacy | ⏳ pendente | 🟠 |
 | **S8** | Hardening de rede no Protheus — firewall libera apenas IP do Supabase | ⏳ pendente | 🟠 |
 | **S9** | Módulo prova `src/modules/dict-viewer` + extração MATA410/415/460 | ⏳ pendente | 🔴 |
