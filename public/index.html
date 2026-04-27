@@ -678,8 +678,18 @@ body::before{
 </style>
 </head>
 <body>
+
+<!-- Loading splash — mostra durante beeitInit IIFE (anti-flash de login) -->
+<div id="beeit-loading-splash" style="position:fixed;inset:0;z-index:999999;background:linear-gradient(135deg,#060F20 0%,#0D2B5E 50%,#001E62 100%);display:flex;align-items:center;justify-content:center;">
+  <div style="text-align:center;">
+    <div style="width:48px;height:48px;border:3px solid rgba(56,212,245,.2);border-top-color:#38D4F5;border-radius:50%;animation:bspin 0.8s linear infinite;margin:0 auto 16px;"></div>
+    <div style="font-family:'Inter',system-ui,sans-serif;font-size:12px;color:rgba(56,212,245,.85);letter-spacing:.08em;font-weight:600;">CARREGANDO…</div>
+  </div>
+</div>
+<style>@keyframes bspin{to{transform:rotate(360deg)}}</style>
+
 <!-- ════ BEEIT AUTH — LOGIN OVERLAY ════ -->
-<div id="beeit-auth-overlay" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#060F20 0%,#0D2B5E 50%,#001E62 100%);display:flex;align-items:center;justify-content:center;font-family:'Inter',system-ui,sans-serif;">
+<div id="beeit-auth-overlay" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#060F20 0%,#0D2B5E 50%,#001E62 100%);display:none;align-items:center;justify-content:center;font-family:'Inter',system-ui,sans-serif;">
   <div style="width:100%;max-width:420px;padding:0 24px;">
     <!-- Logo -->
     <div style="text-align:center;margin-bottom:36px;">
@@ -860,6 +870,7 @@ async function beeitLoadProfile() {
 
 function beeitShowApp() {
   console.log('[BeeIT Auth] beeitShowApp() — sessão ativa para', beeitSession?.user?.email);
+  const splash = document.getElementById('beeit-loading-splash'); if (splash) splash.style.display = 'none';
   beeitStartAutoRefresh();
   const overlay = document.getElementById('beeit-auth-overlay');
   if (overlay) overlay.style.display = 'none';
@@ -1290,6 +1301,7 @@ window.beeitAdminLoadLog    = beeitAdminLoadLog;
     localStorage.removeItem('beeit_session');
   }
   // Sem sessão válida — mostrar login
+  (function(){ const s=document.getElementById('beeit-loading-splash'); if(s) s.style.display='none'; })();
   document.getElementById('beeit-auth-overlay').style.display = 'flex';
 })();
 </script>
@@ -18965,6 +18977,30 @@ function rndConfig(){
     <div id="cfg-key-test-result" style="padding:0 16px 10px;font-size:10px;"></div>
   </div>`;
 
+  // ── CARD 2.5: ClickSign API (token para envio de documentos para assinatura) ──
+  const csToken=cfgGet('clicksign_token','');
+  const csHasToken=csToken && csToken.length>=10;
+  h+=`<div style="background:var(--bg2);border:1px solid rgba(56,212,245,.3);border-radius:12px;overflow:hidden;">
+    <div style="background:rgba(56,212,245,.1);border-bottom:2px solid #38D4F5;padding:12px 16px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px;">✍️</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:800;color:#38D4F5;">ClickSign — Assinatura Eletrônica</div>
+        <div style="font-size:10px;color:var(--txt3);">Token usado pelo botão "ClickSign" do MIT041 para enviar documentos à assinatura</div>
+      </div>
+      <span style="font-size:10px;background:${csHasToken?'rgba(52,211,153,.2)':'rgba(251,191,36,.2)'};color:${csHasToken?'#34d399':'#fbbf24'};border-radius:4px;padding:3px 10px;">${csHasToken?'✅ Configurado':'⚠️ Sem token'}</span>
+    </div>
+    <div style="padding:14px 16px;">
+      <label style="font-size:9px;color:var(--txt3);display:block;margin-bottom:4px;">🔑 Token API ClickSign (access_token)</label>
+      <input id="cfg-clicksign-token" type="password" value="${esc(csToken)}"
+        placeholder="Cole seu access_token do ClickSign aqui"
+        style="width:100%;background:var(--bg3);border:1px solid ${csHasToken?'#34d399':'var(--bdr)'};border-radius:6px;padding:8px 12px;color:var(--txt);font-size:12px;font-family:monospace;box-sizing:border-box;">
+      <div style="font-size:9px;margin-top:6px;color:var(--txt3);line-height:1.5;">
+        Obtenha em <strong>app.clicksign.com → Configurações → Integrações → API → Gerar token</strong>.
+        Não esqueça de preencher também o <strong>E-mail do usuário da API</strong> na mesma página — sem ele o ClickSign rejeita o envio.
+      </div>
+    </div>
+  </div>`;
+
   // ── CARD 2: Protheus REST ──────────────────────────────────────────
   h+=`<div style="background:var(--bg2);border:1px solid rgba(251,191,36,.3);border-radius:12px;overflow:hidden;">
     <div style="background:rgba(251,191,36,.1);border-bottom:2px solid #FF8C00;padding:12px 16px;display:flex;align-items:center;gap:10px;">
@@ -19865,6 +19901,10 @@ function configSave(){
   const k=(document.getElementById('cfg-api-key')?.value||'').trim();
   if(k&&/^sk-ant-[A-Za-z0-9\-_]{10,}$/.test(k)) cfgSet('api_key',k);
   else if(k) { alert('⚠️ API Key com formato inválido — deve começar com sk-ant-'); return; }
+
+  // ClickSign
+  const csTk=(document.getElementById('cfg-clicksign-token')?.value||'').trim();
+  cfgSet('clicksign_token', csTk);
 
   // Protheus
   const url=(document.getElementById('cfg-ptheus-url')?.value||'').trim();
@@ -30949,6 +30989,17 @@ function xpCTBAll(){xpCTBLP();window.setTimeout(function(){xpCTBMV();},400);}
 
 
 
+
+// ── Helper: detecta erro "sem créditos" da Anthropic e retorna mensagem amigável ──
+function _beeitAnthropicErrorMsg(status, errMsg) {
+  const isBilling = /credit.balance|credit_balance|too low|purchase credits|insufficient/i.test(errMsg||'');
+  if (isBilling) {
+    return `❌ SALDO ANTHROPIC INSUFICIENTE\n\n💳 **A conta de API Anthropic associada à sua chave está sem créditos.**\n\nIsso é cobrança da Anthropic (não do BeeIT) — cada chamada IA consome tokens que custam ~$0.01-0.05.\n\n🔗 **Como resolver (2-3 min):**\n\n1. Acesse https://console.anthropic.com/settings/billing\n2. Adicione créditos (mínimo US$ 5) ou ative **Auto Reload** (recarga automática ao cair de um limite)\n3. Volte aqui e tente de novo — **não precisa trocar a chave** em Configurações\n\n💡 **Custo típico:** ~$0.03 por MIT041 completo. US$ 20 = ~500 gerações (dura meses).\n\n---\n\n_Mensagem técnica da Anthropic: "${(errMsg||'').slice(0,200)}"_`;
+  }
+  return `❌ ERRO DA API (${status}): ${errMsg}\n\nVerifique a chave de API em Configurações → API Anthropic.`;
+}
+window._beeitAnthropicErrorMsg = _beeitAnthropicErrorMsg;
+
 // ── Global error handler — mostra erros JS na tela ──────────────────────
 window.addEventListener('error', function(e){
   console.error('Global JS error:', e.message, e.filename, e.lineno);
@@ -34321,7 +34372,7 @@ REGRAS FINAIS DE FORMATAÇÃO (OBRIGATÓRIO):
     if(!r.ok){
       const errBody=await r.json().catch(()=>({}));
       const errMsg=errBody?.error?.message||`HTTP ${r.status}`;
-      _m41.doc=`❌ ERRO DA API (${r.status}): ${errMsg}\n\nVerifique a chave de API em Configurações.`;
+      _m41.doc = _beeitAnthropicErrorMsg(r.status, errMsg);
       _m41StopGenTimer();_m41Set('preview');return;
     }
     // Finaliza barra antes de transitar
@@ -36412,6 +36463,49 @@ function _m41PIk(t){
 
 // ════ CLICKSIGN ═════════════════════════════════════════════════════════
 
+
+// ── BeeIT Helper: HTML → PDF base64 (lazy-load html2pdf.js) ──
+let _beeitHtml2PdfLoading = null;
+async function _beeitLoadHtml2Pdf() {
+  if (typeof window.html2pdf === 'function') return;
+  if (_beeitHtml2PdfLoading) return _beeitHtml2PdfLoading;
+  _beeitHtml2PdfLoading = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    s.onload = () => resolve();
+    s.onerror = () => { _beeitHtml2PdfLoading = null; reject(new Error('Falha ao carregar html2pdf.js')); };
+    document.head.appendChild(s);
+  });
+  return _beeitHtml2PdfLoading;
+}
+async function _beeitHtmlToPdfBase64(htmlString, filename) {
+  await _beeitLoadHtml2Pdf();
+  const wrap = document.createElement('div');
+  wrap.innerHTML = htmlString;
+  wrap.style.cssText = 'position:absolute;top:-99999px;left:0;width:190mm;background:#fff;color:#000;';
+  document.body.appendChild(wrap);
+  try {
+    const pdfBlob = await window.html2pdf().set({
+      margin: [12, 12, 12, 12],
+      filename: filename || 'documento.pdf',
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 1.4, letterRendering: true, useCORS: true, allowTaint: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
+    }).from(wrap).outputPdf('blob');
+    const buf = await pdfBlob.arrayBuffer();
+    const u8 = new Uint8Array(buf);
+    let binary = '';
+    const CHUNK = 8192;
+    for (let i = 0; i < u8.length; i += CHUNK) {
+      binary += String.fromCharCode.apply(null, u8.subarray(i, Math.min(i+CHUNK, u8.length)));
+    }
+    return btoa(binary);
+  } finally {
+    wrap.remove();
+  }
+}
+window._beeitHtmlToPdfBase64 = _beeitHtmlToPdfBase64;
+
 function _m41ClickSign(){
   if(!_m41.doc){alert('Gere o documento MIT041 primeiro.');return;}
   document.getElementById('cs-modal')?.remove();
@@ -36434,13 +36528,26 @@ function _m41ClickSign(){
         O documento MIT041 será enviado ao <strong style="color:#38D4F5;">ClickSign</strong> e o signatário receberá um e-mail para assinatura eletrônica.
         O <strong style="color:#38D4F5;">token</strong> é o seu <em>access_token</em> gerado no painel ClickSign → Configurações → Integrações.
       </div>
-      <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:var(--or);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Configuração API</div>
-      ${fld('cs-token','Token API ClickSign (access_token)','cole seu token aqui',savedTk)}
+      ${savedTk ? `
+        <div style="background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.3);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:18px;">✅</span>
+          <div style="flex:1;">
+            <div style="font-size:11px;font-weight:700;color:#34d399;">Token ClickSign configurado</div>
+            <div style="font-size:10px;color:var(--txt3);margin-top:2px;">Use <strong>Configurações → ClickSign</strong> pra alterar o token quando precisar.</div>
+          </div>
+        </div>
+      ` : `
+        <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.35);border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+          <div style="font-size:11px;font-weight:700;color:#fbbf24;margin-bottom:6px;">⚠️ Token ClickSign não configurado</div>
+          <div style="font-size:10px;color:var(--txt2);line-height:1.55;margin-bottom:8px;">Antes de enviar, configure o token da API ClickSign em <strong>Configurações → ClickSign</strong>.</div>
+          <button onclick="document.getElementById('cs-modal').remove(); nav('config'); setTimeout(()=>document.getElementById('cfg-clicksign-token')?.focus(),300);" style="background:#fbbf24;border:none;color:#0a0e17;padding:6px 14px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">→ Ir para Configurações</button>
+        </div>
+      `}
       <div style="border-top:1px solid var(--bdr);padding-top:14px;margin-bottom:14px;">
         <div style="font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;color:var(--or);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Signatários</div>
         <div id="cs-signers">
-          ${fld('cs-name-0','Nome completo','Ex: Diego Almeida Roman')}
-          ${fld('cs-email-0','E-mail','Ex: diego@empresa.com.br','','email')}
+          ${fld('cs-name-0','Nome completo','Ex: Diego Almeida Roman',(typeof cfgGet==='function'?cfgGet('clicksign_signer_name',''):''))}
+          ${fld('cs-email-0','E-mail','Ex: diego@empresa.com.br',(typeof cfgGet==='function'?cfgGet('clicksign_signer_email',''):''),'email')}
         </div>
         <button onclick="_m41CSAddSigner()" style="background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);color:#38D4F5;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;margin-top:4px;">+ Adicionar outro signatário</button>
       </div>
@@ -36478,10 +36585,13 @@ function _m41CSAddSigner(){
 }
 
 async function _m41DoClickSign(){
-  const token=document.getElementById('cs-token')?.value.trim();
+  const token=(typeof cfgGet==='function'?cfgGet('clicksign_token',''):'').trim();
   const msg=document.getElementById('cs-msg')?.value.trim();
   const status=document.getElementById('cs-status');
-  if(!token){if(status)status.innerHTML='<span style="color:var(--red);">Informe o token de API do ClickSign.</span>';return;}
+  if(!token){
+    if(status)status.innerHTML='<span style="color:var(--red);">Configure o token em <strong>Configurações → ClickSign</strong> antes de enviar.</span>';
+    return;
+  }
 
   // Coletar signatários
   const signers=[];
@@ -36491,6 +36601,11 @@ async function _m41DoClickSign(){
     if(name&&email) signers.push({name,email});
   }
   if(!signers.length){if(status)status.innerHTML='<span style="color:var(--red);">Informe nome e e-mail de pelo menos um signatário.</span>';return;}
+  // Persiste signatário #0 pra pré-preencher na próxima
+  if(typeof cfgSet==='function'){
+    cfgSet('clicksign_signer_name', signers[0].name);
+    cfgSet('clicksign_signer_email', signers[0].email);
+  }
 
   if(status)status.innerHTML='<span style="color:var(--or);">⏳ Fazendo upload do documento para o ClickSign...</span>';
 
@@ -36505,14 +36620,33 @@ async function _m41DoClickSign(){
     td{padding:5pt 9pt;border:0.5pt solid #d1d5db;}tr:nth-child(even)td{background:#fafafa;}
     ul{margin:4pt 0 9pt 18pt;}li{margin:2pt 0;}</style></head>
     <body>${_m41MDtoPrint(_m41.doc)}</body></html>`;
-  const b64=btoa(unescape(encodeURIComponent(docHtml)));
-  const base='https://app.clicksign.com/api/v1';
+  if (!_m41.doc || _m41.doc.trim().length < 50) {
+    if(status)status.innerHTML='<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:6px;padding:10px;"><div style="color:var(--red);font-weight:700;">❌ Documento vazio</div><div style="font-size:10px;color:var(--txt2);">Gere o MIT041 primeiro (botão "🤖 Gerar Documento MIT041") antes de enviar ao ClickSign.</div></div>';
+    return;
+  }
+  // ClickSign só aceita PDF/DOC/DOCX/PNG/JPEG/TXT — converter HTML → PDF no browser via html2pdf
+  if(status)status.innerHTML='<span style="color:var(--or);">⏳ Convertendo documento para PDF... (primeira vez pode demorar ~10s carregando a biblioteca)</span>';
+  const pdfFname = fname.replace(/\.html?$/i, '.pdf');
+  let b64, b64DataURI;
+  try {
+    b64 = await _beeitHtmlToPdfBase64(docHtml, pdfFname);
+    b64DataURI = 'data:application/pdf;base64,' + b64;
+  } catch (pdfErr) {
+    console.warn('[ClickSign] html2pdf falhou, enviando como TXT:', pdfErr.message);
+    b64 = btoa(unescape(encodeURIComponent(_m41.doc || '')));
+    b64DataURI = 'data:text/plain;base64,' + b64;
+  }
+  if (b64.length < 100) {
+    if(status)status.innerHTML='<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:6px;padding:10px;"><div style="color:var(--red);font-weight:700;">❌ PDF vazio</div><div style="font-size:10px;color:var(--txt2);">Falha ao converter documento. Tente gerar o MIT041 novamente.</div></div>';
+    return;
+  }
+  const base='https://dbaqvoatopfquaqgdptk.supabase.co/functions/v1/protheus-proxy/clicksign/api/v1';
 
   try{
     // 1. Upload documento
     const docR=await fetch(`${base}/documents?access_token=${token}`,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({document:{path:`/${fname}`,content_base64:b64,sequence_enabled:true,brand_name:'TOTVS Acelerador Protheus'}})
+      body:JSON.stringify({document:{path:`/${pdfFname}`,content_base64:b64DataURI,sequence_enabled:true,brand_name:'TOTVS Acelerador Protheus'}})
     });
     if(!docR.ok){const e=await docR.json().catch(()=>({}));throw new Error(e?.errors?.join(', ')||`HTTP ${docR.status} — verifique o token`);}
     const docData=await docR.json();
@@ -40486,7 +40620,7 @@ async function _m41rmDoGen(){
   } catch(e){
     console.error('[_m41rmDoGen]', e);
     _m41rmSet('interview');
-    alert('Erro ao gerar MIT041 RM: '+e.message);
+    alert(typeof _beeitAnthropicErrorMsg==='function'?_beeitAnthropicErrorMsg(0,e.message).replace(/\\n\\n/g,'\\n\\n').substring(0,500):'Erro ao gerar MIT041 RM: '+e.message);
   }
 }
 
@@ -40522,11 +40656,11 @@ function _mitChatHTML(ag) {
       .replace(/`([^`]+)`/g,'<code style="background:rgba(0,0,0,.12);padding:1px 5px;border-radius:3px;font-family:monospace;font-size:10px;">$1</code>')
       .replace(/\n/g,'<br>');
     return `<div style="display:flex;gap:10px;margin-bottom:16px;${isUser?'flex-direction:row-reverse':''}">
-      <div style="width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;${isUser?'background:'+cor+';color:#fff':'background:rgba(255,255,255,.1);color:rgba(255,255,255,.8)'}">
+      <div style="width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;${isUser?'background:'+cor+';color:var(--txt,#fff)':'background:var(--bg3,rgba(255,255,255,.1));color:var(--txt2,rgba(255,255,255,.8))'}">
         ${isUser?'V':'🤖'}
       </div>
       <div style="max-width:78%;${isUser?'text-align:right':''}">
-        <div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:4px;">${isUser?'Você':'Agente '+lbl} · ${m.time||''}</div>
+        <div style="font-size:9px;color:var(--txt3,rgba(255,255,255,.4));margin-bottom:4px;">${isUser?'Você':'Agente '+lbl} · ${m.time||''}</div>
         <div style="background:${isUser?cor:'rgba(255,255,255,.07)'};border-radius:${isUser?'12px 2px 12px 12px':'2px 12px 12px 12px'};padding:10px 14px;font-size:12px;line-height:1.6;color:${isUser?'#fff':'rgba(255,255,255,.88)'};">${txt}</div>
       </div>
     </div>`;
@@ -40535,8 +40669,8 @@ function _mitChatHTML(ag) {
   const empty = !st.chatHistory?.length ? `
     <div style="text-align:center;padding:40px 20px;">
       <div style="font-size:40px;margin-bottom:14px;">💬</div>
-      <div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.7);margin-bottom:8px;">Chat com o Agente ${lbl}</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.4);line-height:1.6;max-width:360px;margin:0 auto;">
+      <div style="font-size:14px;font-weight:700;color:var(--txt2,rgba(255,255,255,.7));margin-bottom:8px;">Chat com o Agente ${lbl}</div>
+      <div style="font-size:12px;color:var(--txt3,rgba(255,255,255,.4));line-height:1.6;max-width:360px;margin:0 auto;">
         Converse para refinar seções, corrigir informações, adicionar conteúdo<br>ou pedir ajustes específicos na documentação gerada.
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:20px;max-width:480px;margin-left:auto;margin-right:auto;text-align:left;">
@@ -40548,7 +40682,7 @@ function _mitChatHTML(ag) {
           ['⚡','Adicione um cronograma estimado na seção de Plano de Ação'],
           ['🧩','Inclua o impacto na integração com o módulo Financeiro'],
         ].map(([ic,t]) => `<div onclick="_mitChatQuick('${ag}','${t.replace(/'/g,"\'")}')"
-            style="padding:9px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;cursor:pointer;font-size:11px;color:rgba(255,255,255,.75);transition:all .15s;display:flex;gap:7px;"
+            style="padding:9px 12px;background:var(--bg3,rgba(255,255,255,.06));border:1px solid var(--bdr,rgba(255,255,255,.1));border-radius:8px;cursor:pointer;font-size:11px;color:var(--txt2,rgba(255,255,255,.75));transition:all .15s;display:flex;gap:7px;"
             onmouseover="this.style.borderColor='${cor}';this.style.background='rgba(255,255,255,.1)'"
             onmouseout="this.style.borderColor='rgba(255,255,255,.1)';this.style.background='rgba(255,255,255,.06)'">
             <span>${ic}</span><span>${t}</span></div>`).join('')}
@@ -40557,8 +40691,8 @@ function _mitChatHTML(ag) {
 
   const loadingBubble = st.chatLoading ? `
     <div style="display:flex;gap:10px;margin-bottom:16px;">
-      <div style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:13px;">🤖</div>
-      <div style="background:rgba(255,255,255,.07);border-radius:2px 12px 12px 12px;padding:12px 16px;">
+      <div style="width:30px;height:30px;border-radius:50%;background:var(--bg3,rgba(255,255,255,.1));display:flex;align-items:center;justify-content:center;font-size:13px;">🤖</div>
+      <div style="background:var(--bg3,rgba(255,255,255,.07));border-radius:2px 12px 12px 12px;padding:12px 16px;">
         <div style="display:flex;gap:5px;align-items:center;">
           <div style="width:7px;height:7px;border-radius:50%;background:${cor};animation:pulse 1.2s infinite 0s;"></div>
           <div style="width:7px;height:7px;border-radius:50%;background:${cor};animation:pulse 1.2s infinite .3s;"></div>
@@ -40567,18 +40701,18 @@ function _mitChatHTML(ag) {
       </div>
     </div>` : '';
 
-  return `<div style="display:flex;flex-direction:column;height:calc(100vh - 160px);min-height:500px;">
+  return `<div style="display:flex;flex-direction:column;height:calc(100vh - 160px);min-height:500px;color:var(--txt,#fff);">
     <div id="mit-chat-msgs-${ag}" style="flex:1;overflow-y:auto;padding:16px 4px 8px;">
       ${empty}${msgs}${loadingBubble}
     </div>
-    <div style="padding-top:12px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:8px;align-items:flex-end;">
+    <div style="padding-top:12px;border-top:1px solid var(--bdr,rgba(255,255,255,.08));display:flex;gap:8px;align-items:flex-end;">
       <textarea id="mit-chat-input-${ag}" rows="3"
         placeholder="Peça correções, ajustes ou adições na documentação...&#10;&#10;Shift+Enter para nova linha · Enter para enviar"
-        style="flex:1;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);color:#fff;padding:10px 13px;border-radius:10px;font-size:12px;font-family:inherit;outline:none;resize:none;line-height:1.5;"
+        style="flex:1;background:var(--bg3,rgba(255,255,255,.07));border:1.5px solid var(--bdr,rgba(255,255,255,.15));color:var(--txt,#fff);padding:10px 13px;border-radius:10px;font-size:12px;font-family:inherit;outline:none;resize:none;line-height:1.5;"
         onfocus="this.style.borderColor='${cor}'" onblur="this.style.borderColor='rgba(255,255,255,.15)'"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();_mitChatSend('${ag}');}"></textarea>
       <button onclick="_mitChatSend('${ag}')"
-        style="padding:10px 16px;background:linear-gradient(135deg,${cor},${cor}cc);border:none;border-radius:10px;color:#fff;font-size:18px;cursor:pointer;flex-shrink:0;height:48px;">➤</button>
+        style="padding:10px 16px;background:linear-gradient(135deg,${cor},${cor}cc);border:none;border-radius:10px;color:var(--txt,#fff);font-size:18px;cursor:pointer;flex-shrink:0;height:48px;">➤</button>
     </div>
   </div>`;
 }
@@ -40680,30 +40814,30 @@ function _mitTrainHTML(ag) {
     const ri = data.length - 1 - i;
     const tipo = { padrao:'✅ Padrão', erro:'❌ Erro a Evitar', preferencia:'💡 Preferência', sucesso:'🏆 Sucesso', ajuste:'🔧 Ajuste' }[t.tipo] || t.tipo;
     const prio = { baixa:'Baixa', media:'Média', alta:'Alta', critica:'🔴 CRÍTICA' }[t.prioridade] || t.prioridade;
-    return `<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:14px;margin-bottom:10px;">
+    return `<div style="background:var(--bg3,rgba(255,255,255,.04));border:1px solid var(--bdr,rgba(255,255,255,.08));border-radius:8px;padding:14px;margin-bottom:10px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <div style="display:flex;gap:8px;align-items:center;">
           <span style="font-size:11px;font-weight:700;color:${cor};">${tipo}</span>
-          <span style="padding:2px 7px;background:rgba(255,255,255,.07);border-radius:20px;font-size:9px;color:rgba(255,255,255,.5);">Prio: ${prio}</span>
-          <span style="font-size:9px;color:rgba(255,255,255,.3);">${t.date||''}</span>
+          <span style="padding:2px 7px;background:var(--bg3,rgba(255,255,255,.07));border-radius:20px;font-size:9px;color:var(--txt3,rgba(255,255,255,.5));">Prio: ${prio}</span>
+          <span style="font-size:9px;color:var(--txt3,rgba(255,255,255,.3));">${t.date||''}</span>
         </div>
         <button onclick="_mitTrainDelete('${ag}',${ri})" style="padding:3px 8px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#fca5a5;border-radius:4px;font-size:9px;cursor:pointer;">🗑</button>
       </div>
-      <div style="font-size:11px;color:rgba(255,255,255,.8);margin-bottom:4px;"><strong>Contexto:</strong> ${t.contexto}</div>
-      <div style="font-size:11px;color:rgba(255,255,255,.7);margin-bottom:4px;"><strong>Aprendizado:</strong> ${t.aprendizado}</div>
-      ${t.aplicacao ? `<div style="font-size:10px;color:rgba(255,255,255,.5);"><strong>Aplicação:</strong> ${t.aplicacao}</div>` : ''}
+      <div style="font-size:11px;color:var(--txt2,rgba(255,255,255,.8));margin-bottom:4px;"><strong>Contexto:</strong> ${t.contexto}</div>
+      <div style="font-size:11px;color:var(--txt2,rgba(255,255,255,.7));margin-bottom:4px;"><strong>Aprendizado:</strong> ${t.aprendizado}</div>
+      ${t.aplicacao ? `<div style="font-size:10px;color:var(--txt3,rgba(255,255,255,.5));"><strong>Aplicação:</strong> ${t.aplicacao}</div>` : ''}
     </div>`;
-  }).join('') : `<div style="text-align:center;padding:30px;color:rgba(255,255,255,.3);font-size:12px;">Nenhum aprendizado registrado ainda.<br>Adicione abaixo para que o agente aprenda com seus projetos.</div>`;
+  }).join('') : `<div style="text-align:center;padding:30px;color:var(--txt3,rgba(255,255,255,.3));font-size:12px;">Nenhum aprendizado registrado ainda.<br>Adicione abaixo para que o agente aprenda com seus projetos.</div>`;
 
-  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;color:var(--txt,#fff);">
 
     <!-- Form de registro -->
-    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:20px;">
-      <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:16px;">🧠 Registrar Aprendizado</div>
+    <div style="background:var(--bg3,rgba(255,255,255,.04));border:1px solid var(--bdr,rgba(255,255,255,.1));border-radius:12px;padding:20px;">
+      <div style="font-size:13px;font-weight:700;color:var(--txt,#fff);margin-bottom:16px;">🧠 Registrar Aprendizado</div>
 
       <div style="margin-bottom:12px;">
-        <label style="font-size:9px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px;">Tipo</label>
-        <select id="mt-tipo-${ag}" style="width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 10px;border-radius:6px;font-size:12px;">
+        <label style="font-size:9px;color:var(--txt3,rgba(255,255,255,.5));text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px;">Tipo</label>
+        <select id="mt-tipo-${ag}" style="width:100%;background:var(--bg3,rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.12);color:var(--txt,#fff);padding:8px 10px;border-radius:6px;font-size:12px;">
           <option value="padrao">✅ Padrão Aprovado</option>
           <option value="erro">❌ Erro a Evitar</option>
           <option value="preferencia">💡 Preferência do Cliente</option>
@@ -40713,8 +40847,8 @@ function _mitTrainHTML(ag) {
       </div>
 
       <div style="margin-bottom:12px;">
-        <label style="font-size:9px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px;">Prioridade</label>
-        <select id="mt-prio-${ag}" style="width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 10px;border-radius:6px;font-size:12px;">
+        <label style="font-size:9px;color:var(--txt3,rgba(255,255,255,.5));text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px;">Prioridade</label>
+        <select id="mt-prio-${ag}" style="width:100%;background:var(--bg3,rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.12);color:var(--txt,#fff);padding:8px 10px;border-radius:6px;font-size:12px;">
           <option value="media">Média</option>
           <option value="alta">Alta</option>
           <option value="critica">🔴 Crítica</option>
@@ -40723,25 +40857,25 @@ function _mitTrainHTML(ag) {
       </div>
 
       <div style="margin-bottom:12px;">
-        <label style="font-size:9px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px;">Contexto *</label>
+        <label style="font-size:9px;color:var(--txt3,rgba(255,255,255,.5));text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px;">Contexto *</label>
         <textarea id="mt-ctx-${ag}" rows="3" placeholder="Em qual situação este aprendizado se aplica?"
-          style="width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 10px;border-radius:6px;font-size:11px;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
+          style="width:100%;background:var(--bg3,rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.12);color:var(--txt,#fff);padding:8px 10px;border-radius:6px;font-size:11px;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
       </div>
 
       <div style="margin-bottom:12px;">
-        <label style="font-size:9px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px;">Aprendizado *</label>
+        <label style="font-size:9px;color:var(--txt3,rgba(255,255,255,.5));text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px;">Aprendizado *</label>
         <textarea id="mt-apr-${ag}" rows="3" placeholder="O que o agente deve aprender e aplicar?"
-          style="width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 10px;border-radius:6px;font-size:11px;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
+          style="width:100%;background:var(--bg3,rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.12);color:var(--txt,#fff);padding:8px 10px;border-radius:6px;font-size:11px;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
       </div>
 
       <div style="margin-bottom:16px;">
-        <label style="font-size:9px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px;">Como aplicar (opcional)</label>
+        <label style="font-size:9px;color:var(--txt3,rgba(255,255,255,.5));text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px;">Como aplicar (opcional)</label>
         <textarea id="mt-apl-${ag}" rows="2" placeholder="Como este aprendizado deve ser aplicado na prática?"
-          style="width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 10px;border-radius:6px;font-size:11px;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
+          style="width:100%;background:var(--bg3,rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.12);color:var(--txt,#fff);padding:8px 10px;border-radius:6px;font-size:11px;resize:vertical;font-family:inherit;box-sizing:border-box;"></textarea>
       </div>
 
       <button onclick="_mitTrainSave('${ag}')"
-        style="width:100%;padding:11px;background:linear-gradient(135deg,${cor},${cor}cc);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+        style="width:100%;padding:11px;background:linear-gradient(135deg,${cor},${cor}cc);color:var(--txt,#fff);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
         ✅ Registrar Aprendizado
       </button>
     </div>
@@ -40749,7 +40883,7 @@ function _mitTrainHTML(ag) {
     <!-- Lista de aprendizados -->
     <div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <div style="font-size:13px;font-weight:700;color:#fff;">📚 Memória do Agente <span style="background:rgba(255,255,255,.1);border-radius:20px;padding:2px 9px;font-size:11px;">${data.length}</span></div>
+        <div style="font-size:13px;font-weight:700;color:var(--txt,#fff);">📚 Memória do Agente <span style="background:var(--bg3,rgba(255,255,255,.1));border-radius:20px;padding:2px 9px;font-size:11px;">${data.length}</span></div>
         ${data.length ? `<button onclick="_mitTrainClearAll('${ag}')" style="padding:4px 10px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#fca5a5;border-radius:5px;font-size:10px;cursor:pointer;">🗑 Limpar tudo</button>` : ''}
       </div>
       <div id="mt-log-${ag}">${logHTML}</div>
@@ -40871,7 +41005,7 @@ function _m44rmHomeHTML(){
       onmouseover="this.style.borderColor='#34d399';this.style.background='var(--bb3)'"
       onmouseout="this.style.borderColor='rgba(16,185,129,.2)';this.style.background='var(--bb2)'">
       <div style="font-size:22px;margin-bottom:6px;">${m.ic}</div>
-      <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:3px;">${m.t}</div>
+      <div style="font-size:12px;font-weight:700;color:var(--txt,#fff);margin-bottom:3px;">${m.t}</div>
       <div style="font-size:10px;color:var(--txt3);">${m.d}</div>
     </div>`).join('');
   return `
@@ -40932,7 +41066,7 @@ function _m44rmPreviewHTML(){
     .replace(/\*(.+?)\*/g,'<em>$1</em>')
     .replace(/^### (.+)$/gm,'<div style="font-size:13px;font-weight:700;color:var(--or);margin:14px 0 5px;">$1</div>')
     .replace(/^## (.+)$/gm,'<div style="font-family:Rajdhani,sans-serif;font-size:15px;font-weight:700;color:#34d399;margin:20px 0 8px;padding:8px 0;border-bottom:1px solid var(--bdr);">$1</div>')
-    .replace(/^# (.+)$/gm,'<div style="font-family:Rajdhani,sans-serif;font-size:19px;font-weight:700;color:#fff;margin:0 0 6px;">$1</div>')
+    .replace(/^# (.+)$/gm,'<div style="font-family:Rajdhani,sans-serif;font-size:19px;font-weight:700;color:var(--txt,#fff);margin:0 0 6px;">$1</div>')
     .replace(/^> (.+)$/gm,'<div style="padding:7px 12px;background:rgba(52,211,153,.08);border-left:3px solid #34d399;border-radius:3px;font-size:11px;margin:6px 0;">$1</div>')
     .replace(/^[-*] (.+)$/gm,'<div style="padding:2px 0 2px 14px;font-size:12px;color:var(--txt2);margin:3px 0;">• $1</div>')
     .replace(/\n/g,'<br>');
@@ -41141,24 +41275,24 @@ html,body{
 .cv-inner{position:relative;z-index:5;padding:38mm 18mm 0;display:flex;flex-direction:column;flex:1;}
 .cv-logo-wrap{position:absolute;top:16mm;left:18mm;z-index:20;-webkit-print-color-adjust:exact;print-color-adjust:exact;}.cv-logo{width:48mm;height:auto;display:block;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 .cv-kicker{
-  font-size:6.5pt;font-weight:600;color:rgba(255,255,255,.5);
+  font-size:6.5pt;font-weight:600;color:var(--txt3,rgba(255,255,255,.5));
   letter-spacing:2.2pt;text-transform:uppercase;
   display:flex;align-items:center;gap:7pt;margin-bottom:6mm;
 }
 .cv-kicker::before{content:'';display:inline-block;width:16pt;height:1pt;background:#22D3EE;}
 .cv-h1{
-  font-size:50pt;font-weight:900;color:#fff;
+  font-size:50pt;font-weight:900;color:var(--txt,#fff);
   line-height:.83;letter-spacing:-2.5pt;
 }
 .cv-h2{
-  font-size:19pt;font-weight:300;color:rgba(255,255,255,.7);
+  font-size:19pt;font-weight:300;color:var(--txt2,rgba(255,255,255,.7));
   margin-top:2mm;letter-spacing:-.3pt;
 }
 .cv-sep{
   height:2pt;width:32mm;margin:5.5mm 0;
   background:linear-gradient(90deg,#22D3EE,rgba(255,255,255,.08));border-radius:2pt;
 }
-.cv-mod{font-size:12pt;font-weight:700;color:#fff;margin-bottom:1.5mm;}
+.cv-mod{font-size:12pt;font-weight:700;color:var(--txt,#fff);margin-bottom:1.5mm;}
 .cv-ver{font-size:7.5pt;color:rgba(255,255,255,.45);letter-spacing:.3pt;}
 /* 2×2 info grid */
 .cv-grid2{
@@ -41171,7 +41305,7 @@ html,body{
 }
 .cv-cl{font-size:7pt;font-weight:700;color:rgba(255,255,255,.65);
   text-transform:uppercase;letter-spacing:.8pt;margin-bottom:4pt;}
-.cv-cv{font-size:11pt;font-weight:700;color:#fff;letter-spacing:-.2pt;}
+.cv-cv{font-size:11pt;font-weight:700;color:var(--txt,#fff);letter-spacing:-.2pt;}
 .cv-cv.cy{color:#22D3EE;}
 .cv-foot{
   background:rgba(0,0,0,.35);padding:6pt 18mm;flex-shrink:0;
@@ -41179,7 +41313,7 @@ html,body{
   display:flex;justify-content:space-between;align-items:center;
   border-top:1px solid rgba(255,255,255,.12);
 }
-.cv-ft{font-size:6.5pt;font-weight:600;color:rgba(255,255,255,.5);
+.cv-ft{font-size:6.5pt;font-weight:600;color:var(--txt3,rgba(255,255,255,.5));
   letter-spacing:.5pt;text-transform:uppercase;}
 .cv-ft.cy{color:#06B6D4;}
 
@@ -41243,8 +41377,8 @@ table.doc{width:210mm;table-layout:fixed;border-collapse:collapse;}
   width:8pt;height:8pt;border-radius:50%;
   background:linear-gradient(135deg,#06B6D4,#7C3AED);flex-shrink:0;
 }
-.blk-hdr-txt{font-size:10pt;font-weight:700;color:#fff;}
-.blk-hdr-sub{font-size:6.5pt;color:rgba(255,255,255,.4);margin-left:auto;}
+.blk-hdr-txt{font-size:10pt;font-weight:700;color:var(--txt,#fff);}
+.blk-hdr-sub{font-size:6.5pt;color:var(--txt3,rgba(255,255,255,.4));margin-left:auto;}
 .blk-body{
   /* Inner padding: 0.5cm padding garantido */
   padding:10pt 12pt 11pt;background:#fff;
@@ -41253,7 +41387,7 @@ table.doc{width:210mm;table-layout:fixed;border-collapse:collapse;}
 /* ══ TIPOGRAFIA ══════════════════════════════════════════════════ */
 h1{font-size:14pt;font-weight:800;color:#001E62;margin:9pt 0 5pt;}
 h2{
-  font-size:12pt;font-weight:700;color:#fff;
+  font-size:12pt;font-weight:700;color:var(--txt,#fff);
   background:linear-gradient(135deg,#001E62,#0A3070);
   padding:6.5pt 12pt;border-radius:var(--r) var(--r) 0 0;
   margin:16pt 0 0;
@@ -41294,7 +41428,7 @@ table.tbl{
   border:.5pt solid #E8EDF3;page-break-inside:avoid;
 }
 table.tbl th{
-  background:#001E62;color:#fff;
+  background:#001E62;color:var(--txt,#fff);
   padding:5.5pt 9pt;text-align:left;font-weight:600;font-size:7.5pt;
   letter-spacing:.3pt;text-transform:uppercase;
   border-right:.5pt solid rgba(255,255,255,.07);
@@ -41410,7 +41544,7 @@ ol li::before{display:none;}
 .flow-step.critical{background:#E0F7FB;border-color:rgba(6,182,212,.3);border-top:2pt solid #06B6D4;}
 .flow-step.ai{background:#F5F0FF;border-color:rgba(107,33,168,.2);border-top:2pt solid #6B21A8;}
 .flow-num{
-  width:18pt;height:18pt;border-radius:50%;background:#001E62;color:#fff;
+  width:18pt;height:18pt;border-radius:50%;background:#001E62;color:var(--txt,#fff);
   font-size:8pt;font-weight:700;
   display:flex;align-items:center;justify-content:center;margin-bottom:4pt;
 }
@@ -41457,7 +41591,7 @@ ol li::before{display:none;}
 }
 .ins-chip-dot{width:5pt;height:5pt;border-radius:50%;background:#7C3AED;}
 .ins-chip-lbl{font-size:6pt;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.7pt;}
-.ins-title{font-size:11pt;font-weight:700;color:#fff;margin-bottom:5pt;}
+.ins-title{font-size:11pt;font-weight:700;color:var(--txt,#fff);margin-bottom:5pt;}
 .ins-body{font-size:9.5pt;color:rgba(255,255,255,.82);line-height:1.45;}
 
 /* ══ REFORMA TRIBUTÁRIA ══════════════════════════════════════════ */
@@ -41473,7 +41607,7 @@ ol li::before{display:none;}
 /* ══ ASSINATURA ══════════════════════════════════════════════════ */
 .sig-section{margin-top:var(--sp-section);page-break-inside:avoid;}
 .sig-hdr{
-  background:#001E62;color:#fff;padding:7pt 12pt;
+  background:#001E62;color:var(--txt,#fff);padding:7pt 12pt;
   border-radius:var(--r) var(--r) 0 0;
   font-size:8.5pt;font-weight:700;letter-spacing:.3pt;text-transform:uppercase;
 }
@@ -41496,8 +41630,8 @@ ol li::before{display:none;}
   background:linear-gradient(135deg,#001E62 0%,#0A3070 60%,#6B21A8 100%);
   padding:12pt 15mm;border-bottom:2pt solid #06B6D4;
 }
-.annex-hdr-t{font-size:12pt;font-weight:700;color:#fff;letter-spacing:-.2pt;}
-.annex-hdr-s{font-size:8pt;color:rgba(255,255,255,.5);margin-top:2pt;}
+.annex-hdr-t{font-size:12pt;font-weight:700;color:var(--txt,#fff);letter-spacing:-.2pt;}
+.annex-hdr-s{font-size:8pt;color:var(--txt3,rgba(255,255,255,.5));margin-top:2pt;}
 .annex-body{padding:15pt 15mm;}
 .annex-desc{font-size:10pt;color:#1E3A5F;line-height:1.45;margin-bottom:14pt;}
 .annex-logo-box{
@@ -41514,7 +41648,7 @@ ol li::before{display:none;}
 }
 .annex-logo-hint{font-size:8pt;color:#5A7099;text-align:center;}
 .annex-table{width:100%;border-collapse:collapse;margin-top:10pt;font-size:9.5pt;}
-.annex-table th{background:#001E62;color:#fff;padding:6pt 9pt;
+.annex-table th{background:#001E62;color:var(--txt,#fff);padding:6pt 9pt;
   border:.5pt solid rgba(255,255,255,.07);
   font-size:8pt;font-weight:700;text-transform:uppercase;letter-spacing:.3pt;}
 .annex-table td{padding:5.5pt 9pt;border:.5pt solid #E8EDF3;color:#1E3A5F;}
@@ -41527,7 +41661,7 @@ ol li::before{display:none;}
 }
 .annex-seal.pu{border-top-color:#6B21A8;}
 .seal-dot{width:14pt;height:14pt;border-radius:50%;
-  background:#001E62;color:#fff;font-size:8pt;font-weight:700;
+  background:#001E62;color:var(--txt,#fff);font-size:8pt;font-weight:700;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .seal-dot.pu{background:linear-gradient(135deg,#6B21A8,#7C3AED);}
 .seal-txt{font-size:8pt;font-weight:700;color:#001E62;line-height:1.3;}
@@ -41595,7 +41729,7 @@ hr{display:none;}
 <tbody><tr><td class="body-cell">${bodyHtml}${sigHtml}${annexHtml}</td></tr></tbody>
 </table>
 <div class="no-print" style="position:fixed;bottom:20px;right:20px;display:flex;gap:10px;z-index:9999;">
-  <button onclick="window.print()" style="background:linear-gradient(135deg,#001E62,#06B6D4);border:none;color:#fff;padding:11px 24px;border-radius:5px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,30,98,.45);">&#128229; Salvar PDF</button>
+  <button onclick="window.print()" style="background:linear-gradient(135deg,#001E62,#06B6D4);border:none;color:var(--txt,#fff);padding:11px 24px;border-radius:5px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,30,98,.45);">&#128229; Salvar PDF</button>
   <button onclick="window.close()" style="background:#F1F5F9;border:1px solid #E2E8F0;color:#475569;padding:11px 16px;border-radius:5px;font-size:12px;cursor:pointer;">&#x2715; Fechar</button>
 </div>
 <script>
@@ -41610,10 +41744,10 @@ hr{display:none;}
     <!-- Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;max-width:960px;margin-left:auto;margin-right:auto;">
       <div>
-        <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:900;color:#fff;">👑 Painel Administrativo</div>
+        <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:900;color:var(--txt,#fff);">👑 Painel Administrativo</div>
         <div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:3px;">Gerenciamento de usuários e permissões — BeeIT OS-RT</div>
       </div>
-      <button onclick="beeitAdminClose()" style="padding:8px 20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;border-radius:8px;font-size:12px;cursor:pointer;">✕ Fechar</button>
+      <button onclick="beeitAdminClose()" style="padding:8px 20px;background:var(--bg3,rgba(255,255,255,.08));border:1px solid var(--bdr,rgba(255,255,255,.15));color:var(--txt,#fff);border-radius:8px;font-size:12px;cursor:pointer;">✕ Fechar</button>
     </div>
 
     <div style="max-width:960px;margin:0 auto;">
@@ -41625,11 +41759,11 @@ hr{display:none;}
           👥 Usuários
         </button>
         <button id="adm-tab-novo" onclick="beeitAdminTab('novo')"
-          style="padding:10px 20px;background:transparent;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,.5);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">
+          style="padding:10px 20px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--txt3,rgba(255,255,255,.5));font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">
           ➕ Novo Usuário
         </button>
         <button id="adm-tab-log" onclick="beeitAdminTab('log')"
-          style="padding:10px 20px;background:transparent;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,.5);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">
+          style="padding:10px 20px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--txt3,rgba(255,255,255,.5));font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">
           📋 Log de Acesso
         </button>
       </div>
@@ -41837,7 +41971,7 @@ function _m44StopGenTimer() {
 function _m44GenHTML() {
   const stages = _M44_STAGES.map((st, i) => `
     <div id="m44-stage-${st.id}" style="display:flex;align-items:flex-start;gap:14px;padding:12px 14px;border-radius:10px;transition:all .4s;opacity:.45;border:1.5px solid transparent;">
-      <div id="m44-ico-${st.id}" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;transition:all .4s;">${st.icon}</div>
+      <div id="m44-ico-${st.id}" style="width:36px;height:36px;border-radius:50%;background:var(--bg3,rgba(255,255,255,.06));border:1.5px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;transition:all .4s;">${st.icon}</div>
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:8px;">
           <span id="m44-lbl-${st.id}" style="font-size:12.5px;font-weight:600;color:#94a3b8;transition:color .4s;">${st.label}</span>
@@ -41845,13 +41979,13 @@ function _m44GenHTML() {
           <span id="m44-act-${st.id}" style="display:none;font-size:11px;background:rgba(139,92,246,.12);color:#38D4F5;border:1px solid rgba(139,92,246,.3);border-radius:10px;padding:1px 7px;">em andamento</span>
         </div>
         <div style="font-size:10.5px;color:#475569;margin-top:2px;">${st.sub}</div>
-        <div id="m44-bar-${st.id}" style="display:none;margin-top:6px;height:2px;border-radius:2px;background:rgba(255,255,255,.07);overflow:hidden;">
+        <div id="m44-bar-${st.id}" style="display:none;margin-top:6px;height:2px;border-radius:2px;background:var(--bg3,rgba(255,255,255,.07));overflow:hidden;">
           <div id="m44-fill-${st.id}" style="height:100%;width:0%;background:linear-gradient(90deg,#0A3070,#38D4F5);border-radius:2px;transition:width .8s ease;"></div>
         </div>
       </div>
       <div id="m44-time-${st.id}" style="font-size:10px;color:#334155;min-width:32px;text-align:right;"></div>
     </div>
-    ${i < _M44_STAGES.length-1 ? '<div style="margin-left:31px;width:1.5px;height:10px;background:rgba(255,255,255,.07);"></div>' : ''}
+    ${i < _M44_STAGES.length-1 ? '<div style="margin-left:31px;width:1.5px;height:10px;background:var(--bg3,rgba(255,255,255,.07));"></div>' : ''}
   `).join('');
 
   return `
@@ -41893,7 +42027,7 @@ function _m44Set(screen) { if(_m44.screen!=='chat'&&_m44.screen!=='train') _m44.
 function _m44Toast(msg, color) {
   const t = document.createElement('div');
   t.textContent = msg;
-  t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:${color||'#059669'};color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);pointer-events:none;`;
+  t.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:${color||'#059669'};color:var(--txt,#fff);padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);pointer-events:none;`;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3000);
 }
@@ -42606,7 +42740,7 @@ function _m44HomeHTML() {
       onmouseover="this.style.borderColor='#38D4F5';this.style.background='var(--bb3)'"
       onmouseout="this.style.borderColor='rgba(139,92,246,.2)';this.style.background='var(--bb2)'">
       <div style="font-size:22px;margin-bottom:6px;">${t.ic}</div>
-      <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:3px;">${t.t}</div>
+      <div style="font-size:12px;font-weight:700;color:var(--txt,#fff);margin-bottom:3px;">${t.t}</div>
       <div style="font-size:10px;color:var(--txt3);">${t.d}</div>
     </div>`).join('');
 
@@ -42659,7 +42793,7 @@ function _m44InfoHTML() {
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--bdr);">
       <div style="font-size:28px;opacity:.7;">🔍</div>
       <div>
-        <div style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:#fff;">Dados do Projeto — GAP MIT044</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;color:var(--txt,#fff);">Dados do Projeto — GAP MIT044</div>
         <div style="font-size:10px;color:#38D4F5;font-weight:600;">Especificação Funcional e Técnica de GAP</div>
       </div>
     </div>
@@ -42803,9 +42937,9 @@ function _m44MDtoHTML(md) {
       const emoji=Object.keys(map).find(e=>ln.includes(e))||'💡'; const[bg,bc,tc]=map[emoji];
       out+=`<div style="margin:26px 0 10px;padding:11px 16px;background:${bg};border:1px solid ${bc};border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;color:${tc};letter-spacing:.05em;">${_m44Ink(ln.replace(/^#+\s*/,''))}</div>`;i++;continue;
     }
-    if (ln.startsWith('# '))    {out+=`<div style="font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:#fff;margin:0 0 4px;letter-spacing:.05em;">${_m44Ink(ln.slice(2))}</div>`;i++;continue;}
+    if (ln.startsWith('# '))    {out+=`<div style="font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--txt,#fff);margin:0 0 4px;letter-spacing:.05em;">${_m44Ink(ln.slice(2))}</div>`;i++;continue;}
     if (ln.startsWith('## '))   {out+=`<div style="font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:#38D4F5;margin:22px 0 8px;padding:10px 0 8px;border-bottom:1px solid var(--bdr);letter-spacing:.04em;">${_m44Ink(ln.slice(3))}</div>`;i++;continue;}
-    if (ln.startsWith('### '))  {out+=`<div style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:#fff;margin:14px 0 6px;">${_m44Ink(ln.slice(4))}</div>`;i++;continue;}
+    if (ln.startsWith('### '))  {out+=`<div style="font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;color:var(--txt,#fff);margin:14px 0 6px;">${_m44Ink(ln.slice(4))}</div>`;i++;continue;}
     if (ln.startsWith('#### ')) {out+=`<div style="font-size:12px;font-weight:700;color:var(--txt2);margin:10px 0 4px;">${_m44Ink(ln.slice(5))}</div>`;i++;continue;}
     if (ln.startsWith('##### ')){out+=`<div style="font-size:11px;font-weight:700;color:#38D4F5;margin:8px 0 3px;padding:4px 10px;background:rgba(139,92,246,.1);border-left:3px solid #38D4F5;border-radius:3px;">${_m44Ink(ln.slice(6))}</div>`;i++;continue;}
     if (ln.startsWith('```')) {i++;const code=[];while(i<lines.length&&!lines[i].startsWith('```')){code.push(lines[i]);i++;}i++;out+=`<pre style="background:linear-gradient(135deg,#06122A,#0D2B5E);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#38D4F5;overflow-x:auto;margin:8px 0;white-space:pre-wrap;">${code.join('\n').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`;continue;}
@@ -42903,7 +43037,7 @@ function _m44ImportHTML() {
     // Botões
     + '<div style="display:flex;gap:10px;">'
     + '<button onclick="_m44RevisarMIT44()" '
-    + 'style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;letter-spacing:.3px;">'
+    + 'style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;background:linear-gradient(135deg,#f97316,#ea580c);color:var(--txt,#fff);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;letter-spacing:.3px;">'
     + '🔄 Revisar e Reescrever no Padrão MIT041 Dev</button>'
     + '<button onclick="_m44Set(\'home\')" '
     + 'style="padding:12px 18px;background:#fff;border:1px solid var(--bdr);color:var(--txt2);border-radius:8px;font-size:12px;cursor:pointer;">← Voltar</button>'
@@ -43166,20 +43300,20 @@ html,body{font-family:'Inter',system-ui,sans-serif;font-size:10pt;line-height:1.
 .cv-svg{position:absolute;inset:0;z-index:1;overflow:hidden;}
 .cv-inner{position:relative;z-index:5;padding:38mm 18mm 0;display:flex;flex-direction:column;flex:1;}
 .cv-logo-wrap{position:absolute;top:16mm;left:18mm;z-index:20;-webkit-print-color-adjust:exact;print-color-adjust:exact;}.cv-logo{width:48mm;height:auto;display:block;-webkit-print-color-adjust:exact;print-color-adjust:exact;}');background-size:contain;background-repeat:no-repeat;background-position:left center;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-.cv-kicker{font-size:6.5pt;font-weight:600;color:rgba(255,255,255,.5);letter-spacing:2.2pt;text-transform:uppercase;display:flex;align-items:center;gap:7pt;margin-bottom:6mm;}
+.cv-kicker{font-size:6.5pt;font-weight:600;color:var(--txt3,rgba(255,255,255,.5));letter-spacing:2.2pt;text-transform:uppercase;display:flex;align-items:center;gap:7pt;margin-bottom:6mm;}
 .cv-kicker::before{content:'';display:inline-block;width:16pt;height:1pt;background:#22D3EE;}
-.cv-h1{font-size:38pt;font-weight:900;color:#fff;line-height:.9;letter-spacing:-1.5pt;}
-.cv-h2{font-size:17pt;font-weight:300;color:rgba(255,255,255,.7);margin-top:2mm;letter-spacing:-.3pt;}
+.cv-h1{font-size:38pt;font-weight:900;color:var(--txt,#fff);line-height:.9;letter-spacing:-1.5pt;}
+.cv-h2{font-size:17pt;font-weight:300;color:var(--txt2,rgba(255,255,255,.7));margin-top:2mm;letter-spacing:-.3pt;}
 .cv-sep{height:2pt;width:32mm;margin:5.5mm 0;background:linear-gradient(90deg,#22D3EE,rgba(255,255,255,.08));border-radius:2pt;}
-.cv-mod{font-size:12pt;font-weight:700;color:#fff;margin-bottom:1.5mm;}
+.cv-mod{font-size:12pt;font-weight:700;color:var(--txt,#fff);margin-bottom:1.5mm;}
 .cv-ver{font-size:7.5pt;color:rgba(255,255,255,.45);letter-spacing:.3pt;}
 .cv-grid2{margin-top:auto;padding-bottom:10mm;display:grid;grid-template-columns:1fr 1fr;gap:8pt;}
 .cv-cell{background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.2);border-radius:6pt;padding:10pt 12pt;}
 .cv-cl{font-size:7pt;font-weight:700;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.8pt;margin-bottom:4pt;}
-.cv-cv{font-size:11pt;font-weight:700;color:#fff;letter-spacing:-.2pt;}
+.cv-cv{font-size:11pt;font-weight:700;color:var(--txt,#fff);letter-spacing:-.2pt;}
 .cv-cv.cy{color:#22D3EE;}
 .cv-foot{background:rgba(0,0,0,.22);padding:5pt 18mm;flex-shrink:0;z-index:5;position:relative;display:flex;justify-content:space-between;align-items:center;border-top:.5pt solid rgba(255,255,255,.07);}
-.cv-ft{font-size:6.5pt;font-weight:600;color:rgba(255,255,255,.5);letter-spacing:.5pt;text-transform:uppercase;}
+.cv-ft{font-size:6.5pt;font-weight:600;color:var(--txt3,rgba(255,255,255,.5));letter-spacing:.5pt;text-transform:uppercase;}
 .cv-ft.cy{color:#06B6D4;}
 table.doc{width:210mm;table-layout:fixed;border-collapse:collapse;}
 .doc thead{display:table-header-group;}
@@ -43206,10 +43340,10 @@ table.doc{width:210mm;table-layout:fixed;border-collapse:collapse;}
 .blk{border:.5pt solid #E8EDF3;border-radius:var(--r-lg);margin:10pt 0 0;page-break-inside:avoid;}
 .blk-hdr{background:linear-gradient(135deg,#001E62,#0A3070);padding:7pt 12pt;display:flex;align-items:center;gap:8pt;}
 .blk-hdr-dot{width:8pt;height:8pt;border-radius:50%;background:linear-gradient(135deg,#06B6D4,#7C3AED);flex-shrink:0;}
-.blk-hdr-txt{font-size:10pt;font-weight:700;color:#fff;}
+.blk-hdr-txt{font-size:10pt;font-weight:700;color:var(--txt,#fff);}
 .blk-body{padding:10pt 12pt 11pt;background:#fff;}
 h1{font-size:14pt;font-weight:800;color:#001E62;margin:9pt 0 5pt;}
-h2{font-size:12pt;font-weight:700;color:#fff;background:linear-gradient(135deg,#001E62,#0A3070);padding:6.5pt 12pt;border-radius:var(--r) var(--r) 0 0;margin:16pt 0 0;display:flex;align-items:center;gap:8pt;page-break-after:avoid;page-break-inside:avoid;}
+h2{font-size:12pt;font-weight:700;color:var(--txt,#fff);background:linear-gradient(135deg,#001E62,#0A3070);padding:6.5pt 12pt;border-radius:var(--r) var(--r) 0 0;margin:16pt 0 0;display:flex;align-items:center;gap:8pt;page-break-after:avoid;page-break-inside:avoid;}
 h2::before{content:'';flex-shrink:0;width:3pt;height:14pt;background:#06B6D4;border-radius:2pt;}
 .h2-body{border:.5pt solid #E8EDF3;border-top:none;border-radius:0 0 var(--r) var(--r);padding:10pt 12pt 12pt;margin-bottom:0;background:#fff;}
 h3{font-size:10.5pt;font-weight:700;color:#001E62;border-left:3pt solid #06B6D4;padding-left:8pt;margin:10pt 0 4pt;page-break-after:avoid;page-break-inside:avoid;}
@@ -43219,7 +43353,7 @@ code{font-family:'Courier New',monospace;font-size:9pt;font-weight:700;color:#6B
 strong{font-weight:700;color:#0F172A;}em{font-style:italic;}
 .tbl-wrap{page-break-inside:avoid;margin:6pt 0 0;}
 table.tbl{width:100%;border-collapse:collapse;font-size:9.5pt;border:1px solid #D1D9E6;page-break-inside:avoid;}
-table.tbl th{background:#001E62;color:#fff;padding:5.5pt 9pt;text-align:left;font-weight:600;font-size:7.5pt;letter-spacing:.3pt;text-transform:uppercase;border-right:.5pt solid rgba(255,255,255,.07);}
+table.tbl th{background:#001E62;color:var(--txt,#fff);padding:5.5pt 9pt;text-align:left;font-weight:600;font-size:7.5pt;letter-spacing:.3pt;text-transform:uppercase;border-right:.5pt solid rgba(255,255,255,.07);}
 table.tbl th:last-child{border-right:none;}
 table.tbl td{padding:5pt 9pt;border-top:1px solid #D1D9E6;border-right:1px solid #D1D9E6;vertical-align:top;color:#1E3A5F;line-height:1.4;}
 table.tbl td:last-child{border-right:none;}
@@ -43270,7 +43404,7 @@ ol{margin:4pt 0 8pt 14pt;}ol li{display:list-item;}ol li::before{display:none;}
 .rh-name{font-size:10pt;font-weight:600;color:#0A3070;}
 .rh-menu{font-size:7.5pt;color:#5A7099;margin-top:2pt;}
 .sig-section{margin-top:var(--sp-section);page-break-inside:avoid;}
-.sig-hdr{background:#001E62;color:#fff;padding:7pt 12pt;border-radius:var(--r) var(--r) 0 0;font-size:8.5pt;font-weight:700;letter-spacing:.3pt;text-transform:uppercase;}
+.sig-hdr{background:#001E62;color:var(--txt,#fff);padding:7pt 12pt;border-radius:var(--r) var(--r) 0 0;font-size:8.5pt;font-weight:700;letter-spacing:.3pt;text-transform:uppercase;}
 .sig-body{border:.5pt solid #E8EDF3;border-top:none;border-radius:0 0 var(--r) var(--r);padding:14pt 12pt;display:flex;gap:16pt;background:#F9FAFB;}
 .sig-col{flex:1;}
 .sig-col-t{font-size:8pt;font-weight:700;color:#001E62;text-transform:uppercase;letter-spacing:.4pt;margin-bottom:9pt;padding-bottom:4pt;border-bottom:.5pt solid #D1D9E6;}
@@ -43280,20 +43414,20 @@ ol{margin:4pt 0 8pt 14pt;}ol li{display:list-item;}ol li::before{display:none;}
 .sig-div{width:.5pt;background:#D1D9E6;}
 .annexA{page-break-before:always;}
 .annex-hdr{background:linear-gradient(135deg,#001E62 0%,#0A3070 60%,#6B21A8 100%);padding:12pt 15mm;border-bottom:2pt solid #06B6D4;}
-.annex-hdr-t{font-size:12pt;font-weight:700;color:#fff;letter-spacing:-.2pt;}
-.annex-hdr-s{font-size:8pt;color:rgba(255,255,255,.5);margin-top:2pt;}
+.annex-hdr-t{font-size:12pt;font-weight:700;color:var(--txt,#fff);letter-spacing:-.2pt;}
+.annex-hdr-s{font-size:8pt;color:var(--txt3,rgba(255,255,255,.5));margin-top:2pt;}
 .annex-body{padding:15pt 15mm;}
 .annex-desc{font-size:10pt;color:#1E3A5F;line-height:1.45;margin-bottom:14pt;}
 .annex-logo-box{background:linear-gradient(135deg,#F9FAFB,#E0F7FB);border:.5pt solid #D1D9E6;border-radius:var(--r-lg);border-top:2pt solid #06B6D4;min-height:38mm;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:12pt 0;padding:14pt;}
 .annex-logo-ph{width:70mm;height:22mm;border-radius:var(--r);border:1pt dashed #D1D9E6;display:flex;align-items:center;justify-content:center;margin-bottom:8pt;}
 .annex-logo-hint{font-size:8pt;color:#5A7099;text-align:center;}
 .annex-table{width:100%;border-collapse:collapse;margin-top:10pt;font-size:9.5pt;}
-.annex-table th{background:#001E62;color:#fff;padding:6pt 9pt;border:.5pt solid rgba(255,255,255,.07);font-size:8pt;font-weight:700;text-transform:uppercase;letter-spacing:.3pt;}
+.annex-table th{background:#001E62;color:var(--txt,#fff);padding:6pt 9pt;border:.5pt solid rgba(255,255,255,.07);font-size:8pt;font-weight:700;text-transform:uppercase;letter-spacing:.3pt;}
 .annex-table td{padding:5.5pt 9pt;border:.5pt solid #E8EDF3;color:#1E3A5F;}
 .annex-seals{display:flex;gap:7pt;margin-top:12pt;}
 .annex-seal{border:.5pt solid #E8EDF3;border-radius:var(--r);background:#fff;padding:7pt 9pt;flex:1;display:flex;align-items:center;gap:7pt;border-top:2pt solid #06B6D4;}
 .annex-seal.pu{border-top-color:#6B21A8;}
-.seal-dot{width:14pt;height:14pt;border-radius:50%;background:#001E62;color:#fff;font-size:8pt;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.seal-dot{width:14pt;height:14pt;border-radius:50%;background:#001E62;color:var(--txt,#fff);font-size:8pt;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .seal-dot.pu{background:linear-gradient(135deg,#6B21A8,#7C3AED);}
 .seal-txt{font-size:8pt;font-weight:700;color:#001E62;line-height:1.3;}
 .seal-sub{font-size:7pt;font-weight:400;color:#5A7099;}
@@ -43358,7 +43492,7 @@ hr{border:none;border-top:1px solid #D1D9E6;margin:9pt 0;}
 <tbody><tr><td class="body-cell">${bodyHtml}${sigHtml}${annexHtml}</td></tr></tbody>
 </table>
 <div class="no-print" style="position:fixed;bottom:20px;right:20px;display:flex;gap:10px;z-index:9999;">
-  <button onclick="window.print()" style="background:linear-gradient(135deg,#001E62,#06B6D4);border:none;color:#fff;padding:11px 24px;border-radius:5px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,30,98,.45);">&#128229; Salvar PDF</button>
+  <button onclick="window.print()" style="background:linear-gradient(135deg,#001E62,#06B6D4);border:none;color:var(--txt,#fff);padding:11px 24px;border-radius:5px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,30,98,.45);">&#128229; Salvar PDF</button>
   <button onclick="window.close()" style="background:#F1F5F9;border:1px solid #E2E8F0;color:#475569;padding:11px 16px;border-radius:5px;font-size:12px;cursor:pointer;">&#x2715; Fechar</button>
 </div>
 <script>

@@ -32,6 +32,8 @@ const SERVICE_ROLE_KEY   = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const IBGE_BASE      = "https://servicodados.ibge.gov.br/api/v1/localidades";
 const VIACEP_BASE    = "https://viacep.com.br/ws";
 const BRASILAPI_BASE = "https://brasilapi.com.br/api";
+const CLICKSIGN_BASE = "https://app.clicksign.com";
+const CLICKSIGN_SBOX = "https://sandbox.clicksign.com";
 
 // Allow-list de origens (CORS). localhost:* é permitido em dev via regex.
 const ORIGIN_EXACT = new Set<string>([
@@ -290,6 +292,8 @@ Deno.serve(async (req) => {
         ibge: "/ibge/*",
         viacep: "/viacep/:cep",
         brasilapi: "/brasilapi/*",
+        clicksign: "/clicksign/*",
+        clicksign_sandbox: "/clicksign-sandbox/*",
       },
       security: {
         cors: "allow-list",
@@ -425,8 +429,22 @@ Deno.serve(async (req) => {
       return await proxyPublic(origin, `${BRASILAPI_BASE}${rest}${search}`, req);
     }
 
+    // ───── ClickSign (produção) ─────
+    // Contorna CORS da API ClickSign. access_token trafega como query param.
+    // JWT Supabase obrigatório (check global acima) — apenas usuários autenticados acessam.
+    if (path.startsWith("/clicksign/")) {
+      const rest = path.slice("/clicksign".length);
+      return await proxyPublic(origin, `${CLICKSIGN_BASE}${rest}${search}`, req);
+    }
+
+    // ───── ClickSign (sandbox) ─────
+    if (path.startsWith("/clicksign-sandbox/")) {
+      const rest = path.slice("/clicksign-sandbox".length);
+      return await proxyPublic(origin, `${CLICKSIGN_SBOX}${rest}${search}`, req);
+    }
+
     return jsonErr(origin, `Rota não encontrada: ${path}`, 404, {
-      hint: "Use /protheus/<path>, /ibge/*, /viacep/:cep ou /brasilapi/*",
+      hint: "Use /protheus/<path>, /ibge/*, /viacep/:cep, /brasilapi/*, /clicksign/* ou /clicksign-sandbox/*",
     });
 
   } catch (e) {
