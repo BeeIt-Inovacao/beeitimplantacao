@@ -12995,8 +12995,8 @@ function rndSync(){
         <div style="font-size:9px;color:var(--txt3);">${comDados}/${grupo.tabelas.length} com dados · ${grpTotal.toLocaleString('pt-BR')} registros</div>
         <div style="flex:1;height:1px;background:linear-gradient(to right,${grupo.cor}33,transparent);"></div>
         ${grupo.titulo.includes('Cadastros')
-          ? `<button onclick="fetchDictBlueprint(['SA1','SA2','SB1'])"
-              style="background:${grupo.cor}12;border:1px solid ${grupo.cor}33;color:${grupo.cor};border-radius:5px;padding:4px 12px;font-size:9px;font-weight:700;cursor:pointer;white-space:nowrap;">
+          ? `<button id="sync-cadastros-btn" onclick="fetchDictBlueprint(['SA1','SA2','SB1'])"
+              style="background:${grupo.cor}12;border:1px solid ${grupo.cor}33;color:${grupo.cor};border-radius:5px;padding:4px 12px;font-size:9px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s;">
               🔄 Sincronizar Cadastros
             </button>`
           : `<button onclick="syncGrupo(${JSON.stringify(grupo.tabelas.map(t=>t.alias))})"
@@ -13317,6 +13317,8 @@ async function fetchDictBlueprintSA1SB1(){
 async function fetchDictBlueprint(aliases){
   const EDGE=window.BEEIT_EDGE_URL||'https://dbaqvoatopfquaqgdptk.supabase.co/functions/v1/protheus-proxy';
   const el=document.getElementById('sync-blueprint-status');
+  const syncBtn=document.getElementById('sync-cadastros-btn');
+  if(syncBtn){ syncBtn.textContent='⏳ Sincronizando...'; syncBtn.disabled=true; syncBtn.style.opacity='.6'; }
   if(el) el.innerHTML='<span style="color:#60a5fa;">\u{1F504} Buscando dicionário '+aliases.join('/')+'...</span>';
   try{
     const r=await fetch(EDGE+'/protheus/api/v1/bda/dictionary/blueprint',{
@@ -13381,6 +13383,9 @@ async function fetchDictBlueprint(aliases){
     if(el) el.innerHTML=`<span style="color:#f87171;">❌ ${e.message}</span>`;
     if(typeof toast==='function') toast('❌ Blueprint: '+e.message.slice(0,60));
     return null;
+  }finally{
+    const b=document.getElementById('sync-cadastros-btn');
+    if(b){ b.textContent='🔄 Sincronizar Cadastros'; b.disabled=false; b.style.opacity='1'; }
   }
 }
 
