@@ -587,6 +587,28 @@ body::before{
 </div>
 <style>@keyframes bspin{to{transform:rotate(360deg)}}</style>
 
+<!-- ════ BEEIT PROGRESS OVERLAY — overlay genérico de processamento ════ -->
+<div id="beeit-process-overlay"
+  style="position:fixed;inset:0;z-index:99998;background:linear-gradient(135deg,#060F20 0%,#0D2B5E 50%,#001E62 100%);
+         display:none;flex-direction:column;align-items:center;justify-content:center;
+         font-family:'Inter',system-ui,sans-serif;">
+  <div style="text-align:center;max-width:380px;padding:24px;width:100%;">
+    <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:28px;">
+      Bee<span style="color:#06B6D4;">IT</span>
+    </div>
+    <div id="beeit-process-spinner"
+      style="width:52px;height:52px;border:3px solid rgba(56,212,245,.18);border-top-color:#38D4F5;
+             border-radius:50%;animation:bspin 0.8s linear infinite;margin:0 auto 22px;"></div>
+    <div id="beeit-process-msg"
+      style="font-size:12px;color:rgba(56,212,245,.85);letter-spacing:.06em;font-weight:600;
+             min-height:18px;transition:opacity .25s;"></div>
+    <div id="beeit-process-sub"
+      style="font-size:10px;color:rgba(255,255,255,.35);margin-top:8px;min-height:14px;transition:opacity .25s;"></div>
+    <div id="beeit-process-done"
+      style="display:none;font-size:14px;font-weight:700;margin-top:20px;letter-spacing:.02em;"></div>
+  </div>
+</div>
+
 <!-- ════ BEEIT AUTH — LOGIN OVERLAY ════ -->
 <div id="beeit-auth-overlay" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#060F20 0%,#0D2B5E 50%,#001E62 100%);display:none;align-items:center;justify-content:center;font-family:'Inter',system-ui,sans-serif;">
   <div style="width:100%;max-width:420px;padding:0 24px;">
@@ -1182,6 +1204,86 @@ window.beeitAdminSaveUser   = beeitAdminSaveUser;
 window.beeitAdminToggle     = beeitAdminToggle;
 window.beeitAdminLoadLog    = beeitAdminLoadLog;
 
+// ════════════════════════════════════════════════════════
+// BEEIT PROGRESS — overlay genérico de processamento
+// Uso:
+//   beeitProgress.start(['Consultando...', 'Gravando...'])
+//   beeitProgress.step('Etapa customizada')   // avança manualmente
+//   beeitProgress.done(true,  '✅ Sucesso!')
+//   beeitProgress.done(false, '❌ Erro: detalhe')
+// ════════════════════════════════════════════════════════
+window.beeitProgress = (function(){
+  let _timer = null;
+  let _idx   = 0;
+  let _steps = [];
+
+  function _el(id){ return document.getElementById('beeit-process-'+id); }
+
+  function _setMsg(main, sub, fade){
+    const m = _el('msg'), s = _el('sub');
+    if(!m) return;
+    if(fade){
+      m.style.opacity = '0';
+      if(s) s.style.opacity = '0';
+      setTimeout(function(){
+        m.textContent = main || '';
+        if(s) s.textContent = sub || '';
+        m.style.opacity = '1';
+        if(s) s.style.opacity = sub ? '1' : '0';
+      }, 220);
+    } else {
+      m.textContent = main || '';
+      if(s){ s.textContent = sub || ''; s.style.opacity = sub ? '1' : '0'; }
+    }
+  }
+
+  function start(steps){
+    _steps = Array.isArray(steps) ? steps : [steps || 'Processando…'];
+    _idx   = 0;
+    const ov      = document.getElementById('beeit-process-overlay');
+    const spinner = _el('spinner');
+    const doneEl  = _el('done');
+    if(!ov) return;
+    if(doneEl)  { doneEl.style.display = 'none'; doneEl.textContent = ''; }
+    if(spinner) { spinner.style.display = 'block'; }
+    _setMsg(_steps[0], '(' + _steps.length + ' etapas)');
+    ov.style.opacity = '0';
+    ov.style.display = 'flex';
+    requestAnimationFrame(function(){ ov.style.transition = 'opacity .3s'; ov.style.opacity = '1'; });
+    if(_timer) clearInterval(_timer);
+    _timer = setInterval(function(){
+      _idx++;
+      if(_idx < _steps.length){
+        _setMsg(_steps[_idx], 'etapa ' + (_idx+1) + ' de ' + _steps.length, true);
+      }
+    }, 2400);
+  }
+
+  function step(msg){
+    if(!_el('msg')) return;
+    _setMsg(msg, '', true);
+  }
+
+  function done(ok, msg){
+    if(_timer){ clearInterval(_timer); _timer = null; }
+    const ov      = document.getElementById('beeit-process-overlay');
+    const spinner = _el('spinner');
+    const doneEl  = _el('done');
+    if(spinner) spinner.style.display = 'none';
+    if(doneEl){
+      doneEl.textContent  = msg || (ok ? '✅ Concluído!' : '❌ Erro');
+      doneEl.style.color  = ok ? '#34d399' : '#f87171';
+      doneEl.style.display = 'block';
+    }
+    _setMsg('', '', true);
+    setTimeout(function(){
+      if(ov){ ov.style.opacity = '0'; setTimeout(function(){ ov.style.display = 'none'; }, 320); }
+    }, 1800);
+  }
+
+  return { start: start, step: step, done: done };
+})();
+
 // ── Auto-login por sessão salva ───────────────────────────
 (async function beeitInit() {
   console.log('[BeeIT Auth] beeitInit() pageload em', new Date().toISOString(), '- document.readyState =', document.readyState);
@@ -1202,7 +1304,25 @@ window.beeitAdminLoadLog    = beeitAdminLoadLog;
           beeitSession = refreshed;
           localStorage.setItem('beeit_session', JSON.stringify(refreshed));
         }
-        await beeitLoadProfile();
+        try {
+          await beeitLoadProfile();
+        } catch(pe) {
+          // 404 / schema cache = tabela profiles ausente (local dev). Mantém sessão com fallback JWT.
+          const isProfileMissing = /404|schema cache|profiles/i.test(pe.message);
+          if(isProfileMissing){
+            console.warn('[BeeIT Auth] beeitInit: profiles não encontrado, usando fallback JWT');
+            const meta = beeitSession.user?.user_metadata || {};
+            beeitProfile = {
+              id:    beeitSession.user?.id,
+              email: beeitSession.user?.email,
+              nome:  meta.nome || beeitSession.user?.email?.split('@')[0] || 'Usuário',
+              role:  meta.role || 'consultor',
+              ativo: true
+            };
+          } else {
+            throw pe; // Erro real de auth — deixa o catch externo limpar a sessão
+          }
+        }
         beeitShowApp();
         return;
       }
@@ -13320,6 +13440,13 @@ async function fetchDictBlueprint(aliases){
   const syncBtn=document.getElementById('sync-cadastros-btn');
   if(syncBtn){ syncBtn.textContent='⏳ Sincronizando...'; syncBtn.disabled=true; syncBtn.style.opacity='.6'; }
   if(el) el.innerHTML='<span style="color:#60a5fa;">\u{1F504} Buscando dicionário '+aliases.join('/')+'...</span>';
+  if(typeof beeitProgress!=='undefined') beeitProgress.start([
+    'Consultando cadastros ' + aliases.join(', ') + '…',
+    'Aguardando resposta do Protheus…',
+    'Retornando blueprint dos campos…',
+    'Validando estrutura e calculando hash…',
+    'Gravando snapshot no banco…'
+  ]);
   try{
     const r=await fetch(EDGE+'/protheus/api/v1/bda/dictionary/blueprint',{
       method:'POST',
@@ -13377,10 +13504,12 @@ async function fetchDictBlueprint(aliases){
     }
     window._protheusBlueprintSA1SB1=data; // compat legado
     if(el) el.innerHTML='<span style="color:#34d399;">✅ Dicionário '+aliases.join('/')+' sincronizado</span>';
+    if(typeof beeitProgress!=='undefined') beeitProgress.done(true,'✅ Dicionário '+aliases.join(', ')+' salvo com sucesso!');
     if(typeof toast==='function') toast('✅ Dicionário '+aliases.join('+')+' salvo no banco');
     return data;
   }catch(e){
     if(el) el.innerHTML=`<span style="color:#f87171;">❌ ${e.message}</span>`;
+    if(typeof beeitProgress!=='undefined') beeitProgress.done(false,'❌ '+e.message.slice(0,70));
     if(typeof toast==='function') toast('❌ Blueprint: '+e.message.slice(0,60));
     return null;
   }finally{
