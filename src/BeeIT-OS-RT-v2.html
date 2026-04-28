@@ -13148,7 +13148,7 @@ function rndSync(){
               style="background:${grupo.cor}12;border:1px solid ${grupo.cor}33;color:${grupo.cor};border-radius:5px;padding:4px 12px;font-size:9px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s;">
               🔄 Sincronizar Cadastros
             </button>`
-          : `<button onclick="syncGrupo(${JSON.stringify(grupo.tabelas.map(t=>t.alias))})"
+          : `<button onclick="syncGrupo(${JSON.stringify(grupo.tabelas.map(t=>t.alias)).replace(/"/g,"'")})"
               style="background:${grupo.cor}12;border:1px solid ${grupo.cor}33;color:${grupo.cor};border-radius:5px;padding:4px 12px;font-size:9px;font-weight:700;cursor:pointer;white-space:nowrap;">
               🚀 Sync grupo
             </button>`
