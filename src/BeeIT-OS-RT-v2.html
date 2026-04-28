@@ -822,7 +822,7 @@ function beeitShowApp() {
         window._beeitManagedProtheusUrl = rows[0].protheus_url;
       }
     } catch (e) {}
-    checkDictSnapshots().catch(() => {});
+    checkDictSnapshots().then(()=>{ try{ _refreshDictBadges(); }catch(e){} }).catch(() => {});
   })();
 }
 
@@ -2186,7 +2186,9 @@ window.beeitProgress = (function(){
     <div class="ph-acts">
       <button class="btn btn-g" onclick="xpExcelCT1()" title="Exportar Plano de Contas completo em Excel com múltiplas abas">📊 Excel CT1</button>
       <button class="btn btn-g" onclick="xpEnt('ct1')">⬇️ JSON</button>
-      
+      <button data-dict-ux onclick="fetchDictBlueprint(['CT1'])" style="background:rgba(56,212,245,.1);border:1px solid rgba(56,212,245,.3);color:#38D4F5;border-radius:6px;padding:7px 12px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;" title="Extrai blueprint SX3 via Edge protheus-proxy">📋 Sync Dicionário</button>
+      <button data-dict-ux onclick="openDictDrawer('CT1')" style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:#a78bfa;border-radius:6px;padding:7px 10px;font-size:10px;font-weight:700;cursor:pointer;" title="Ver Dicionário CT1">📖 CT1</button>
+      <span id="sync-st-CT1-hdr" style="font-size:10px;color:var(--txt3);font-weight:700;align-self:center;"></span>
     </div>
   </div>
   <div class="stats" id="st-ct"></div>
@@ -2262,7 +2264,9 @@ window.beeitProgress = (function(){
     <div class="ph-acts">
       <button class="btn btn-g" onclick="xpExcelCTT()" title="Exportar Centros de Custo em Excel com múltiplas abas">📊 Excel CTT</button>
       <button class="btn btn-g" onclick="xpEnt('ctt')">⬇️ JSON</button>
-      
+      <button data-dict-ux onclick="fetchDictBlueprint(['CTT'])" style="background:rgba(56,212,245,.1);border:1px solid rgba(56,212,245,.3);color:#38D4F5;border-radius:6px;padding:7px 12px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;" title="Extrai blueprint SX3 via Edge protheus-proxy">📋 Sync Dicionário</button>
+      <button data-dict-ux onclick="openDictDrawer('CTT')" style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:#a78bfa;border-radius:6px;padding:7px 10px;font-size:10px;font-weight:700;cursor:pointer;" title="Ver Dicionário CTT">📖 CTT</button>
+      <span id="sync-st-CTT-hdr" style="font-size:10px;color:var(--txt3);font-weight:700;align-self:center;"></span>
     </div>
   </div>
   <!-- Agente IA CTT -->
@@ -2323,6 +2327,9 @@ window.beeitProgress = (function(){
     <div class="ph-acts">
       <button id="btn-fiscal-agent" onclick="fiscalAgentAnalyze()" style="background:linear-gradient(135deg,#ea580c,#f97316);border:none;color:#fff;border-radius:7px;padding:8px 16px;font-size:11px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 12px rgba(249,115,22,.4);">🧠 Agente Tributarista IA</button>
       <button class="btn btn-g" onclick="xpEnt('cfop')">⬇️ TES + F2B JSON</button>
+      <button data-dict-ux onclick="fetchDictBlueprint(['SF4'])" style="background:rgba(56,212,245,.1);border:1px solid rgba(56,212,245,.3);color:#38D4F5;border-radius:6px;padding:7px 12px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;" title="Extrai blueprint SX3 via Edge protheus-proxy">📋 Sync Dicionário</button>
+      <button data-dict-ux onclick="openDictDrawer('SF4')" style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:#a78bfa;border-radius:6px;padding:7px 10px;font-size:10px;font-weight:700;cursor:pointer;" title="Ver Dicionário SF4">📖 SF4</button>
+      <span id="sync-st-SF4-hdr" style="font-size:10px;color:var(--txt3);font-weight:700;align-self:center;"></span>
     </div>
   </div>
   <div id="fiscal-agent-result" style="display:none;padding:0 22px 14px;"></div>
@@ -2370,6 +2377,9 @@ window.beeitProgress = (function(){
     </div>
     <div class="ph-acts">
       <button class="btn btn-g" onclick="exportSEDExcel()">📊 Exportar Excel</button>
+      <button data-dict-ux onclick="fetchDictBlueprint(['SED'])" style="background:rgba(56,212,245,.1);border:1px solid rgba(56,212,245,.3);color:#38D4F5;border-radius:6px;padding:7px 12px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;" title="Extrai blueprint SX3 via Edge protheus-proxy">📋 Sync Dicionário</button>
+      <button data-dict-ux onclick="openDictDrawer('SED')" style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:#a78bfa;border-radius:6px;padding:7px 10px;font-size:10px;font-weight:700;cursor:pointer;" title="Ver Dicionário SED">📖 SED</button>
+      <span id="sync-st-SED-hdr" style="font-size:10px;color:var(--txt3);font-weight:700;align-self:center;"></span>
     </div>
   </div>
   <div class="ok-box" style="margin-bottom:12px;">
@@ -2554,7 +2564,11 @@ window.beeitProgress = (function(){
   </div>
   <div class="ph-acts">
     <button class="btn btn-g" onclick="ativoExportTemplate()">📥 Template Excel</button>
-    
+    <button data-dict-ux onclick="fetchDictBlueprint(['SN1','SN3'])" style="background:rgba(56,212,245,.1);border:1px solid rgba(56,212,245,.3);color:#38D4F5;border-radius:6px;padding:7px 12px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;" title="Extrai blueprint SX3 via Edge protheus-proxy">📋 Sync Dicionário</button>
+    <button data-dict-ux onclick="openDictDrawer('SN1')" style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:#a78bfa;border-radius:6px;padding:7px 10px;font-size:10px;font-weight:700;cursor:pointer;" title="Ver Dicionário SN1">📖 SN1</button>
+    <span id="sync-st-SN1-hdr" style="font-size:10px;color:var(--txt3);font-weight:700;align-self:center;"></span>
+    <button data-dict-ux onclick="openDictDrawer('SN3')" style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:#a78bfa;border-radius:6px;padding:7px 10px;font-size:10px;font-weight:700;cursor:pointer;" title="Ver Dicionário SN3">📖 SN3</button>
+    <span id="sync-st-SN3-hdr" style="font-size:10px;color:var(--txt3);font-weight:700;align-self:center;"></span>
   </div></div>
   <div id="ativo-content"><div style="text-align:center;padding:30px;color:var(--txt3);">Carregando...</div></div>
 </div>
@@ -2566,7 +2580,11 @@ window.beeitProgress = (function(){
   </div>
   <div class="ph-acts">
     <button class="btn btn-g" onclick="se1se2ExportTemplate()">📥 Baixar Template Excel</button>
-    
+    <button data-dict-ux onclick="fetchDictBlueprint(['SE1','SE2'])" style="background:rgba(56,212,245,.1);border:1px solid rgba(56,212,245,.3);color:#38D4F5;border-radius:6px;padding:7px 12px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;" title="Extrai blueprint SX3 via Edge protheus-proxy">📋 Sync Dicionário</button>
+    <button data-dict-ux onclick="openDictDrawer('SE1')" style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:#a78bfa;border-radius:6px;padding:7px 10px;font-size:10px;font-weight:700;cursor:pointer;" title="Ver Dicionário SE1">📖 SE1</button>
+    <span id="sync-st-SE1-hdr" style="font-size:10px;color:var(--txt3);font-weight:700;align-self:center;"></span>
+    <button data-dict-ux onclick="openDictDrawer('SE2')" style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:#a78bfa;border-radius:6px;padding:7px 10px;font-size:10px;font-weight:700;cursor:pointer;" title="Ver Dicionário SE2">📖 SE2</button>
+    <span id="sync-st-SE2-hdr" style="font-size:10px;color:var(--txt3);font-weight:700;align-self:center;"></span>
   </div></div>
   <div id="se1se2-content">
     <div style="text-align:center;padding:30px;color:var(--txt3);">Carregando...</div>
@@ -2578,6 +2596,11 @@ window.beeitProgress = (function(){
 </div>
 <div class="pg" id="pg-condpag">
   <div class="ph"><div class="ph-left"><div class="ph-t">CONDIÇÃO DE PAGAMENTO — SE4</div><div class="ph-s">Agente IA · Gerador automático · MATA360 · Importação Protheus</div></div><div class="ph-acts" id="condpag-acts"></div></div>
+  <div data-dict-ux style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 0 12px;">
+    <button onclick="fetchDictBlueprint(['SE4'])" style="background:rgba(56,212,245,.1);border:1px solid rgba(56,212,245,.3);color:#38D4F5;border-radius:6px;padding:7px 12px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;" title="Extrai blueprint SX3 via Edge protheus-proxy">📋 Sync Dicionário</button>
+    <button onclick="openDictDrawer('SE4')" style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:#a78bfa;border-radius:6px;padding:7px 10px;font-size:10px;font-weight:700;cursor:pointer;" title="Ver Dicionário SE4">📖 SE4</button>
+    <span id="sync-st-SE4-hdr" style="font-size:10px;color:var(--txt3);font-weight:700;align-self:center;"></span>
+  </div>
   <div id="condpag-content"><div style="text-align:center;padding:30px;color:var(--txt3);">Carregando...</div></div>
 </div>
 
@@ -2714,6 +2737,9 @@ window.beeitProgress = (function(){
     </div>
     <div class="ph-acts">
       <button class="btn" style="background:var(--bg3);border:1px solid var(--bdr);" onclick="exportSB9Template()">📋 Baixar Template Vazio</button>
+      <button data-dict-ux onclick="fetchDictBlueprint(['SB9'])" style="background:rgba(56,212,245,.1);border:1px solid rgba(56,212,245,.3);color:#38D4F5;border-radius:6px;padding:7px 12px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;" title="Extrai blueprint SX3 via Edge protheus-proxy">📋 Sync Dicionário</button>
+      <button data-dict-ux onclick="openDictDrawer('SB9')" style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:#a78bfa;border-radius:6px;padding:7px 10px;font-size:10px;font-weight:700;cursor:pointer;" title="Ver Dicionário SB9">📖 SB9</button>
+      <span id="sync-st-SB9-hdr" style="font-size:10px;color:var(--txt3);font-weight:700;align-self:center;"></span>
     </div>
   </div>
   <div id="sendsync-content"></div>
@@ -3397,6 +3423,9 @@ CST-IBS/CBS;Descrição CST-IBS/CBS;cClassTrib;Descrição cClassTrib<br>
   <div class="ph-acts">
     <button class="btn btn-g" onclick="xpCTBAll()">⬇️ Exportar Completo</button>
     <button class="btn btn-p" style="font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.05em;" onclick="nav('sync')">🚀 ENVIAR AO PROTHEUS</button>
+    <button data-dict-ux onclick="fetchDictBlueprint(['CT5'])" style="background:rgba(56,212,245,.1);border:1px solid rgba(56,212,245,.3);color:#38D4F5;border-radius:6px;padding:7px 12px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;" title="Extrai blueprint SX3 via Edge protheus-proxy">📋 Sync Dicionário</button>
+    <button data-dict-ux onclick="openDictDrawer('CT5')" style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:#a78bfa;border-radius:6px;padding:7px 10px;font-size:10px;font-weight:700;cursor:pointer;" title="Ver Dicionário CT5">📖 CT5</button>
+    <span id="sync-st-CT5-hdr" style="font-size:10px;color:var(--txt3);font-weight:700;align-self:center;"></span>
   </div>
 </div>
 
@@ -13534,11 +13563,14 @@ async function _sha256hex(str){
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
-// Verifica snapshots existentes para SA1/SA2/SB1 e cacheia em window._dictSnapshotStatus
+// Aliases monitorados pelo painel de dicionário (cards de header e hub Sync)
+const _DICT_TRACKED_ALIASES=['SA1','SA2','SB1','CT1','CTT','CT5','SED','SE4','SE1','SE2','SA6','SEE','SF4','SB9','SN1','SN3'];
+
+// Verifica snapshots existentes para todos os aliases monitorados e cacheia em window._dictSnapshotStatus
 async function checkDictSnapshots(){
   try{
     const rows=await beeitSbFetch(
-      '/rest/v1/protheus_dict_snapshot?select=sx2_alias,campos,updated_at&sx2_alias=in.(SA1,SA2,SB1)'
+      '/rest/v1/protheus_dict_snapshot?select=sx2_alias,campos,updated_at&sx2_alias=in.('+_DICT_TRACKED_ALIASES.join(',')+')'
     );
     window._dictSnapshotStatus={};
     if(Array.isArray(rows)){
@@ -13555,13 +13587,17 @@ async function checkDictSnapshots(){
 
 // Atualiza os badges de dicionário nos cards já renderizados
 function _refreshDictBadges(){
-  ['SA1','SA2','SB1'].forEach(alias=>{
-    const el=document.getElementById('dict-snap-badge-'+alias);
-    if(!el) return;
+  const ok='<span style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.35);color:#34d399;border-radius:10px;padding:2px 7px;font-size:8px;font-weight:700;">🟢 Atualizado</span>';
+  const no='<span style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:#fbbf24;border-radius:10px;padding:2px 7px;font-size:8px;font-weight:700;">🟡 Sem dados</span>';
+  _DICT_TRACKED_ALIASES.forEach(alias=>{
     const s=window._dictSnapshotStatus?.[alias];
-    el.innerHTML=s?.hasData
-      ? '<span style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.35);color:#34d399;border-radius:10px;padding:2px 7px;font-size:8px;font-weight:700;">🟢 Atualizado</span>'
-      : '<span style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:#fbbf24;border-radius:10px;padding:2px 7px;font-size:8px;font-weight:700;">🟡 Sem dados</span>';
+    const html=s?.hasData?ok:no;
+    // Badge legado (cards SA1/SA2/SB1 do hub Sync)
+    const elOld=document.getElementById('dict-snap-badge-'+alias);
+    if(elOld) elOld.innerHTML=html;
+    // Badge novos cards de header (Contábil/Financeiro/Fiscal/Ativo Fixo)
+    const elHdr=document.getElementById('sync-st-'+alias+'-hdr');
+    if(elHdr) elHdr.innerHTML=html;
   });
 }
 
@@ -21444,7 +21480,11 @@ function rndSA6(){
     </div>
     <div class="ph-acts">
       <button class="btn btn-g" onclick="sa6ExportAll()">⬇️ Exportar Tudo</button>
-      
+      <button data-dict-ux onclick="fetchDictBlueprint(['SA6','SEE'])" style="background:rgba(56,212,245,.1);border:1px solid rgba(56,212,245,.3);color:#38D4F5;border-radius:6px;padding:7px 12px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;" title="Extrai blueprint SX3 via Edge protheus-proxy">📋 Sync Dicionário</button>
+      <button data-dict-ux onclick="openDictDrawer('SA6')" style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:#a78bfa;border-radius:6px;padding:7px 10px;font-size:10px;font-weight:700;cursor:pointer;" title="Ver Dicionário SA6">📖 SA6</button>
+      <span id="sync-st-SA6-hdr" style="font-size:10px;color:var(--txt3);font-weight:700;align-self:center;"></span>
+      <button data-dict-ux onclick="openDictDrawer('SEE')" style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:#a78bfa;border-radius:6px;padding:7px 10px;font-size:10px;font-weight:700;cursor:pointer;" title="Ver Dicionário SEE">📖 SEE</button>
+      <span id="sync-st-SEE-hdr" style="font-size:10px;color:var(--txt3);font-weight:700;align-self:center;"></span>
     </div>
   </div>
 
