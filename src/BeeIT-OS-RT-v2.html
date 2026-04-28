@@ -19084,7 +19084,7 @@ function rndConfig(){
       <div>
         <label style="font-size:9px;color:var(--txt3);display:block;margin-bottom:4px;">URL Base API REST</label>
         <input id="cfg-ptheus-url" value="${esc(protheusUrl)}" placeholder="https://protheus.empresa.com.br/api/framework/v1"
-          ${managedUrl?'readonly':''} style="width:100%;background:${managedUrl?'rgba(52,211,153,.06)':'var(--bg3)'};border:1px solid ${managedUrl?'rgba(52,211,153,.4)':'var(--bdr)'};border-radius:6px;padding:7px 10px;color:${managedUrl?'#34d399':'var(--txt)'};font-size:11px;font-family:monospace;${managedUrl?'cursor:default;':''}">
+          style="width:100%;background:${managedUrl?'rgba(52,211,153,.06)':'var(--bg3)'};border:1px solid ${managedUrl?'rgba(52,211,153,.4)':'var(--bdr)'};border-radius:6px;padding:7px 10px;color:${managedUrl?'#34d399':'var(--txt)'};font-size:11px;font-family:monospace;">
       </div>
       <div>
         <label style="font-size:9px;color:var(--txt3);display:block;margin-bottom:4px;">Empresa</label>
@@ -19106,7 +19106,8 @@ function rndConfig(){
     <div style="padding:0 16px 14px;">
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
         <button onclick="cfgTestProtheus()" style="background:#1a7a4a;border:none;color:#fff;border-radius:6px;padding:7px 16px;font-size:11px;font-weight:700;cursor:pointer;">🔌 Testar Conexão</button>
-        ${managedUrl?`<span style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.4);color:#34d399;border-radius:20px;padding:4px 12px;font-size:10px;font-weight:700;white-space:nowrap;">🔗 Conexão Gerenciada pela BeeIT</span>`:''}
+        <button id="cfg-save-conn-btn" onclick="cfgSaveProtheusConn()" style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.5);color:#34d399;border-radius:6px;padding:7px 16px;font-size:11px;font-weight:700;cursor:pointer;display:none;">💾 Salvar Conexão</button>
+        <span id="cfg-managed-badge">${managedUrl?`<span style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.4);color:#34d399;border-radius:20px;padding:4px 12px;font-size:10px;font-weight:700;white-space:nowrap;">🔗 Conexão Gerenciada pela BeeIT</span>`:''}</span>
         <button onclick="cfgPingEndpoints()" style="background:rgba(96,165,250,.15);border:1px solid rgba(96,165,250,.4);color:#60a5fa;border-radius:6px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;">📡 Testar Todos Endpoints (28)</button>
         <span id="cfg-ptheus-status" style="font-size:10px;color:var(--txt3);"></span>
       </div>
@@ -19480,7 +19481,49 @@ async function cfgTestProtheus(){
       ?`<span style="color:#fbbf24;font-weight:700;">⚠️ Servidor UP · CORS bloqueado</span>`
       :`<span style="color:#f87171;font-weight:700;">❌ Servidor inacessível</span>`;
 
+  const saveBtn=document.getElementById('cfg-save-conn-btn');
+  if(saveBtn) saveBtn.style.display=conectado?'inline-block':'none';
+
   if(detail) detail.innerHTML=`<div style="background:var(--bg3);border-radius:8px;padding:12px;margin-top:8px;">${html}</div>`;
+}
+
+async function cfgSaveProtheusConn(){
+  const url  = (document.getElementById('cfg-ptheus-url')?.value||'').trim();
+  const emp  = (document.getElementById('cfg-ptheus-emp')?.value||'').trim();
+  const fil  = (document.getElementById('cfg-ptheus-fil')?.value||'').trim();
+  const user = (document.getElementById('cfg-ptheus-user')?.value||'').trim();
+  const pass = (document.getElementById('cfg-ptheus-pass')?.value||'').trim();
+  if(!url||!emp||!fil||!user||!pass){
+    if(typeof toast==='function') toast('⚠️ Preencha URL, Empresa, Filial, Usuário e Senha antes de salvar');
+    return;
+  }
+  const adminEmail   = beeitSession?.user?.email||'';
+  const displayName  = (typeof beeitProfile!=='undefined'&&beeitProfile?.nome) || adminEmail.split('@')[0] || 'Empresa';
+  const basicAuthB64 = btoa(user+':'+pass);
+  const btn = document.getElementById('cfg-save-conn-btn');
+  if(btn){ btn.textContent='⏳ Salvando...'; btn.disabled=true; }
+  try{
+    const result = await beeitSbFetch('/rest/v1/rpc/provision_tenant_protheus',{
+      method:'POST',
+      body: JSON.stringify({
+        p_display_name:    displayName,
+        p_protheus_url:    url,
+        p_protheus_env:    'P',
+        p_protheus_company:emp,
+        p_protheus_filial: fil,
+        p_basic_auth_b64:  basicAuthB64,
+        p_admin_email:     adminEmail
+      })
+    });
+    if(result?.error) throw new Error(result.error.message||JSON.stringify(result.error));
+    if(typeof toast==='function') toast('✅ Conexão salva com sucesso! Dados persistidos no banco.');
+    const badge = document.getElementById('cfg-managed-badge');
+    if(badge) badge.innerHTML='<span style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.4);color:#34d399;border-radius:20px;padding:4px 12px;font-size:10px;font-weight:700;white-space:nowrap;">🔗 Conexão Gerenciada pela BeeIT</span>';
+  }catch(e){
+    if(typeof toast==='function') toast('❌ Erro ao salvar conexão: '+(e.message||String(e)).slice(0,90));
+  }finally{
+    if(btn){ btn.textContent='💾 Salvar Conexão'; btn.disabled=false; }
+  }
 }
 
 function cfgMostrarTicketCloud(){
@@ -47138,9 +47181,35 @@ window.rndAssessments = rndAssessments;
 (function(){
   var _ddAlias='', _ddCampos=[];
 
+  const _DD_META = {
+    SA1:{desc:'Clientes',       icon:'👥'},
+    SA2:{desc:'Fornecedores',   icon:'🏭'},
+    SB1:{desc:'Produtos',       icon:'📦'},
+    CT1:{desc:'Plano de Contas',icon:'📊'},
+    CTT:{desc:'Centro de Custo',icon:'🏢'},
+    SED:{desc:'Natureza Fin.',  icon:'💹'},
+    SE1:{desc:'Contas a Receber',icon:'📥'},
+    SE2:{desc:'Contas a Pagar', icon:'📤'},
+  };
+
+  function _mockVal(c){
+    const t=c.tipo||'C';
+    if(t==='N') return c.decimal>0?1234.56:1;
+    if(t==='D') return '20260101';
+    if(t==='L') return '1';
+    if(t==='M') return 'Observação de exemplo';
+    const tam=c.tamanho||10;
+    if((c.campo||'').endsWith('COD')||(c.campo||'').endsWith('CODIGO')) return '000001';
+    if((c.campo||'').endsWith('NOME')||(c.campo||'').endsWith('RAZAO')) return 'EMPRESA EXEMPLO LTDA';
+    if((c.campo||'').endsWith('CGC')||(c.campo||'').endsWith('CNPJ')) return '12.345.678/0001-99';
+    if((c.campo||'').endsWith('CEP')) return '01310-100';
+    if((c.campo||'').endsWith('EMAIL')) return 'contato@exemplo.com.br';
+    return 'EXEMPLO'.slice(0,tam);
+  }
+
   window.openDictDrawer = function(alias){
     _ddAlias = alias;
-    const snap = window._dictSnapshotStatus?.[alias];
+    const snap    = window._dictSnapshotStatus?.[alias];
     const drawer  = document.getElementById('dict-drawer');
     const overlay = document.getElementById('dict-drawer-overlay');
     const title   = document.getElementById('dict-drawer-title');
@@ -47150,19 +47219,23 @@ window.rndAssessments = rndAssessments;
     const search  = document.getElementById('dict-drawer-search');
     if(!drawer) return;
 
-    const icons = {SA1:'👥',SA2:'🏭',SB1:'📦'};
-    icon.textContent = icons[alias]||'📖';
-    title.textContent = alias+' — Dicionário Protheus';
+    const meta = _DD_META[alias]||{desc:'Tabela Protheus',icon:'📖'};
+    const EDGE_PATH = '/api/v1/bda/dynamic';
+
+    icon.textContent = meta.icon;
+    title.innerHTML  = `<strong style="color:#38D4F5;">${alias}</strong> <span style="color:var(--txt3,#6b7280);font-weight:400;">— ${meta.desc}</span>`;
+    sub.innerHTML    = `<span style="background:rgba(52,211,153,.18);color:#34d399;border-radius:4px;padding:1px 7px;font-size:9px;font-weight:700;font-family:monospace;">POST</span>
+      <span style="color:#6b7280;font-size:9px;margin-left:5px;font-family:monospace;">${EDGE_PATH}</span>`;
 
     if(!snap?.hasData){
-      sub.textContent = 'Sem snapshot salvo';
-      body.innerHTML = '<div style="color:#fbbf24;padding:20px 0;font-size:11px;">🟡 Nenhum snapshot encontrado para '+alias+'.<br><br>Clique em <strong>🔄 Sincronizar Cadastros</strong> para buscar o dicionário do Protheus.</div>';
+      sub.innerHTML += ' <span style="color:#fbbf24;font-size:9px;">· sem snapshot</span>';
+      body.innerHTML = `<div style="color:#fbbf24;padding:20px 0;font-size:11px;">🟡 Nenhum snapshot encontrado para ${alias}.<br><br>Clique em <strong>🔄 Sincronizar Cadastros</strong> para buscar o dicionário do Protheus.</div>`;
       _ddCampos = [];
     } else {
       _ddCampos = snap.campos||[];
       const dt = new Date(snap.updatedAt);
-      sub.textContent = _ddCampos.length+' campos · atualizado '+dt.toLocaleString('pt-BR');
-      _renderDrawerCampos(_ddCampos);
+      sub.innerHTML += ` <span style="color:#6b7280;font-size:9px;">· ${_ddCampos.length} campos · ${dt.toLocaleString('pt-BR')}</span>`;
+      _renderSwaggerBody(_ddCampos, alias);
     }
 
     if(search) search.value='';
@@ -47190,7 +47263,7 @@ window.rndAssessments = rndAssessments;
           return s.toLowerCase().includes(q.toLowerCase());
         })
       : _ddCampos;
-    _renderDrawerCampos(filtered);
+    _renderSchemaRows(filtered, document.getElementById('dict-drawer-schema-rows'));
   };
 
   window._dictDrawerCopyJson = function(){
@@ -47200,38 +47273,83 @@ window.rndAssessments = rndAssessments;
     }catch(e){}
   };
 
-  function _renderDrawerCampos(campos){
+  function _renderSwaggerBody(campos, alias){
     const body = document.getElementById('dict-drawer-body');
     if(!body) return;
+
+    // ── Seção 1: Request Payload ──────────────────────────────────────────
+    const reqPayload = JSON.stringify({
+      aliases:[alias],
+      options:{scope:'MANDATORY_AND_KEYS',include_custom:true,include_mock:true}
+    },null,2);
+
+    // ── Seção 3: Mock Data (gerado a partir dos campos) ───────────────────
+    const mockObj = {};
+    campos.slice(0,8).forEach(c=>{ mockObj[c.campo]=_mockVal(c); });
+    const mockJson = JSON.stringify({status:'success',data:[mockObj]},null,2);
+
+    body.innerHTML = `
+      <!-- Seção 1: Request Payload -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:10px;font-weight:700;color:#60a5fa;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+          <span style="background:rgba(96,165,250,.15);border:1px solid rgba(96,165,250,.3);border-radius:4px;padding:1px 8px;">📨 Request — Payload</span>
+        </div>
+        <pre style="background:#0d1117;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:12px;margin:0;
+                    font-size:10px;color:#e6edf3;font-family:monospace;overflow-x:auto;line-height:1.6;white-space:pre-wrap;">${reqPayload}</pre>
+      </div>
+
+      <!-- Seção 2: Response Schema -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:10px;font-weight:700;color:#a78bfa;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+          <span style="background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.3);border-radius:4px;padding:1px 8px;">📋 Response — Schema de Campos</span>
+        </div>
+        <div style="background:#0d1117;border:1px solid rgba(255,255,255,.08);border-radius:8px;overflow:hidden;">
+          <div style="display:grid;grid-template-columns:130px 36px 58px 1fr;gap:6px;padding:6px 10px;
+                      font-size:9px;color:#6b7280;border-bottom:1px solid rgba(255,255,255,.06);font-weight:700;letter-spacing:.04em;">
+            <span>CAMPO</span><span style="text-align:center;">TIPO</span><span style="text-align:right;">TAM</span><span>TÍTULO / FLAGS</span>
+          </div>
+          <div id="dict-drawer-schema-rows" style="max-height:260px;overflow-y:auto;"></div>
+        </div>
+      </div>
+
+      <!-- Seção 3: Mock Data -->
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#34d399;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+          <span style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.3);border-radius:4px;padding:1px 8px;">🧪 Mock — Exemplo de Resposta</span>
+        </div>
+        <pre style="background:#0d1117;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:12px;margin:0;
+                    font-size:10px;color:#e6edf3;font-family:monospace;overflow-x:auto;line-height:1.6;white-space:pre-wrap;">${mockJson}</pre>
+      </div>`;
+
+    _renderSchemaRows(campos, document.getElementById('dict-drawer-schema-rows'));
+  }
+
+  function _renderSchemaRows(campos, el){
+    if(!el) return;
     if(!campos.length){
-      body.innerHTML='<div style="color:#6b7280;padding:16px 0;">Nenhum campo encontrado.</div>';
+      el.innerHTML='<div style="color:#6b7280;padding:12px 10px;font-size:10px;">Nenhum campo encontrado.</div>';
       return;
     }
-    const rows = campos.map(c=>{
+    el.innerHTML = campos.map(c=>{
       const tipo   = c.tipo||'C';
       const tam    = c.tamanho!=null?c.tamanho:'—';
       const dec    = c.decimal!=null&&c.decimal>0?'.'+c.decimal:'';
-      const obrig  = c.obrigat?'<span style="color:#f87171;font-size:8px;font-weight:700;">OBR</span>':'';
-      const isKey  = c.is_key?'<span style="color:#fbbf24;font-size:8px;font-weight:700;">KEY</span>':'';
-      const custom = c.is_custom?'<span style="color:#a78bfa;font-size:8px;font-weight:700;">USR</span>':'';
+      const obrig  = c.obrigat ?`<span style="background:rgba(248,113,113,.15);color:#f87171;border-radius:3px;padding:0 5px;font-size:8px;font-weight:700;">OBR</span>`:'';
+      const isKey  = c.is_key  ?`<span style="background:rgba(251,191,36,.15);color:#fbbf24;border-radius:3px;padding:0 5px;font-size:8px;font-weight:700;">KEY</span>`:'';
+      const custom = c.is_custom?`<span style="background:rgba(167,139,250,.15);color:#a78bfa;border-radius:3px;padding:0 5px;font-size:8px;font-weight:700;">USR</span>`:'';
       const tipoColor = {C:'#38D4F5',N:'#34d399',D:'#fbbf24',L:'#f472b6',M:'#60a5fa'}[tipo]||'#9ca3af';
-      return `<div style="display:grid;grid-template-columns:120px 32px 56px 1fr;gap:6px;align-items:center;
-                padding:5px 8px;border-radius:5px;border-bottom:1px solid rgba(255,255,255,.04);">
-        <code style="font-size:10px;color:#f9fafb;font-weight:700;">${c.campo||''}</code>
-        <span style="font-size:10px;color:${tipoColor};font-weight:700;text-align:center;">${tipo}</span>
-        <span style="font-size:9px;color:#6b7280;text-align:right;">${tam}${dec}</span>
-        <div style="display:flex;align-items:center;gap:4px;min-width:0;">
-          <span style="font-size:9px;color:#d1d5db;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.titulo||''}</span>
+      return `<div style="display:grid;grid-template-columns:130px 36px 58px 1fr;gap:6px;align-items:center;
+                padding:5px 10px;border-bottom:1px solid rgba(255,255,255,.03);">
+        <code style="font-size:10px;color:#e6edf3;font-weight:700;">${c.campo||''}</code>
+        <span style="font-size:10px;color:${tipoColor};font-weight:700;text-align:center;
+              background:${tipoColor}18;border-radius:3px;padding:1px 0;">${tipo}</span>
+        <span style="font-size:9px;color:#6b7280;text-align:right;font-family:monospace;">${tam}${dec}</span>
+        <div style="display:flex;align-items:center;gap:3px;min-width:0;flex-wrap:wrap;">
+          <span style="font-size:9px;color:#d1d5db;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;">${c.titulo||''}</span>
           ${obrig}${isKey}${custom}
         </div>
       </div>`;
     }).join('');
-
-    body.innerHTML = `<div style="font-size:9px;color:#6b7280;padding:4px 8px 8px;display:grid;
-        grid-template-columns:120px 32px 56px 1fr;gap:6px;">
-      <span>CAMPO</span><span style="text-align:center;">TIPO</span>
-      <span style="text-align:right;">TAM</span><span>TÍTULO</span>
-    </div>${rows}`;
   }
 })();
 </script>
