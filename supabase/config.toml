@@ -12,7 +12,7 @@ enabled = false
 [api]
 enabled = true
 port = 54321
-schemas = ["public", "graphql_public"]
+schemas = ["public", "graphql_public", "vault"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
@@ -24,6 +24,10 @@ jwt_expiry = 3600
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
 enable_signup = true
+
+[auth.hook.custom_access_token]
+enabled = true
+uri = "pg-functions://postgres/public/custom_access_token_hook"
 
 [storage]
 enabled = true
