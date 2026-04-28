@@ -10,6 +10,7 @@
 
 | Data | Sessão | Sprints | Resumo |
 |---|---|---|---|
+| 2026-04-28 | [S-2026-04-28-G](#s-2026-04-28-g) | SEC · GOV | Laudo de segurança (RLS, JWT, anon key, tabelas sem homologação) + prompt Gemini como analista de backlog + tasks.md incremental |
 | 2026-04-28 | [S-2026-04-28-F](#s-2026-04-28-f) | S6+ UX | Drawer dicionário, btn Salvar Conexão→RPC provision, overlay genérico, loading Sincronizar, tabelas legadas criadas, dev.sh |
 | 2026-04-28 | [S-2026-04-28-E](#s-2026-04-28-e) | S5.6 + prep S5.7 | E2E local validado: Auth Hook, Vault, Edge→Protheus real→snapshot (HTTP 201) |
 | 2026-04-28 | [S-2026-04-28-D](#s-2026-04-28-d) | Git Flow | Sync develop→feature + integração ClickSign na Edge v3.1 + propagação de regras IA |
@@ -1055,6 +1056,108 @@ SELECT ut.tenant_id, ut.role, t.basic_auth_ref
 | `supabase/migrations/20260427100100_auth_hook_vault_alias.sql` | Migration nova | ✅ criada · commitada `6de6d38` |
 | `docs/SUPABASE-DEPLOY-PLAN.md` | Doc novo | ✅ criado · commitado `6d28831` |
 | `docs/ROADMAP.md` | Atualizado | ✅ S6 ✅ · ADR-010 · renumeração · S5 corrigido · commitado `cd051f5` |
+
+---
+
+## S-2026-04-28-G
+**Data:** 2026-04-28
+**Branch:** `feature/os-rt-modularization`
+**Commits:** sem commits novos (sessão de análise e governança)
+**Roadmap:** SEC (Security Audit) · GOV (Governança)
+
+---
+
+### Contexto
+
+Sessão focada em análise de segurança e governança após o deploy das migrations SaaS e Edge v3.1. O usuário anexou o dump de schema de produção (`schemas_supabase_tenant_id_prd.md`) e solicitou um laudo técnico antes de qualquer nova ação. Também foi criado um prompt de sistema para o Gemini 3.1 Pro no Antigravity atuar como analista conversacional de backlog, e o arquivo `Governanca/tasks.md` foi estruturado como diário incremental de sessões.
+
+---
+
+### Tarefa G.1 — Laudo de Segurança (schema produção)
+
+**Arquivo analisado:** `schemas_supabase_tenant_id_prd.md` (dump de schema remoto, 600+ linhas — fora do repo, .gitignore)
+
+#### O que foi analisado
+
+1. **RLS nas tabelas legadas** — `profiles`, `clientes`, `documentos`, `access_log` tinham políticas escritas mas `ENABLE ROW LEVEL SECURITY` **ausente** → RLS inativo. Dados acessíveis a qualquer usuário autenticado via PostgREST. Risco crítico detectado. Fix aplicado em sessão anterior via migration P0 `20260427120000_enable_rls_legacy_tables.sql` (commit `25283d7`).
+2. **JWT claims** — `custom_access_token_hook` injeta `tenant_id`, `role_in_tenant`, `vault_alias` no JWT. Validação: somente via `user_tenant` (vínculo mais antigo). Troca de tenant exige `refreshSession()`.
+3. **Anon Key no HTML** — A Supabase Anon Key é pública por design e está no HTML do monólito. Aceitável desde que RLS esteja ativo em todas as tabelas (condição agora atendida pós-P0).
+4. **Tabelas novas em produção sem homologação** — `protheus_dict_snapshot`, `tenant_protheus_config`, `user_tenant`, `sx2_alias_map` foram deployadas diretamente em produção via `supabase db push` sem passar por ambiente de homologação. O usuário **discordou** desta abordagem. Decisão: futuras migrations devem ser validadas em Supabase Local antes de promover.
+5. **Auth Hook ativo em produção** — Risco de quebra de login se hook retornar erro. Recomendação: manter Auth Hook suspenso no Dashboard até que S5.6 (E2E local) seja validado. Sessão P0 (S-2026-04-28-B) já havia suspendido o hook.
+
+#### Tabelas Supabase impactadas (análise)
+
+| Tabela | RLS pré-P0 | RLS pós-P0 | Risco |
+|---|---|---|---|
+| `profiles` | ❌ ENABLE ausente | ✅ ENABLED | 🔴→🟢 |
+| `clientes` | ❌ ENABLE ausente | ✅ ENABLED | 🔴→🟢 |
+| `documentos` | ❌ ENABLE ausente | ✅ ENABLED | 🔴→🟢 |
+| `access_log` | ❌ ENABLE ausente | ✅ ENABLED | 🔴→🟢 |
+| `protheus_dict_snapshot` | ✅ (nova) | ✅ | 🟢 |
+| `tenant_protheus_config` | ✅ (nova) | ✅ | 🟢 |
+| `user_tenant` | ✅ (nova) | ✅ | 🟢 |
+
+#### Pendências identificadas no laudo
+
+- [ ] Audit periódico de `pg_class.relrowsecurity` via query de monitoramento
+- [ ] Todas as migrations futuras: `supabase start` → testar local → `supabase db push` (nunca direto em prod)
+- [ ] Quando Auth Hook for reativado: smoke test imediato de login + JWT claims
+- [ ] Rate-limit na Edge Function (ainda sem implementação)
+
+---
+
+### Tarefa G.2 — Prompt Gemini (Analista de Backlog)
+
+**Artefato:** Prompt de sistema para Gemini 3.1 Pro no Antigravity (VS Code)
+**Arquivo:** Não persistido em repo — entregue como texto na sessão
+
+#### O que foi gerado
+
+Um prompt de sistema em dois blocos:
+
+**Bloco 1 — Role/instrução:**
+- Gemini atua como analista crítico de backlog (não como executor)
+- Critica respostas anteriores do Claude, aponta lacunas, sugere próximas perguntas
+- Faz 2–3 perguntas por turno, prioriza segurança > entrega > custo
+- Estilo: direto, técnico, sem enrolação
+
+**Bloco 2 — Briefing do projeto (contexto):**
+- Stack: Supabase + Edge Functions Deno + Hostinger + TOTVS Protheus Cloud
+- Arquitetura: monólito 46.786 linhas + Strangler Pattern SaaS
+- Sprints concluídas: S0→S7 + R1 + P0
+- Pendências: tenant provisioning (aguardando credenciais Protheus), merge final das branches, S8 (firewall), S9 (módulo dict-viewer)
+- Riscos ativos: Auth Hook suspenso, tabelas prod sem homologação local, branch develop divergida
+
+---
+
+### Tarefa G.3 — Estruturação de `Governanca/tasks.md`
+
+**Arquivo:** `Governanca/tasks.md`
+**Status:** Descoberto já existente com 1122 linhas e 8 sessões documentadas
+
+#### O que foi feito
+
+- Verificado que o arquivo já continha histórico completo (sessões S-2026-04-27-A até S-2026-04-28-F)
+- Adicionada entrada no índice para esta sessão (S-2026-04-28-G) via `Edit` cirúrgico
+- Estrutura do arquivo confirmada: índice no topo → sessões mais recentes primeiro → template ao final
+- Arquivo está no `.gitignore`? **Não** — está em `Governanca/tasks.md` e **não** está no gitignore (apenas `Governanca/bdapowered.html` está). Portanto, pode ser commitado.
+
+---
+
+### Resumo de artefatos desta sessão
+
+| Artefato | Tipo | Status |
+|---|---|---|
+| Laudo de segurança (schema produção) | Análise (verbal) | ✅ entregue — sem commit |
+| Prompt Gemini analista de backlog | Texto (não persistido) | ✅ entregue na sessão |
+| `Governanca/tasks.md` — índice G | Atualização incremental | ✅ índice atualizado + bloco G adicionado |
+
+### Pendências pós-sessão
+
+- [ ] Commitar `Governanca/tasks.md` (não está no .gitignore, pode ser versionado)
+- [ ] Reativar Auth Hook após validação E2E local (S5.6)
+- [ ] Provisionar tenant com credenciais Protheus reais (`scripts/setup-tenant.js`)
+- [ ] Validar pipeline: `supabase start` → migration local → smoke test → `supabase db push`
 
 ---
 
