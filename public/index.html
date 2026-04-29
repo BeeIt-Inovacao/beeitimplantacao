@@ -980,6 +980,14 @@ function beeitStopAutoRefresh() {
 }
 
 
+// 🚨 [SECURITY WARNING — CWE-602]: ADMIN IAM LOGIC EXPOSED IN CLIENT.
+// All functions below (beeitAdminFetch, beeitAdminCreateUser, beeitAdminSaveUser, etc.)
+// handle user provisioning and role management directly in the browser bundle.
+// This reveals the admin-users Edge Function API structure to any authenticated user.
+// RISK: Caller authentication relies entirely on the backend Edge Function (admin-users);
+//       if that function lacks role enforcement, privilege escalation is possible.
+// TODO (Sprint 6): Extract all IAM operations to admin-users Edge Function.
+//                  The browser should only POST to /admin-users; logic stays server-side.
 // ════════════════════════════════════════════════════════════════
 // BEEIT ADMIN — Painel de Gerenciamento de Usuários
 // ════════════════════════════════════════════════════════════════
@@ -1304,6 +1312,7 @@ window.beeitAdminEditUser   = beeitAdminEditUser;
 window.beeitAdminSaveUser   = beeitAdminSaveUser;
 window.beeitAdminToggle     = beeitAdminToggle;
 window.beeitAdminLoadLog    = beeitAdminLoadLog;
+// 🚨 [END SECURITY WARNING] — IAM Client-Side Logic Block ends here.
 
 // ════════════════════════════════════════════════════════
 // BEEIT PROGRESS — overlay genérico de processamento
@@ -13530,36 +13539,6 @@ function syncAllJsonBatch(){
 
 // syncAll legado (compatibilidade)
 function syncAll(){syncAllJsonBatch();}
-
-// ── Sprint 7 — Extração de dicionário SA1/SB1 via Edge Function ──────────
-async function fetchDictBlueprintSA1SB1(){
-  const EDGE=window.BEEIT_EDGE_URL||'https://dbaqvoatopfquaqgdptk.supabase.co/functions/v1/protheus-proxy';
-  const el=document.getElementById('sync-blueprint-status');
-  if(el) el.innerHTML='<span style="color:#60a5fa;">\u{1F504} Buscando dicionário SA1/SB1...</span>';
-  try{
-    const r=await fetch(EDGE+'/protheus/api/v1/bda/dictionary/blueprint',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        aliases:['SA1','SB1'],
-        options:{scope:'MANDATORY_AND_KEYS',include_custom:true,include_f3_combo:true,include_mock:true}
-      }),
-      signal:AbortSignal.timeout(15000)
-    });
-    if(!r.ok) throw new Error('HTTP '+r.status+' — Falha na comunicação com o backend (Edge/Protheus). Verifique credenciais e URL em Configurações.');
-    const data=await r.json();
-    window._protheusBlueprintSA1SB1=data;
-    if(el) el.innerHTML='<span style="color:#34d399;">\u2705 Blueprint SA1/SB1 recebido</span>';
-    if(typeof toast==='function') toast('\u2705 Dicionário SA1/SB1 carregado via Edge Function');
-    return data;
-  }catch(e){
-    if(el) el.innerHTML=`<span style="color:#f87171;">\u274C ${e.message}</span>`;
-    if(typeof toast==='function') toast('\u274C Blueprint SA1/SB1: '+e.message.slice(0,60));
-    return null;
-  }
-}
-
-
 
 
 // ── Sprint R1 — fetchDictBlueprint generalizado (array de aliases) ───────
