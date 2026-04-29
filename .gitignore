@@ -60,8 +60,21 @@ clientes/
 .nfs*
 
 # ───────── HUD local privado ─────────
+/governanca/
+Governanca/
+Governanca/*
 Governanca/bdapowered.html
+Governanca/app/
 bdapowered.html
 
 # ───────── Dev local ─────────
 .logs/
+
+# ───────── BdaPowered: AI Methodology & Test IP ─────────
+CLAUDE.md
+docs/CLAUDE_CODE_*.md
+Governanca/tasks.md
+scripts/test-extract-dict.js
+scripts/run-setup-secure.js
+topology.txt
+
