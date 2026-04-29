@@ -36480,8 +36480,7 @@ function _m41CaptureMasterHtml() {
     window.open = originalOpen;
   }
   // Remove UI chrome do template de impressão antes de mandar pro PDFShift:
-  //   - <div class="no-print">…</div> (botões "Salvar PDF" / "Fechar")
-  //   - <script>…window.print()…</script> (auto-print da janela popup)
+  // botões "Salvar PDF" / "Fechar" (div.no-print) e auto-print da popup.
   captured = captured
     .replace(/<div\s+class=["']no-print["'][\s\S]*?<\/div>/gi, '')
     .replace(/<script>[\s\S]*?window\.print\(\)[\s\S]*?<\/script>/gi, '');
