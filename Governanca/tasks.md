@@ -12,6 +12,9 @@ Autor: Bruno Daniel
 
 | Data       | Sessão                            | Sprints          | Resumo                                                                                                                           |
 | ---------- | --------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-04-29 | [S-2026-04-29-D](#s-2026-04-29-d) | SEC-2 · GOV      | Gatekeeper SAST local: motor Python oculto (.gatekeeper/) + HUD tab Auditoria com fetch ao servidor porta 54320, offline badge, findings agrupados por severidade |
+| 2026-04-29 | [S-2026-04-29-C](#s-2026-04-29-c) | SEC-1 · DevOps   | Auditoria CWE-602: remoção código morto (fetchDictBlueprintSA1SB1), marcação bloco IAM, SECURITY-AUDIT.md, fix dev.sh PROJECT_ROOT |
+| 2026-04-29 | [S-2026-04-29-B](#s-2026-04-29-b) | R1.2-diag        | Diagnóstico cirúrgico: syncGrupo vs fetchDictBlueprint (propósitos ortogonais) + bug IDs hardcoded + proposta de refatoração       |
 | 2026-04-29 | [S-2026-04-29-A](#s-2026-04-29-a) | R1.1 · SEC       | RLS recursion fix (PG14+ SECURITY DEFINER) + safe 404 handling + syncGrupo onclick quotes repair + build regen                   |
 | 2026-04-28 | [S-2026-04-28-H](#s-2026-04-28-h) | S5.7             | fetch-interceptor dinâmico (EDGE_BASE lê window.BEEIT_EDGE_URL) + dev-server.js + E2E browser: interceptor→Edge local→Protheus   |
 | 2026-04-28 | [S-2026-04-28-G](#s-2026-04-28-g) | SEC · GOV        | Laudo de segurança (RLS, JWT, anon key, tabelas sem homologação) + prompt Gemini como analista de backlog + tasks.md incremental |
@@ -29,78 +32,361 @@ Autor: Bruno Daniel
 
 ---
 
-## S-2026-04-29-A
+## S-2026-04-29-C
 
-**Data:** 2026-04-29 (continuação de 2026-04-28)
+**Data:** 2026-04-29
 **Branch:** `feature/os-rt-modularization`
-**Commits:** `d096cb1` `63720ff` `af60309` `a54a3de`
-**Migrations:** `20260428180000_fix_profiles_rls_recursion.sql` (criada)
-**Roadmap:** R1.1 (concluída) · SEC (RLS hardening)
+**Commits:** `7acf708` · `f3f9138` · `692c524`
+**Migrations:** nenhuma nesta sessão
+**Roadmap:** SEC-1 ✅ · DevOps (dev.sh) ✅
 **OS Ativa:** OS-1042
 
 ---
 
-### Contexto
+### Contexto geral da sessão
 
-Esta sessão foi dedicada ao hardening de segurança e correção de bugs críticos de UX no frontend. Os principais focos foram:
+Sessão de auditoria de segurança e correção de resiliência de ambiente. Três blocos distintos:
 
-1. **RLS Recursion Fix (PG14+ SECURITY DEFINER behavior)** — Função `is_admin()` foi alterada para adicionar `SET row_security = off` na sua definição, evitando recursão infinita quando políticas de RLS tentam chamar a função. Este é um problema conhecido em PostgreSQL 14+ onde `SECURITY DEFINER` não bypassa RLS por padrão.
+**Bloco 1 — Auditoria de Segurança (CWE-602):**
+Identificação e contenção de vulnerabilidade de IAM exposta no bundle do cliente. Remoção de função legada sem chamadas. Documentação formal do risco.
 
-2. **Safe 404 Error Handling** — Funções `fetchDictBlueprint()` e `fetchDictBlueprintSA1SB1()` agora possuem guard clauses que tratam respostas HTTP não-OK (4xx, 5xx) com mensagens descritivas orientando o usuário a verificar credenciais/URL, em vez de falhar silenciosamente ou exibir erros genéricos.
+**Bloco 2 — Ambiente de desenvolvimento:**
+Diagnóstico do erro `ERR_CONNECTION_REFUSED` ao tentar logar com dev server apontando para Supabase local offline. Workaround temporário com servidor estático na porta 5001 (apontando para produção). Reversão ao servidor correto após Supabase local ser ligado no OrbStack.
 
-3. **syncGrupo onclick Quotes Fix** — Corrigido crítico problema onde `JSON.stringify()` produzia aspas duplas dentro de atributos HTML `onclick="..."`, quebrando o HTML prematuramente (SyntaxError: Unexpected end of input). Solução implementada: `.replace(/"/g,"'")` converte aspas duplas para simples após stringify, tornando seguro embutir em atributos HTML.
-
-4. **Build System Regeneration** — Após as correções, build foi regenerado via script e `public/index.html` foi atualizado automaticamente.
-
-5. **R1.1 Expansion Documentation** — Roadmap atualizado refletindo conclusão de R1.1 (expansão horizontal do dicionário blueprint para 16 aliases: Contábil/Financeiro/Fiscal/AF).
+**Bloco 3 — Fix de resiliência no `dev.sh`:**
+Correção do bug de contexto de diretório: script movido de `dev.sh` (raiz) para `scripts/dev.sh` sem atualizar os caminhos internos, causando `MODULE_NOT_FOUND` e falha de localização do `config.toml` ao invocar de subdiretórios.
 
 ---
 
-### Fixes / Alterações no código
+### Código morto removido
 
-| Descrição | Arquivo | Commit | Tipo |
-| --- | --- | --- | --- |
-| Fix RLS infinita recursão em `is_admin()` — adiciona `SET row_security = off` | `supabase/migrations/20260428180000_fix_profiles_rls_recursion.sql` | — | Migration SQL |
-| Safe 404 handling: `fetchDictBlueprint()` + `fetchDictBlueprintSA1SB1()` com guard clauses descritivas | `src/BeeIT-OS-RT-v2.html` | `af60309` | Fix |
-| Quotes fix: `syncGrupo()` JSON.stringify → `.replace(/"/g,"'")` para atributos HTML seguros | `src/BeeIT-OS-RT-v2.html` | `af60309` + `a54a3de` | Fix |
-| Build regeneration: `public/index.html` sincronizado via `node scripts/build-modules.js` | `public/index.html` | `a54a3de` | Chore |
-| Roadmap atualizado: R1.1 concluída, API-v2 backlog formalmente registrado | `docs/ROADMAP.md` | `d096cb1` | Docs |
-| UX expansion (R1.1): 16 aliases (CT1, CTT, CT5, SED, SE4, SE1, SE2, SA6, SEE, SF4, SB9, SN1, SN3) + badges `-hdr` suffix | `src/BeeIT-OS-RT-v2.html` | `63720ff` | Feat |
+| Função | Localização (pré-remoção) | Motivo |
+|---|---|---|
+| `fetchDictBlueprintSA1SB1()` | `src/BeeIT-OS-RT-v2.html` ~linha 13434 | Criada na Sprint 7 para SA1/SB1 hardcoded. Nunca chamada após Sprint R1 introduzir `fetchDictBlueprint(aliases)` generalizado. Zero referências no arquivo inteiro. |
+
+**Função canônica preservada:** `fetchDictBlueprint(aliases[])` — Sprint R1, aceita array arbitrário de aliases, persiste em `protheus_dict_snapshot`, computa SHA-256, atualiza badges.
+
+---
+
+### Botões adicionados / alterados
+
+Nenhum botão foi adicionado ou alterado nesta sessão. Todos os botões de "📋 Sync Dicionário" já chamavam `fetchDictBlueprint(aliases)` corretamente desde a sessão S-2026-04-29-A.
+
+---
+
+### Vulnerabilidade mapeada — CWE-602
+
+**Classificação:** Client-Side Enforcement of Server-Side Security
+**Localização:** `src/BeeIT-OS-RT-v2.html` linhas **882–1214**
+
+**O problema:** Funções de provisionamento e gerenciamento de identidade estão no bundle JavaScript servido ao browser. Qualquer usuário autenticado com DevTools aberto pode:
+1. Ver a URL exata da Edge Function de admin (`BEEIT_ADMIN_FN`)
+2. Ver o payload de cada operação IAM
+3. Executar `beeitAdminCreateUser()` diretamente no console
+
+| Função exposta | Operação | Endpoint |
+|---|---|---|
+| `beeitAdminFetch(action, method, body)` | Todas as chamadas admin | `POST/GET/PATCH /admin-users?action=<action>` |
+| `beeitAdminCreateUser()` | Criar usuário | `action=create` |
+| `beeitAdminSaveUser(id)` | Editar nome/senha/role | `action=update` |
+| `beeitAdminToggle(id, ativo)` | Ativar/desativar usuário | `action=update` |
+| `beeitAdminLoadUsers()` | Listar usuários do tenant | `action=list` |
+| `beeitAdminLoadLog()` | Log de acesso | `action=log` |
+
+**Risco efetivo:** Depende da Edge Function `supabase/functions/admin-users/`. Se ela valida `role = 'admin'` no JWT antes de executar → risco **moderado**. Se não valida → risco **crítico** (privilege escalation: qualquer consultor pode criar admin).
+
+**Ação de contenção (sem quebra de produção):**
+```js
+// 🚨 [SECURITY WARNING — CWE-602]: ADMIN IAM LOGIC EXPOSED IN CLIENT.
+// All functions below handle user provisioning in the browser bundle.
+// TODO (Sprint 6): Extract all IAM operations to admin-users Edge Function.
+// 🚨 [END SECURITY WARNING]
+```
+
+**Laudo completo:** [`docs/SECURITY-AUDIT.md`](../docs/SECURITY-AUDIT.md)
+
+---
+
+### Fluxo de processos — IAM (como funciona hoje)
+
+```
+Browser (beeitAdminCreateUser)
+  └→ POST https://…supabase.co/functions/v1/admin-users?action=create
+       Headers: Authorization: Bearer <JWT do usuário logado>
+                apikey: <BEEIT_SB_KEY (anon)>
+       Body: { email, nome, senha, role }
+  ←  Edge Function admin-users
+       [⚠️ VERIFICAR] valida JWT → extrai role → se não admin → 403
+       Se admin → cria usuário via service_role_key (interno na Edge)
+       → Retorna { user, error? }
+```
 
 ---
 
 ### Tabelas Supabase envolvidas
 
+Nenhuma tabela nova nesta sessão. As operações IAM (via `admin-users`) acessam:
+
 | Tabela | Schema | Operação | Contexto |
-| --- | --- | --- | --- |
-| `profiles` | `public` | Policy `profile_select_admin` — RLS | Corrigido recursão: policy agora usa `is_admin()` com `row_security=off` |
-| `protheus_dict_snapshot` | `public` | SELECT/UPSERT via RPC | `fetchDictBlueprint()` com error handling seguro |
+|---|---|---|---|
+| `profiles` | `public` | SELECT / INSERT / UPDATE | Leitura de `role` para verificação de admin (dentro da Edge, via `service_role_key`) |
+| `auth.users` | `auth` | INSERT / UPDATE | Supabase Auth — criação e edição de usuários (somente via `service_role_key` na Edge) |
+| `access_log` | `public` | INSERT | Registro de ações de admin (via `beeitAdminLoadLog`) |
 
 ---
 
-### Logs de erro tratados / prevenidos
+### Correção dev.sh — root enforcement
 
-| Erro | Causa Original | Fix Implementado |
+**Problema:** `dev.sh` foi movido de `/dev.sh` (raiz) para `/scripts/dev.sh`. `SCRIPT_DIR` passou a resolver para `.../scripts/` em vez da raiz, quebrando caminhos internos.
+
+**Correção:**
+```bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"   # raiz do projeto
+cd "$PROJECT_ROOT"                              # garante contexto correto
+```
+
+| Ocorrência | Antes | Depois |
+|---|---|---|
+| `LOG_DIR` | `${SCRIPT_DIR}/.logs` | `${PROJECT_ROOT}/.logs` |
+| `supabase start/stop --workdir` | `"$SCRIPT_DIR"` | `"$PROJECT_ROOT"` |
+| `supabase functions serve --env-file / --workdir` | `"${SCRIPT_DIR}/…"` | `"${PROJECT_ROOT}/…"` |
+| `node` path | `"${SCRIPT_DIR}/scripts/dev-server.js"` | `"${PROJECT_ROOT}/scripts/dev-server.js"` |
+
+**Teardown robusto:** SIGTERM → sleep 1 → SIGKILL como fallback para Dev Server e Edge Function. Fallback por porta com `kill -9` quando PID file falha.
+
+---
+
+### Artefatos gerados / modificados
+
+| Artefato | Tipo | Status | Commit |
+|---|---|---|---|
+| `src/BeeIT-OS-RT-v2.html` | Monólito | Remoção de 30 linhas (`fetchDictBlueprintSA1SB1`) + comentários de warning IAM | `7acf708` |
+| `public/index.html` | Build | Regenerado via `build-modules.js` | `7acf708` |
+| `docs/SECURITY-AUDIT.md` | Documento | Criado — laudo técnico CWE-602 | `7acf708` |
+| `docs/ROADMAP.md` | Documento | Sprint SEC-1 adicionada + descoberta #1 CWE-602 | `f3f9138` |
+| `scripts/dev.sh` | Script | PROJECT_ROOT enforcement + teardown SIGKILL | `692c524` |
+| `Governanca/bdapowered.html` | HUD | aiLog OS-1042 atualizado (não commitado — .gitignore) | — |
+
+---
+
+### Validações executadas
+
+| Validação | Comando | Resultado |
+|---|---|---|
+| Sintaxe JS inline do monólito | `node -e "new Function(script)"` em 7 blocos | ✅ 7/7 OK |
+| Build regenerado | `node scripts/build-modules.js` | ✅ 1 módulo injetado |
+| Função legada ausente do build | `grep -c "fetchDictBlueprintSA1SB1" public/index.html` | ✅ 0 |
+| Sintaxe bash do dev.sh | `bash -n scripts/dev.sh` | ✅ OK |
+| Dev server respondendo | `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5000/` | ✅ 200 |
+
+---
+
+### Pendências pós-sessão
+
+- [ ] **CRÍTICO:** Auditar `supabase/functions/admin-users/index.ts` — confirmar validação de `role = 'admin'` antes de cada `action`. Se ausente → implementar antes de qualquer outra mudança.
+- [ ] **Sprint 6:** Migrar `beeitAdminCreateUser`, `beeitAdminSaveUser`, `beeitAdminToggle` para lógica exclusiva na Edge Function — remover do bundle cliente.
+- [ ] Aplicar `20260428180000_fix_profiles_rls_recursion.sql` no banco remoto (pendência da sessão S-2026-04-29-A).
+
+---
+
+---
+
+## S-2026-04-29-A
+
+**Data:** 2026-04-29 (continuação de 2026-04-28, sessão reaberta pós-compactação de contexto)
+**Branch:** `feature/os-rt-modularization`
+**Commits:** `d096cb1` `63720ff` `af60309` `a54a3de`
+**Migrations:** `20260428180000_fix_profiles_rls_recursion.sql` (⚠️ criada localmente, **não commitada**)
+**Roadmap:** R1.1 ✅ · SEC-RLS ⚠️ pendente de push
+**OS Ativa:** OS-1042
+
+---
+
+### Contexto geral da sessão
+
+Sessão de fechamento do ciclo R1.1 e hardening de segurança. Dois blocos distintos:
+
+**Bloco 1 — R1.1 (expansão horizontal dict blueprint):**
+Injeção de botões `📋 Sync Dicionário` e `📖 Ver Dicionário` em todas as páginas de módulos Contábil/Financeiro/Fiscal/Ativo Fixo do monólito — sem tocar em `nav()`, `rndP()`, agentes IA legados ou CSS. Badges com sufixo `-hdr` para evitar colisão de ID com os progress-writers existentes (`_syncCardAcoes`, `syncSEDTemplate`). Confirmação de que `BdaDictApi.tlpp` no repositório AdvPL é 100% dinâmico para SX2/SX3.
+
+**Bloco 2 — Bugs críticos e segurança:**
+- RLS recursion infinita em PG14+ (SECURITY DEFINER não bypassa RLS por default)
+- SyntaxError em atributos `onclick` gerados com `JSON.stringify`
+- Silêncio de erros HTTP 4xx/5xx nas funções de fetch
+
+---
+
+### Botões adicionados (R1.1 — commit `63720ff`)
+
+Padrão visual uniforme em todas as páginas:
+- `📋 Sync Dicionário` → cyan `rgba(56,212,245,.1)` — chama `fetchDictBlueprint([alias])`
+- `📖 ALIAS` → roxo `rgba(167,139,250,.1)` — chama `openDictDrawer('ALIAS')`
+- `<span id="sync-st-ALIAS-hdr">` → badge de status atualizado por `_refreshDictBadges()`
+
+| Página / Módulo | Alias(es) | Botão Sync | Botão Drawer | Badge ID |
+| --- | --- | --- | --- | --- |
+| Plano de Contas | `CT1` | `fetchDictBlueprint(['CT1'])` | `openDictDrawer('CT1')` | `sync-st-CT1-hdr` |
+| Centros de Custo | `CTT` | `fetchDictBlueprint(['CTT'])` | `openDictDrawer('CTT')` | `sync-st-CTT-hdr` |
+| Natureza Financeira | `CT5` | `fetchDictBlueprint(['CT5'])` | `openDictDrawer('CT5')` | `sync-st-CT5-hdr` |
+| NFs de Entrada / Saída | `SF4` | `fetchDictBlueprint(['SF4'])` | `openDictDrawer('SF4')` | `sync-st-SF4-hdr` |
+| Fornecedores | `SED` | `fetchDictBlueprint(['SED'])` | `openDictDrawer('SED')` | `sync-st-SED-hdr` |
+| Contas a Receber | `SE1` + `SE2` | `fetchDictBlueprint(['SE1','SE2'])` | `openDictDrawer('SE1')` + `openDictDrawer('SE2')` | `sync-st-SE1-hdr` + `sync-st-SE2-hdr` |
+| Cond. de Pagamento | `SE4` | `fetchDictBlueprint(['SE4'])` | `openDictDrawer('SE4')` | `sync-st-SE4-hdr` |
+| Ativo Fixo | `SN1` + `SN3` | `fetchDictBlueprint(['SN1','SN3'])` | `openDictDrawer('SN1')` + `openDictDrawer('SN3')` | `sync-st-SN1-hdr` + `sync-st-SN3-hdr` |
+| (já existiam) SA1/SA2/SB1 | — | — | — | `sync-st-*-hdr` |
+
+**Atributo de marcação:** `data-dict-ux` em todos os containers novos — facilita `querySelectorAll('[data-dict-ux]')` para hide/show em massa no futuro.
+
+---
+
+### Fluxo de processos por botão
+
+#### `📋 Sync Dicionário` → `fetchDictBlueprint(aliases[])`
+
+```
+1. Exibe beeitShowOverlay("Sincronizando dicionário...")
+2. POST → Edge Function /protheus/api/v1/bda/dictionary/blueprint
+   Headers: Authorization: Bearer <JWT>, apikey: <SUPABASE_ANON_KEY>
+   Body: { aliases: ["CT1"], options: { scope: "ALL" } }
+3. Edge Function valida JWT → encaminha para Protheus REST
+   Protheus BdaDictApi.tlpp:getBlueprint → SX2/SX3 dinâmico
+4. Response: { status:"success", blueprint: { CT1: { campos: [...] } } }
+5. Para cada alias:
+   a. SHA-256 (crypto.subtle) do array de campos → hash de diff
+   b. UPSERT em protheus_dict_snapshot via beeitSbFetch (Supabase REST)
+      - Conflito por (tenant_id, alias) → atualiza updated_at + campos_json + hash
+6. _refreshDictBadges() → atualiza span#sync-st-CT1-hdr com ✅ ou 🟡
+7. beeitHideOverlay()
+```
+
+**Guard clause (fix `af60309`):**
+```js
+if (!res.ok) throw new Error(
+  res.status === 404
+    ? `Protheus retornou 404 — verifique credenciais/URL em Configurações`
+    : `Erro HTTP ${res.status}: ${res.statusText}`
+);
+```
+
+#### `📖 Alias` → `openDictDrawer('CT1')`
+
+```
+1. SELECT campos_json FROM protheus_dict_snapshot
+   WHERE tenant_id = <jwt_tenant_id> AND alias = 'CT1'
+2. Renderiza drawer lateral com _renderSchemaRows():
+   Colunas: CAMPO | TIPO | TAM | DEC | TÍTULO | OBRIGAT. | IS_KEY | F3 | COMBO
+3. Toolbar:
+   - Input filtro → _dictDrawerFilter(value) — filtra em tempo real (x3_campo, x3_titulo, x3_tipo)
+   - Botão {} → _dictDrawerCopyJson() — copia JSON para clipboard
+   - Botão ✕ → closeDictDrawer()
+4. Overlay escuro atrás do drawer — clique fecha
+```
+
+#### `_refreshDictBadges()` — chamada automática no bootstrap
+
+```
+checkDictSnapshots()
+  → SELECT alias, updated_at FROM protheus_dict_snapshot WHERE tenant_id = <tid>
+  → Para cada alias em _DICT_TRACKED_ALIASES (16 aliases):
+      Se existe snapshot → verde ✅ + data no span#sync-st-ALIAS-hdr
+      Se não existe → 🟡 Não sincronizado
+beeitShowApp() chama checkDictSnapshots().then(() => _refreshDictBadges())
+```
+
+---
+
+### Tabelas Supabase envolvidas
+
+| Tabela | Schema | Operação | Query / RPC | Contexto |
+| --- | --- | --- | --- | --- |
+| `profiles` | `public` | SELECT + RLS policy | `SELECT role FROM profiles WHERE id = auth.uid()` | `is_admin()` — corrigida recursão PG14+ |
+| `protheus_dict_snapshot` | `public` | SELECT | `SELECT alias, updated_at WHERE tenant_id=? AND alias IN (...)` | `checkDictSnapshots()` — bootstrap e refresh de badges |
+| `protheus_dict_snapshot` | `public` | UPSERT | `UPSERT (tenant_id, alias, campos_json, hash, updated_at)` | `fetchDictBlueprint()` — após sync com Protheus |
+| `protheus_dict_snapshot` | `public` | SELECT | `SELECT campos_json WHERE tenant_id=? AND alias=?` | `openDictDrawer()` — leitura para drawer |
+| `tenant_protheus_config` | `public` | SELECT | `SELECT protheus_url WHERE tenant_id=?` | `beeitShowApp()` — URL gerenciada pós-login |
+
+**RLS ativa em todas as tabelas acima.** Tenant isolation via `tenant_id = auth.jwt() ->> 'tenant_id'`.
+
+---
+
+### Migrations desta sessão
+
+#### `20260428180000_fix_profiles_rls_recursion.sql` ⚠️ NÃO COMMITADA
+
+**Problema:** PostgreSQL 14+ mudou o comportamento de `SECURITY DEFINER` — funções definidas com este atributo não bypassam mais o RLS por padrão. A função `is_admin()` fazia `SELECT FROM profiles`, e a policy `profiles_admin_select` chamava `is_admin()` → recursão infinita → crash da query.
+
+**Solução:**
+```sql
+CREATE OR REPLACE FUNCTION public.is_admin()
+  RETURNS boolean
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO 'public'
+  SET row_security = off   -- <-- NOVO: bypassa RLS dentro da função
+AS $$
+  SELECT COALESCE(
+    (SELECT role = 'admin' FROM public.profiles WHERE id = auth.uid()),
+    false
+  );
+$$;
+
+-- Também recria a policy para usar is_admin() (sem recursão inline):
+DROP POLICY IF EXISTS profiles_admin_select ON public.profiles;
+CREATE POLICY profiles_admin_select ON public.profiles
+  FOR SELECT USING (public.is_admin());
+```
+
+**Status:** arquivo criado localmente em `supabase/migrations/`, aguarda commit + `supabase db push`.
+
+---
+
+### Bugs corrigidos
+
+| Bug | Sintoma | Root Cause | Fix | Commit |
+| --- | --- | --- | --- | --- |
+| `SyntaxError: Unexpected end of input` no onclick | Browser rejeitava clicar em `syncGrupo` — erro no console | `JSON.stringify(['SA1','SA2'])` → `["SA1","SA2"]` — aspas duplas dentro de `onclick="..."` fecham o atributo prematuramente | `.replace(/"/g,"'")` após stringify: `['SA1','SA2']` → sem aspas duplas no HTML | `af60309` + `a54a3de` |
+| HTTP 4xx/5xx silencioso | Sync aparentava sucesso mas não salvava nada | `fetch()` não rejeita em respostas 4xx/5xx — `.ok` precisa ser checado manualmente | Guard clause `if (!res.ok) throw new Error(...)` com mensagem descritiva | `af60309` |
+| RLS infinite recursion | Login admin retornava 500 / "infinite recursion detected in policy" | `is_admin()` → `SELECT profiles` → policy `profiles_admin_select` → `is_admin()` → loop | `SET row_security = off` na definição da função | migration (pendente) |
+| `checkDictSnapshots` não atualizava badges | Badges ficavam em estado inicial mesmo após sync | `checkDictSnapshots()` não chamava `_refreshDictBadges()` depois | `.then(() => { _refreshDictBadges(); })` no bootstrap | `63720ff` |
+
+---
+
+### Consultas HTTP externas
+
+| Endpoint | Método | Headers obrigatórios | Payload | Resposta esperada |
+| --- | --- | --- | --- | --- |
+| `https://dbaqvoatopfquaqgdptk.supabase.co/functions/v1/protheus-proxy/protheus/api/v1/bda/dictionary/blueprint` | POST | `Authorization: Bearer <JWT>`, `apikey: <ANON_KEY>` | `{"aliases":["CT1"],"options":{"scope":"ALL"}}` | `{"status":"success","blueprint":{"CT1":{"campos":[...]}}}` |
+| `https://dbaqvoatopfquaqgdptk.supabase.co/rest/v1/protheus_dict_snapshot` | POST (upsert) | `Authorization: Bearer <JWT>`, `Prefer: resolution=merge-duplicates` | `{tenant_id, alias, campos_json, hash}` | HTTP 201 ou 200 |
+| `https://dbaqvoatopfquaqgdptk.supabase.co/rest/v1/protheus_dict_snapshot?alias=eq.CT1` | GET | `Authorization: Bearer <JWT>` | — | `[{campos_json:[...], updated_at:"..."}]` |
+
+---
+
+### Pendências e falhas desta sessão
+
+| Item | Status | Detalhe |
 | --- | --- | --- |
-| `SyntaxError: Unexpected end of input` (onclick parse) | `JSON.stringify()` com aspas duplas dentro de `onclick="..."` | `.replace(/"/g,"'")` antes de embutir no atributo HTML |
-| HTTP 404/500 silencioso | Falta de guard clause após `.fetch()` | `if (!res.ok) throw new Error(res.status === 404 ? "Credenciais/URL inválida" : res.statusText)` |
-| **Infinite recursion** (PG 14+ RLS) | `is_admin()` chamada de policy `profile_select_admin` dispara RLS novamente | `SET row_security = off` na função — similar pattern em Oracle/SQL Server |
+| Migration RLS recursion | ⚠️ Criada, não commitada | `supabase/migrations/20260428180000_fix_profiles_rls_recursion.sql` — precisa `git add` + `git commit` + `supabase db push --linked` |
+| Aliases CT5, SA6, SEE, SB9 | ⚠️ Na lista `_DICT_TRACKED_ALIASES` mas botões não verificados no diff | Commit `63720ff` lista 16 aliases mas diff visível mostra CT1/CTT/SF4/SED/SN1/SN3/SE1/SE2/SE4 — verificar se CT5/SA6/SEE/SB9 foram injetados |
+| Deploy para staging | ⏳ Pendente | `git push origin feature/os-rt-modularization` + aplicar migration no Supabase remoto |
+| Teste E2E dos novos botões | ⏳ Pendente | Abrir produção (ou staging) e clicar `📋 Sync Dicionário` em CT1, CT5, SED, SE1, SE2, SE4, SN1 — validar response + badge atualizado |
+| API-v2 (backlog TLPP) | ⏳ Backlog | SXB resolver, dependencies ExecAuto, router rotina_padrao para CT5/SE1/SE2/SEE/SB9/SN3 |
+| S8 — firewall Protheus | ⏳ Pendente | Liberar apenas IP Supabase no firewall do Protheus Cloud TOTVS |
+| S9 — módulo dict-viewer | ⏳ Pendente | Extrair drawer + blueprint como `src/modules/dict-viewer/` |
 
 ---
 
-### Consultas/RPCs testadas
+### Próxima sessão sugerida
 
-- ✅ `POST /protheus/api/v1/bda/dictionary/blueprint` (Edge Function) — agora com error handling
-- ✅ `SELECT * FROM protheus_dict_snapshot` (Supabase RLS) — agora sem recursão
-- ✅ `onclick="syncGrupo(['SA1','SA2'])"` — HTML parsing correto
+**Prioridade 1:** Commitar e aplicar migration `20260428180000_fix_profiles_rls_recursion.sql`:
+```bash
+git add supabase/migrations/20260428180000_fix_profiles_rls_recursion.sql
+git commit -m "fix(supabase): corrigir recursão RLS em is_admin() via SET row_security=off (PG14+)"
+supabase db push --linked --project-ref dbaqvoatopfquaqgdptk
+```
 
----
-
-### Build / Deploy
-
-- ✅ `node --check` em `src/BeeIT-OS-RT-v2.html` validado
-- ✅ `public/index.html` regenerado (109 linhas alteradas)
-- ⏳ Próximo step: deploy em staging para validar Edge Function com nova migration RLS
+**Prioridade 2:** Teste E2E dos botões R1.1 em staging — validar que todos os 16 aliases conseguem fazer sync e abrir drawer.
 
 ---
 
