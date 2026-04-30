@@ -40581,7 +40581,7 @@ function _m41rmNavSec(dir){
 async function _m41rmImport(ev){
   const file = ev.target.files && ev.target.files[0];
   if(!file) return;
-  if(typeof window.BeeITDocParser !== 'object' || typeof window.BeeITDocParser.parse !== 'function'){
+  if(typeof window.BeeITDocParser !== 'object' || typeof window.BeeITDocParser.parseDocument !== 'function'){
     alert('⚠️ Parser de documento não está carregado.\n\nAbra a aba Assessments uma vez para inicializar (window.BeeITDocParser).');
     ev.target.value = '';
     return;
@@ -40591,7 +40591,7 @@ async function _m41rmImport(ev){
   banner.textContent = '📄 Processando ' + file.name + '...';
   document.body.appendChild(banner);
   try {
-    const result = await window.BeeITDocParser.parse(file);
+    const result = await window.BeeITDocParser.parseDocument(file);
     banner.remove();
     if(result && result.success){
       _m41rm._importDoc = result.texto || '';
@@ -46060,7 +46060,7 @@ Se retornar ex. "sb, beeitClient", me envie o resultado.
   async function importFirstDoc(ev) {
     const file = ev.target.files && ev.target.files[0];
     if (!file) return;
-    if (typeof window.BeeITDocParser !== 'object' || typeof window.BeeITDocParser.parse !== 'function') {
+    if (typeof window.BeeITDocParser !== 'object' || typeof window.BeeITDocParser.parseDocument !== 'function') {
       alert('⚠️ Parser de documento não carregado. Recarregue a página (Cmd+Shift+R).');
       ev.target.value = ''; return;
     }
@@ -46069,7 +46069,7 @@ Se retornar ex. "sb, beeitClient", me envie o resultado.
     banner.textContent = '📄 Analisando ' + file.name + '...';
     document.body.appendChild(banner);
     try {
-      const result = await window.BeeITDocParser.parse(file);
+      const result = await window.BeeITDocParser.parseDocument(file);
       banner.remove();
       if (!result?.success) {
         alert('❌ Falha ao processar: ' + (result?.erro || 'erro desconhecido'));
