@@ -33940,6 +33940,44 @@ Processado mensalmente, calcula a parcela de depreciação de cada bem baseado n
 
   };
 
+  // Lock estrutural por módulo: enumera as subseções 4.4/4.5 e blocos extras
+  // que a IA DEVE produzir, na ordem certa, com os títulos certos. Sem isso,
+  // a IA escolhe livremente quais cadastros/rotinas listar — runs divergem.
+  // Para PCP a estrutura é alinhada ao MIT041 V0 PROSOLUS (referência canônica).
+  const _M41_MOD_LOCK = {
+    pcp: `
+═══ 🔒 ESTRUTURA EXATA OBRIGATÓRIA PARA SIGAPCP ═══
+Para o módulo PCP, as seções 4.4 e 4.5 DEVEM gerar EXATAMENTE as subseções abaixo, NA ORDEM, com os títulos exatos. NÃO inventar, NÃO omitir, NÃO renomear, NÃO reagrupar.
+
+### 4.4. Cadastros SIGAPCP — 7 subseções obrigatórias:
+- 4.4.1. Produtos MOD (Mão de Obra) — SB1
+- 4.4.2. Estruturas (BOM) — SG1
+- 4.4.3. Calendário Fabril — SH7/SR6
+- 4.4.4. Centro de Trabalho — CT0
+- 4.4.5. Recursos — SR3
+- 4.4.6. Roteiros de Operações — SBE
+- 4.4.7. Previsão de Vendas — SB9/SHF
+
+### 4.5. Rotinas SIGAPCP — 6 subseções obrigatórias:
+- 4.5.1. Ordem de Produção Prevista — MATA650
+- 4.5.2. Ordem de Produção Firme — MATA650 (status/empenho)
+- 4.5.3. MRP / Planejamento — MATA700 (parâmetros MV_MRPRES, MV_MRPHOR, MV_MRPFIR)
+- 4.5.4. Carga Máquina — MATA720
+- 4.5.5. Apontamento de Produção — MATA681 (parâmetros MV_APCUSTO, MV_APREFUG)
+- 4.5.6. Poder em Terceiros — MATA681 / MATA682
+
+### Adicionar seção 7 (depois do GAP, antes da Aprovação):
+## 7. Subprocessos Específicos SIGAPCP
+### 7.1. Inventário Físico — MATA240 / MATA215
+[Descreva contagem de saldo, ajustes, congelamento e processo de auditoria]
+### 7.2. Fechamento Mensal de PCP
+[Descreva encerramento de OPs do período, apuração de custo (CSP), integração contábil CT2]
+
+Cada subseção 4.4.x e 4.5.x DEVE seguir o template padrão (rotina, tabela, objetivo, campos, parâmetros, configuração para o cliente).
+`,
+  };
+  const _modLock = _M41_MOD_LOCK[m.id] || '';
+
   const _flowContent = _FLOWS[m.id] || `
 ### 4.2. Fluxo Macro do Processo — ${m.sub}
 
@@ -34232,7 +34270,7 @@ A MIT foi desenvolvida com base na Proposta Comercial e informações obtidas ju
 | # | Descrição do GAP | Módulo | No Escopo? | Prioridade |
 |---|---|---|---|---|
 | 1 | [descrição] | ${m.name} | Sim/Não | Alta/Média/Baixa |
-
+${_modLock}
 ═══ 🧠 MODO ALTA PERFORMANCE ═══
 - Priorizar clareza e padronização para escala: estruture o documento como se fosse replicável para múltiplos clientes do mesmo segmento
 - Pensar em aceleração de implantação: destaque configurações que economizam tempo na implantação
@@ -34240,7 +34278,7 @@ A MIT foi desenvolvida com base na Proposta Comercial e informações obtidas ju
 - Estrutura como base para Bee Agent OS: cada seção deve ser autoexplicativa e completa, sem depender de contexto externo
 
 REGRAS FINAIS DE FORMATAÇÃO (OBRIGATÓRIO):
-1. Numeração exata das seções (1, 2, 3.1, 3.2, 4.1, 4.2, 4.3, 4.4, 4.5, etc.)
+1. ESTRUTURA EXATA E ESTÁVEL — use a numeração e os títulos das seções EXATAMENTE como fornecidos (1, 2, 3.1, 3.2, 4.1…4.6, 5, 6). NÃO inventar, omitir, renomear ou reordenar seções. Se houver bloco "🔒 ESTRUTURA EXATA OBRIGATÓRIA PARA ${m.sub}" antes destas regras, ele PREVALECE sobre os templates genéricos das seções 4.4 e 4.5 — siga-o à risca, na ordem dada e com os títulos dados.
 2. ☒ = habilitado/selecionado | ☐ = não habilitado
 3. Tabelas Markdown |col|col| para TODAS as tabelas — sem exceção
 4. Campos Protheus: XX_CAMPO (ex: A1_CGC, C5_TIPLIB, B1_PRV1)
