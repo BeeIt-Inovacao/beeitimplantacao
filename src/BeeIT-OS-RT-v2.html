@@ -13186,7 +13186,6 @@ function rndSync(){
             <div style="font-size:11px;font-weight:800;color:${ok?cor:'#4b5563'};">${t.alias}</div>
             <div style="font-size:9px;color:var(--txt3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.label.replace(t.alias+' — ','')}</div>
             <div style="font-size:8px;color:#4b5563;margin-top:1px;">📍 ${t.rotina} · ${t.fonte}</div>
-            ${!grupo.titulo.includes('Reforma')?`<div id="dict-snap-badge-${t.alias}" style="margin-top:4px;"></div>`:''}
           </div>
           <div style="text-align:right;flex-shrink:0;">
             <div style="font-size:24px;font-weight:900;color:${ok?cor:'#374151'};line-height:1;">${total}</div>
@@ -13199,10 +13198,14 @@ function rndSync(){
           POST /api/framework/v1/company/{emp}/{fil}/${t.alias}
         </div>
         <!-- Ações -->
-        ${_syncCardAcoes(t,ok,cor,sedTemTemplate)}
-        ${!grupo.titulo.includes('Reforma')?`<div style="padding:0 14px 8px;display:flex;gap:6px;align-items:center;">
-          <button onclick="openDictDrawer('${t.alias}')" style="background:rgba(56,212,245,.1);border:1px solid rgba(56,212,245,.3);color:#38D4F5;border-radius:5px;padding:4px 10px;font-size:9px;font-weight:700;cursor:pointer;margin-left:auto;">📖 Ver Dicionário</button>
-        </div>`:''}
+        <div style="padding:8px 14px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <button onclick="syncExcelTabela('${t.alias}')" style="background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);color:#34d399;border-radius:5px;padding:5px 10px;font-size:9px;font-weight:700;cursor:pointer;">📊 Excel</button>
+          <button onclick="syncJsonTabela('${t.alias}')" style="background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);color:#60a5fa;border-radius:5px;padding:5px 10px;font-size:9px;font-weight:700;cursor:pointer;">📄 JSON</button>
+          <button onclick="syncTabela('${t.alias}')" style="background:${grupo.cor}18;border:1px solid ${grupo.cor}44;color:${grupo.cor};border-radius:5px;padding:5px 12px;font-size:9px;font-weight:700;cursor:pointer;">🚀 Sincronizar</button>
+          ${!grupo.titulo.includes('Reforma')?`<div id="dict-snap-badge-${t.alias}" style="display:inline-block;margin-left:4px;"></div>`:''}
+          ${!grupo.titulo.includes('Reforma')?`<button onclick="openDictDrawer('${t.alias}')" style="background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);color:#a78bfa;border-radius:6px;padding:5px 10px;font-size:9px;font-weight:700;cursor:pointer;margin-left:auto;">📖 Ver Dicionário</button>`:''}
+          <span id="sync-st-${t.alias}" style="font-size:9px;margin-left:${grupo.titulo.includes('Reforma')?'auto':'4px'};"></span>
+        </div>
         <!-- Progress bar -->
         <div id="sync-pb-${t.alias}" style="display:none;height:3px;background:var(--bdr);">
           <div id="sync-pf-${t.alias}" style="height:3px;background:${cor};width:0%;transition:width .3s;"></div>

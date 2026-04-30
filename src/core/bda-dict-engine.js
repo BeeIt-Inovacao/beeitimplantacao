@@ -40,7 +40,7 @@
 
   // ── Aliases monitorados e estado de snapshot ──────────────────────────
 
-  const _DICT_TRACKED_ALIASES = ['SA1','SA2','SB1','CT1','CTT','CT5','SED','SE4','SE1','SE2','SA6','SEE','SF4','SB9','SN1','SN3'];
+  const _DICT_TRACKED_ALIASES = ['SA1','SA2','SB1','CT1','CTT','CT5','SED','SE4','SE1','SE2','SA6','SEE','SF4','SB9','SN1','SN3','CVE','CVF','CTS','CT2','SF5','SG1','SRV','SRJ','SR6','SRA','SR3','SRF','SRG','SP4','SP9'];
 
   async function checkDictSnapshots() {
     try {

@@ -24,6 +24,7 @@ Thumbs.db
 credentials.json
 service-account.json
 supabase/.temp/
+supabase/.branches/
 
 # ───────── Artefatos de dev ─────────
 *.tmp
